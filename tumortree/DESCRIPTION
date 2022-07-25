@@ -1,0 +1,29 @@
+Package: tumortree
+Title: Analyze spatially structured tree simulations
+Version: 0.0.1
+Authors@R:
+  person("Maya", "Lewinsohn", email = "maya.lewinsohn@gmail.com", role = c("aut", "cre"))
+Description: Includes functions for phylogenetic analysis of an agent-based simulated of tumor growth in a 2D lattice. 
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Suggests: 
+  testthat
+Imports:
+  ape,
+  dplyr,
+  tidyr,
+  ggplot2,
+  ggtree,
+  phangorn,
+  phylogram,
+  phytools,
+  stringr,
+  tibble,
+  treeio,
+  HDInterval,
+  rdist,
+  beastio,
+  rlist, 
+  apTreeshape
