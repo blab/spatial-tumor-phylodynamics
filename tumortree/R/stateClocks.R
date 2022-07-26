@@ -14,125 +14,105 @@
 #' @importFrom magrittr %>%
 #' @export
 #'
-write_state_clocks_xml <- function(sim_cells_file,
-                                   sampled_cells_file,
-                                   xml_file,
-                                   template_file,
-                                   rewrite_sampled_cells_csv = FALSE,
-                                   n_samples = 100,
-                                   diversified = FALSE,
-                                   resample = FALSE) {
-
-    sim_cells <- read.csv(sim_cells_file) %>%
-        normalize_locs
-
-
+#'
+#'
+write_state_clocks_xml <-function(sim_cells_file, sampled_cells_file, xml_file, template_file, 
+          rewrite_sampled_cells_csv = FALSE, n_samples = 100, diversified = FALSE, 
+          resample = FALSE) {
+    sim_cells <- read.csv(sim_cells_file) %>% normalize_locs
     endpoint <- max(sim_cells$deathdate)
-
-    alive_cells <- sim_cells %>%
-        dplyr::filter(deathdate == endpoint)
-
-    if (file.exists(sampled_cells_file) & (! resample)) {
-
-        sampled_cells <- read.csv(sampled_cells_file) %>%
-            normalize_locs
-
-    } else {
-
+    alive_cells <- sim_cells %>% dplyr::filter(deathdate == endpoint)
+    if (file.exists(sampled_cells_file) & (!resample)) {
+        sampled_cells <- read.csv(sampled_cells_file) %>% normalize_locs
+    }
+    else {
         message("Sampling")
-
-        sampled_cells <- sample_alive_cells(alive_cells = alive_cells,
-                                                       n = n_samples,
-                                                       diversified_sampling = diversified) %>%
-            normalize_locs %>%
-            filter(sampled == TRUE)
-
-
+        sampled_cells <- sample_alive_cells(alive_cells = alive_cells, 
+                                            n = n_samples, diversified_sampling = diversified) %>% 
+            normalize_locs %>% filter(sampled == TRUE)
         write_csv(sampled_cells, file = sampled_cells_file)
     }
-
-
-    ## find unique sampled mutations to filter sequence data
-    ## (only include segregating sites)
-    if (! "sequence_collapsed" %in% colnames(sampled_cells)) {
-        sampled_muts <- sampled_cells$mutations
-
-        all_sampled_muts <- as.integer(unique(unlist(purrr::map(sampled_muts, function(mut_row) extract_mutations(mut_row)))))
-        ## extract sequence data
-
-
-        sampled_cells$sequence_collapsed <- purrr::map_chr(sampled_cells$sequence, function(seq) extract_sequences(seq, sampled_muts = all_sampled_muts))
+    sampled_sim_tree <- tumortree::convert_all_cells_to_tree_fast(all_cells = sim_cells, 
+                                                                  sampled_cells_indices = sampled_cells$index)
+    sampled_tree_length <- sum(sampled_sim_tree@phylo$edge.length)
+    sim_tree <- tumortree::convert_all_cells_to_tree_fast(all_cells = sim_cells)
+    tree_length <- sum(sim_tree@phylo$edge.length)
+    all_sim_tree_length <- sim_cells %>% dplyr::mutate(br = deathdate - 
+                                                           birthdate) %>% dplyr::summarize(tree_length = sum(br))
+    all_muts <- as.integer(unique(unlist(purrr::map(sim_cells$mutations, 
+                                                    function(mut_row) extract_mutations(mut_row)))))
+    all_alive_muts <- as.integer(unique(unlist(purrr::map(alive_cells$mutations, 
+                                                          function(mut_row) extract_mutations(mut_row)))))
+    all_sampled_muts <- as.integer(unique(unlist(purrr::map(sampled_cells$mutations, 
+                                                            function(mut_row) extract_mutations(mut_row)))))
+    clock_rate_mean <- length(unique(all_muts))/all_sim_tree_length/length(all_muts)
+    clock_rate_string <- format(clock_rate_mean, scientific = FALSE, 
+                                digits = 5)
+    sampled_cells$sequence_collapsed <- purrr::map_chr(sampled_cells$sequence, 
+                                                       function(seq) extract_sequences(seq, sampled_muts = all_muts))
+    if ((!"edge_adjacent" %in% colnames(sampled_cells)) | (!"most_extreme" %in% 
+                                                           colnames(sampled_cells))) {
+        sampled_cells$most_extreme <- purrr::map2_dbl(sampled_cells$locx, 
+                                                      sampled_cells$locy, function(x_loc, y_loc) check_if_cell_most_extreme(x_loc, 
+                                                                                                                            y_loc, alive_cells = alive_cells))
+        alive_cells$most_extreme <- purrr::map2_dbl(alive_cells$locx, 
+                                                    alive_cells$locy, function(x_loc, y_loc) check_if_cell_most_extreme(x_loc, 
+                                                                                                                        y_loc, alive_cells = alive_cells))
+        alive_cells$edge_adjacent <- purrr::map2_dbl(alive_cells$locx, 
+                                                     alive_cells$locy, function(x_loc, y_loc) check_boundary_adjacent(x_loc, 
+                                                                                                                      y_loc, alive_cells = alive_cells))
+        sampled_cells$edge_adjacent <- purrr::map2_dbl(sampled_cells$locx, 
+                                                       sampled_cells$locy, function(x_loc, y_loc) check_boundary_adjacent(x_loc, 
+                                                                                                                          y_loc, alive_cells = alive_cells))
     }
-    ####################
-    ## Find edge states
-
-    if ((! "edge_adjacent" %in% colnames(sampled_cells)) | (! "most_extreme" %in% colnames(sampled_cells)) ) {
-        sampled_cells$most_extreme <- purrr::map2_dbl(sampled_cells$locx, sampled_cells$locy,
-                                                      function(x_loc, y_loc) check_if_cell_most_extreme(x_loc, y_loc, alive_cells = alive_cells))
-
-        alive_cells$most_extreme <- purrr::map2_dbl(alive_cells$locx, alive_cells$locy,
-                                                    function(x_loc, y_loc) check_if_cell_most_extreme(x_loc, y_loc, alive_cells = alive_cells))
-
-        sampled_cells$edge_adjacent <- purrr::map2_dbl(sampled_cells$locx, sampled_cells$locy,
-                                                       function(x_loc, y_loc) check_boundary_adjacent(x_loc, y_loc, alive_cells = alive_cells))
-    }
-
-    if(rewrite_sampled_cells_csv) {
-
+    if (rewrite_sampled_cells_csv) {
         write_csv(sampled_cells, sampled_cells_file)
     }
-
-    sampled_cell_states <- as.integer(sampled_cells$most_extreme | sampled_cells$edge_adjacent)
-
-    ## Add edge state to name
-
-    sampled_cells$cell_name <- paste0("cell", sampled_cells$index, "loc", sampled_cell_states, sep = "")
-
+    sampled_cell_states <- as.integer(sampled_cells$most_extreme | 
+                                          sampled_cells$edge_adjacent)
+    sampled_cells$cell_name <- paste0("cell", sampled_cells$index, 
+                                      "loc", sampled_cell_states, sep = "")
     alignment_string <- ""
-
     for (i in 1:nrow(sampled_cells)) {
-        alignment_string <- paste0(alignment_string, paste0('\t', '<sequence id="seq_',
-                                                            sampled_cells$cell_name[i],
-                                                            '" spec="Sequence" taxon="',
-                                                            sampled_cells$cell_name[i],
-                                                            '" totalcount="4" value="',
-                                                            sampled_cells$sequence_collapsed[i],
-                                                            '"/>', sep = ""), sep = "\n")
+        alignment_string <- paste0(alignment_string, paste0("\t", 
+                                                            "<sequence id=\"seq_", sampled_cells$cell_name[i], 
+                                                            "\" spec=\"Sequence\" taxon=\"", sampled_cells$cell_name[i], 
+                                                            "\" totalcount=\"4\" value=\"", sampled_cells$sequence_collapsed[i], 
+                                                            "\"/>", sep = ""), sep = "\n")
     }
-
     taxon_traits <- c()
-
     for (i in 1:nrow(sampled_cells)) {
-
-        taxon_traits <- c(taxon_traits, paste0(sampled_cells$cell_name[i], "=loc", sampled_cell_states[i], sep = ""))
+        taxon_traits <- c(taxon_traits, paste0(sampled_cells$cell_name[i], 
+                                               "=loc", sampled_cell_states[i], sep = ""))
     }
-
     taxon_traits_string <- paste(taxon_traits, collapse = ",")
-
-
+    rho_edge <- round(sum(sampled_cell_states)/sum(alive_cells$most_extreme | 
+                                                       alive_cells$edge_adjacent), 3)
+    rho_center <- round(sum(!sampled_cell_states)/sum(!(alive_cells$most_extreme | 
+                                                            alive_cells$edge_adjacent)), 3)
+    rho_string <- paste0(rho_center, " ", rho_edge, sep = "")
     con = file(template_file, "r")
-
     first_line = TRUE
-
-    while(length(x <- readLines(con, n = 1)) > 0) {
-
-
-
-        if (grepl("insert_sequence", x, fixed = TRUE)) { #alignment insertion
-            write(alignment_string, file=xml_file, append=!first_line)
-
-        } else if (grepl("insert_trait", x, fixed = TRUE)) { #taxon insertion
-            write(gsub("insert_trait", taxon_traits_string , x), file=xml_file, append = !first_line)
-
-        }  else {
-            write(x, file=xml_file, append=!first_line)
+    while (length(x <- readLines(con, n = 1)) > 0) {
+        if (grepl("insert_sequence", x, fixed = TRUE)) {
+            write(alignment_string, file = xml_file, append = !first_line)
         }
-
+        else if (grepl("insert_trait", x, fixed = TRUE)) {
+            write(gsub("insert_trait", taxon_traits_string, x), 
+                  file = xml_file, append = !first_line)
+        }
+        else if (grepl("insert_rho", x, fixed = TRUE)) {
+            write(gsub("insert_rho", rho_string, x), file = xml_file, 
+                  append = !first_line)
+        }
+        else if (grepl("insert_clock_rate", x, fixed = TRUE)) {
+            write(gsub("insert_clock_rate", clock_rate_string, 
+                       x), file = xml_file, append = !first_line)
+        }
+        else {
+            write(x, file = xml_file, append = !first_line)
+        }
         first_line = FALSE
-
-
     }
     close(con)
-
-
 }
