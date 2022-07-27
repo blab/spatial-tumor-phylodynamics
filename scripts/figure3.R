@@ -15,7 +15,7 @@ colors_edge_center <- get_color_palette(names = c("edge", "center"))
 ################ EXAMPLE POSTERIORS ##################
 
 #example_mcmc_log_file <- "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/logs2/death_rate_validation_pop_1000_dr_0.29_n_100_state_clock_estimate_dr.log"
-example_mcmc_log_file <- "../analysis/logs/death_rate_validation_pop_1000_dr_0.29_n_100_state_clock_estimate_dr.log"
+example_mcmc_log_file <- "../eden/logs/death_rate_validation_pop_1000_dr_0.29_n_100_state_clock_estimate_dr.log"
 
 example_mcmc_log <- as.data.frame(readLog(example_mcmc_log_file))
 
@@ -58,7 +58,7 @@ ggsave(plot=example_birth_rates_posteriors, file ="manuscript/figures/example_bi
 ############## EXAMPLE ANCESTRAL STATE RECONSTRUCTION TREE #####
 
 #mcc_tree <- read.beast("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/logs2/death_rate_validation_pop_1000_dr_0.29_n_100_state_clock_estimate_dr.typed.node.trees.mcc")
-mcc_tree <- read.beast("../analysis/trees/death_rate_validation_pop_1000_dr_0.29_n_100_state_clock_estimate_dr.typed.node.trees.mcc")
+mcc_tree <- read.beast("../eden/trees/death_rate_validation_pop_1000_dr_0.29_n_100_state_clock_estimate_dr.typed.node.trees.mcc")
 
 
 colors_loc <- colors_edge_center
@@ -99,7 +99,7 @@ example_all_cells <- read_csv("../simulation_data/cells_death_rate_validation_po
 
 ### Ancestral state reconstruction ######
 
-sim_tree <- readRDS("../analysis/simtrees/cells_death_rate_validation_pop_1000_dr_0.29.rds")
+sim_tree <- readRDS("../eden/simtrees/cells_death_rate_validation_pop_1000_dr_0.29.rds")
 
 example_alive_cells <- example_all_cells %>% 
     filter_alive_cells()
@@ -296,13 +296,13 @@ calculate_growth_rate_posterior <- function(mcmc_log, log_file) {
 
 
 # State-dependent clock (SDevo)
-log_files <- list.files(path = "../analysis/logs",
+log_files <- list.files(path = "../eden/logs",
                         pattern ="*estimate_dr.log",
                         full.names = TRUE,
                         include.dirs = TRUE)
 
 # Strict clock
-strict_clock_log_files <- list.files(path = "../analysis/logs",
+strict_clock_log_files <- list.files(path = "../eden/logs",
                                      pattern ="*estimate_dr_strict_clock.log",
                                      full.names = TRUE,
                                      include.dirs = TRUE)
@@ -330,11 +330,11 @@ strict_clock_growth_rate_posteriors <- purrr::map2(strict_clock_logs, strict_clo
 
 
 #true simulated rates
-sim_rates <- read_csv("../analysis/stats/sim_validation_rates.csv")
+sim_rates <- read_csv("../eden/stats/sim_validation_rates.csv")
 
 #From extract_validation_sims_rates.R
-weighted_sim_rates <- read_csv("../analysis/stats/validation_growth_and_death_rates_weighted.csv") %>% 
-    dplyr::mutate(true_birth_rate_diff_weighted = mean_edge_growth_rate - mean_center_growth_rate) %>% 
+weighted_sim_rates <- read_csv("../eden/stats/validation_growth_and_death_rates_weighted.csv") %>% 
+    dplyr::mutate(true_birth_rate_diff_weighted = mean_edge_birth_rate - mean_center_birth_rate) %>% 
     dplyr::select(dr, true_birth_rate_diff_weighted)
 
 #add true growth rates 
@@ -358,12 +358,12 @@ strict_clock_growth_rate_posteriors_df <- strict_clock_growth_rate_posteriors_df
     left_join(., weighted_sim_rates, by = "dr")
 
 # Write results to CSV
-write.csv(growth_rate_posteriors_df, "../analysis/stats/birth_death_rate_posteriors_estimate_dr.csv")
-write.csv(strict_clock_growth_rate_posteriors_df, "../analysis/stats/birth_death_rate_posteriors_estimate_dr_strict_clock.csv")
+write.csv(growth_rate_posteriors_df, "../eden/stats/birth_death_rate_posteriors_estimate_dr.csv")
+write.csv(strict_clock_growth_rate_posteriors_df, "../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock.csv")
 
 # To skip above computation
-growth_rate_posteriors_df <- read_csv("../analysis/stats/birth_death_rate_posteriors_estimate_dr.csv")
-strict_clock_growth_rate_posteriors_df <- read_csv("../analysis/stats/birth_death_rate_posteriors_estimate_dr_strict_clock.csv")  
+growth_rate_posteriors_df <- read_csv("../eden/stats/birth_death_rate_posteriors_estimate_dr.csv")
+strict_clock_growth_rate_posteriors_df <- read_csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock.csv")  
 
 
 # True versus estimated plots (stat-dependent and strict comparisons,  Figure 3E)

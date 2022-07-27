@@ -7,9 +7,6 @@ library(ggplot2)
 library(testit)
 library(scales)
 
-
-setwd("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation")
-
 #function to identify cells within radius of cell
 
 get_punched_cells <- function(sampled_cell_index, alive_cells, punch_radius_n_cells) {
@@ -811,96 +808,6 @@ write_state_clocks_xml_from_bulk <- function(punch_info, punches_edge_assigment_
   close(con)
 }
 
-generate_bulk_seq_nexus_files <- function(punch_info, punches_edge_assigment_df, nexus_file_basename ) {
-    
-    n_punches <- length(punch_info$sequences)
-    #states nexus file
-    
-    nexus_file <- paste0(nexus_file_basename, ".nex", sep = "")
-    nexus_state_file <- paste0(nexus_file_basename, "_edge_state.nex", sep = "")
-    
-    message ("Generating states nexus file...")
-    
-    
-    ## CONVERT STATES TO NEXUS ##
-    
-    #translate into nexus format
-    
-    #initialize
-    write(paste0("#NEXUS",
-                 "\n",
-                 "\nBEGIN DATA;",
-                 "\n",
-                 paste0("\nDIMENSIONS NTAX=",n_punches, " NCHAR=1;"),
-                 '\nFORMAT datatype=Standard symbols="01" missing=? GAP=-;',
-                 "\n",
-                 "\nMATRIX",
-                 "\n"),
-          file = nexus_state_file,
-          append=FALSE)
-    
-    
-    #then append other lines
-    for (i in 1:n_punches) {
-        write(paste0("punch_",i,"\t", as.integer(punches_edge_assigment_df$punch_on_edge[i])),
-              file = nexus_state_file,
-              append=TRUE)
-        
-    }
-    
-    write(paste0(";","\nEND;"),
-          file = nexus_state_file,
-          append=TRUE)
-    
-    message ("Generating alignment nexus file...")
-    
-    
-    ## WRITE JC SEQUENCE DATA TO NEXUS ##
-    
-    
-    len_seq <- nchar(punch_info$sequences[1])
-    
-    #initialize
-    write(paste0("#NEXUS",
-                 "\n",
-                 "\nBEGIN TAXA;",
-                 "\n",
-                 paste0("\tDIMENSIONS NTAX=",n_punches, ";"),
-                 '\n', 
-                 '\t', 'TAXLABELS'),
-          file = nexus_file,
-          append=FALSE)
-    
-    
-    #then append other lines
-    
-    for (i in 1:n_punches) {
-        write(paste0("\t", "punch_",i),
-              file = nexus_file,
-              append=TRUE)
-        
-    }
-    
-    write(paste0(";", "\n", "END;", "\n", "BEGIN CHARACTERS;",
-                 "\n",
-                 "\t",paste0("DIMENSIONS NCHAR =", len_seq,";"),
-                 "\n", "\t", "FORMAT DATATYPE=DNA MISSING=? GAP=-;",
-                 "\n", "\t", "MATRIX"),
-          file = nexus_file,
-          append=TRUE)
-    
-    for (i in 1:n_punches) {
-        write(paste0("\t", "punch_",i,"\t", punch_info$sequences[i]),
-              file = nexus_file,
-              append=TRUE)
-        
-    }
-    
-    write(paste0(";","\nEND;"),
-          file = nexus_file,
-          append=TRUE)
-    
-}
 
 #calculate expected tree length based on pop gen theory
 #this can be used to normalize a prior
@@ -915,65 +822,7 @@ calc_expected_total_tree_length <- function(n_tips, root_age) {
     E_total_tree_length <- root_age * sum_i / (1- 1/n_tips)
     return(E_total_tree_length)
 }
-write_rb_header_file <- function(rb_header_file, nexus_file_basename, simulation_name, alive_cells, n_tips, pop) {
-    
-    root_age <- max(alive_cells$deathdate)
-    E_tree_length <- calc_expected_total_tree_length(n_tips, root_age)
-    rate_pr <- E_tree_length / 10
-    
-    # write model info
-    write('#########################################################
-## RevBayes script to combine time tree                
-## estimation and BiSSE model for differences in       
-## diversification rates of edge and center            
-## on simulated tumor data 
-## Based on: 
-## https://revbayes.github.io/tutorials/clocks/        
-## https://revbayes.github.io/tutorials/sse/bisse.html
-## ', rb_header_file)
-    write(paste0("## Script generated: ", Sys.time()), rb_header_file, append = TRUE)
-    write('#########################################################
-                  ', rb_header_file, append = TRUE)
-    
-    # write simulation-specific parameters
-    write("## input parameters", rb_header_file, append = TRUE)
-    write(paste0('SIMULATION= "', simulation_name, '"', sep = ""), rb_header_file, append = TRUE)
-    write(paste0('ROOT_AGE= ', round(root_age,2), sep = ""), rb_header_file, append = TRUE)
-    write(paste0('N= ', pop, sep = ""), rb_header_file, append = TRUE)
-    #write(paste0('rate_pr = ', rate_pr, sep = ""), rb_header_file, append = TRUE)
-    
-    
-}
 
-
-bisse_bulk_sample_and_sequence <- function(all_cells, simulation_name, rb_header_file, nexus_file_basename, punch_radius_n_cells = 2, n_samples = 20, min_alt_reads = 2, min_coverage = 10, depth = 100, ccf = 0.15, seed = NA) {
-    
-    # sampling, sequence
-    alive_cells <- all_cells %>%
-        dplyr::filter(deathdate == max(deathdate))
-    
-    punch_info <- bulk_sample_and_sequence(all_cells, punch_radius_n_cells = punch_radius_n_cells, n_samples = n_samples, min_alt_reads = min_alt_reads, min_coverage = min_coverage, depth = depth, ccf = ccf, seed = seed)
-    punches_edge_assigment_df <- mark_edge_punches(punch_info$indices, alive_cells = alive_cells)
-    
-    alive_cells <- add_missing_punch_info_to_cells(alive_cells, punch_info, punches_edge_assigment_df )
-    
-
-    a <- plot_punch_biopsies(alive_cells, punch_info$indices, color_by_edge = TRUE, size = 2)
-    
-    print(a)
-    
-    b <- plot_punch_biopsies(alive_cells, punch_info$indices, color_by_punch_id = TRUE, size = 2)
-    
-    print(b)
-    
-    generate_bulk_seq_nexus_files(punch_info = punch_info,
-                              punches_edge_assigment_df = punches_edge_assigment_df,
-                              nexus_file_basename = nexus_file_basename)
-    
-    n_tips <- length(punch_info$sequences)
-    pop <- nrow(alive_cells)
-    write_rb_header_file(rb_header_file = rb_header_file, nexus_file_basename = nexus_file_basename, simulation_name = simulation_name, alive_cells = alive_cells, n_tips = n_tips, pop = pop)
-}
 
 stateClocks_bulk_sample_and_sequence <- function(all_cells, xml_file, template_file, punch_radius_n_cells = 2, n_samples = 20, min_alt_reads = 2, min_coverage = 10, depth = 100, ccf = 0.15, seed = NA) {
   
@@ -1016,72 +865,46 @@ stateClocks_bulk_sample_and_sequence <- function(all_cells, xml_file, template_f
 
 #read in example cells
 
+# Record local directory info
+#all_cells <- read.csv("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation/cells_death_rate_validation_pop_1000_dr_0.21.csv")
 
-
-
-all_cells <- read.csv("outputs/raw_simulation_results/validation/cells_death_rate_validation_pop_1000_dr_0.21.csv")
+all_cells <- read.csv("../eden/simulation_data/cells_death_rate_validation_pop_1000_dr_0.21.csv")
 
 alive_cells <- all_cells %>%
   dplyr::filter(deathdate == max(deathdate))
 
 
-
+set.seed(30182)
 punch_info <- bulk_sample_and_sequence(all_cells,
                                        punch_radius_n_cells = 1,
                                        n_samples = 50,
                                        ccf = 0.3)
 punches_edge_assigment_df <- mark_edge_punches(punch_info$indices, alive_cells = alive_cells)
 
-alive_cells <- add_missing_punch_info_to_cells(alive_cells, punch_info, punches_edge_assigment_df )
-write_csv(alive_cells, file = "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/manuscript/analysis/example_bulk_sequencing_alive_cells.csv")
-a <- plot_punch_biopsies(alive_cells, punch_info$indices, color_by_edge = TRUE, size = 2)
-punch_colors <-  c("edge" = "#89352F", "center" = "#A2D2E2", "not_sampled" = "grey")
-
-g <- ggplot(alive_cells, aes(x = locx, y = locy, color = ifelse(punch_on_edge & (! is.na(punch_id)), "edge",
-                                                                ifelse(! is.na(punch_id), "center", "not_sampled")))) +
-  geom_point(size = 2) +
-  theme_void() +
-  scale_color_manual(values = punch_colors) +
-  theme(legend.position = "none")
-g
-ggsave("~/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/manuscript/figures/bulk_exampled_tumor_sampled.png", g, height = 5, width = 5)
+alive_cells <- add_missing_punch_info_to_cells(alive_cells, punch_info, punches_edge_assigment_df)
 
 alive_cells <- alive_cells %>% 
   mark_boundary(alive_cells = alive_cells)
 
-punched_cells <- alive_cells %>% 
-  filter(! is.na(punch_id))
-g <- ggplot(alive_cells, aes(x = locx, y = locy, color = ifelse(est_edge == 1, "edge", "center") )) +
-  geom_point(size = 2) +
-  scale_color_manual(values = punch_colors)+
-  geom_point(data=punched_cells, size = 2, color = "black") +
-  theme_void() +
-  theme(legend.position = "none")
-g
-ggsave("~/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/manuscript/figures/bulk_exampled_tumor_sampled_punches.png", g, height = 5, width = 5)
-
-b <- plot_punch_biopsies(alive_cells, punch_info$indices, color_by_punch_id = TRUE, size = 2)
-
-print(b)
-stateClocks_bulk_sample_and_sequence(all_cells, 
-                                     xml_file = "outputs/beast_analysis/state_dependent_clock_model/validation/bulk/xml_files/bulk_sampling_death_rate_validation_pop_1000_dr_0.20.xml",
-                                     template_file = "outputs/beast_analysis/state_dependent_clock_model/validation/bulk/xml_files/state_clocks_template.xml",
-                                     n_samples = 50,
-                              vaf_threshold = 0.15,
-                              punch_radius_n_cells = 1)
+write_csv(alive_cells, file = "../eden/simulation_data/example_bulk_sequencing_alive_cells.csv")
 
 
-all_simulation_files <- paste0("outputs/raw_simulation_results/validation/",
-                                list.files(path ="outputs/raw_simulation_results/validation",
-                                           pattern = "death_rate_validation_pop_1000_dr_0.[0-9][0-9].csv" ), 
-                                sep = "")
+# Now generate bulk sequencing XMLs for all eden simulated tumors
 
-overwrite = TRUE
+#Local directories
+# all_simulation_files <- list.files(path ="outputs/raw_simulation_results/validation",
+#                                            pattern = "death_rate_validation_pop_1000_dr_0.[0-9][0-9].csv", full.names = TRUE)
+
+all_simulation_files <- list.files(path ="../eden/simulation_data",
+                                           pattern = "death_rate_validation_pop_1000_dr_0.[0-9][0-9].csv", full.names = TRUE)
+
+
+# set to TRUE if want to overwrite XML files
+overwrite = FALSE
 for (sim_file in all_simulation_files) {
   
-  #print(sim_file)
   all_cells <- read.csv(sim_file)
-  xml_file <- paste0("outputs/beast_analysis/state_dependent_clock_model/validation/bulk/xml_files/",
+  xml_file <- paste0("../eden/xml/",
                      gsub("cells_", "bulk_sampling_", gsub(".csv", ".xml", basename(sim_file))), sep = "")
   if (file.exists(xml_file) & (! overwrite)) {
     
@@ -1093,7 +916,7 @@ for (sim_file in all_simulation_files) {
     
     stateClocks_bulk_sample_and_sequence(all_cells, 
                                          xml_file = xml_file,
-                                         template_file = "outputs/beast_analysis/state_dependent_clock_model/validation/bulk/xml_files/state_clocks_template.xml",
+                                         template_file = "../eden/xml/state-clocks-template-bulk.xml",
                                          n_samples = 50,
                                          ccf = 0.3,
                                          punch_radius_n_cells = 1)
