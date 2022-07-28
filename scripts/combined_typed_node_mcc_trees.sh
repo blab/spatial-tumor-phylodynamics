@@ -1,7 +1,36 @@
 #!/bin/sh
-##script to find MCC tree for typed.node.trees in single directory
-for trees_file in *.typed.node.trees
+##script to find combine tree files
+
+#Tumor 1
+## New states / unidirectional
+/Applications/BEAST\ 2.6.2/bin/LogCombiner -log T1_wgs_newstates_unidir_state_rep0.HCCtumor.typed.node.trees \
+-log T1_wgs_newstates_unidir_state_rep1.HCCtumor.typed.node.trees \
+-log T1_wgs_newstates_unidir_state_rep2.HCCtumor.typed.node.trees \
+-o T1_wgs_newstates_unidir_state_comb.HCCtumor.typed.node.trees \
+-b 10
+## Old states / unidirectional
+/Applications/BEAST\ 2.6.2/bin/LogCombiner -log T1_wgs_oristates_unidir_state_rep0.HCCtumor.typed.node.trees \
+-log T1_wgs_oristates_unidir_state_rep1.HCCtumor.typed.node.trees \
+-log T1_wgs_oristates_unidir_state_rep2.HCCtumor.typed.node.trees \
+-o T1_wgs_oristates_unidir_state_comb.HCCtumor.typed.node.trees \
+-b 10
+
+#Tumor 2
+## New states / unidirectional
+/Applications/BEAST\ 2.6.2/bin/LogCombiner -log T2_wgs_newstates_unidir_state_rep0.HCCtumor.typed.node.trees \
+-log T2_wgs_newstates_unidir_state_rep1.HCCtumor.typed.node.trees \
+-log T2_wgs_newstates_unidir_state_rep2.HCCtumor.typed.node.trees \
+-o T2_wgs_newstates_unidir_state_comb.HCCtumor.typed.node.trees \
+-b 10
+## Old states / unidirectional
+/Applications/BEAST\ 2.6.2/bin/LogCombiner -log T2_wgs_oristates_unidir_state_rep0.HCCtumor.typed.node.trees \
+-log T2_wgs_oristates_unidir_state_rep1.HCCtumor.typed.node.trees \
+-log T2_wgs_oristates_unidir_state_rep2.HCCtumor.typed.node.trees \
+-o T2_wgs_oristates_unidir_state_comb.HCCtumor.typed.node.trees \
+-b 10
+
+for trees_file in *_comb.HCCtumor.typed.node.trees
 do
   MODEL=$(basename $trees_file .typed.node.trees)
-  /Applications/BEAST\ 2.6.2/bin/treeannotator -burnin 10 -heights median $trees_file ${MODEL}_mcc.tree
+  /Applications/BEAST\ 2.6.2/bin/treeannotator -burnin 0 -heights median $trees_file ${MODEL}_mcc.tree
 done
