@@ -26,7 +26,7 @@ Simulation data is generated from https://github.com/federlab/PhysiCellTrees and
 Scripts to generate input XML files from simulated Eden simulation can be found here: `scripts/set_up_simulated_tumors_xmls.R`
 Scripts to generate input XML files from PhysiCell outputs can be found here: `scripts/write_state_clocks_xml_from_physicell.R`
 
-## Run strick clock model on simulated trees
+## Run strict clock model on simulated trees
 Make XML files with strict clock by `running create_strict_clock.R`, where input is state clocks XML file generated above.
 
 ### HCC Tumor analysis with SDevo
