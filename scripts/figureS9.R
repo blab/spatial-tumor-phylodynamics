@@ -182,13 +182,13 @@ t2_vaf_df <- t2_vaf_list %>%
 t1_vaf_df_truncal <- t1_vaf_df %>% 
     group_by(contig, position) %>% 
     summarize(n_samples = sum(variant, na.rm = TRUE)) %>% 
-    dplyr::filter(n_samples > 1) %>% 
+    dplyr::filter(n_samples == length(t1_snv_list)) %>% 
     add_column("mark" = "truncal")
 
 t2_vaf_df_truncal <- t2_vaf_df %>% 
     group_by(contig, position) %>% 
     summarize(n_samples = sum(variant, na.rm = TRUE)) %>% 
-    dplyr::filter(n_samples > 3) %>% 
+    dplyr::filter(n_samples == length(t2_snv_list)) %>% 
     add_column("mark" = "truncal")
 
 t1_vaf_df <- t1_vaf_df %>% 
@@ -208,24 +208,31 @@ t2_vaf_df_marked <- t2_vaf_df %>%
 
 edge_center_colors <- get_color_palette(names = c("edge", "center"))
 t1_vaf_histograms <- ggplot(t1_vaf_df, (aes(x=t_alt_vaf, fill = ifelse(edgeP == 1, "edge", "center")))) +
-    geom_histogram(color = "black", bins = 50) + theme_bw() + facet_wrap(~sample) +
-    geom_histogram(color = "black", bins = 50, fill = "grey", data = t1_vaf_df_marked, alpha = 0.5) + 
+    geom_histogram(color = "black", bins = 30) + theme_bw() + facet_wrap(~sample, ncol = 4) +
+    geom_histogram(color = "black", bins = 30, fill = "grey", data = t1_vaf_df_marked, alpha = 0.5) + 
     #geom_vline(xintercept = 0.25, linetype = "dashed") +
     scale_fill_manual(values = edge_center_colors) +
-    theme(legend.position = "none") #+
+    theme(legend.position = "none") +
+    theme(text=element_text(size = 15)) +
+    xlab("Variant Allele Frequency")
     #geom_point(data = t1_vaf_df_marked, color = "black", y=0)
 t1_vaf_histograms
 
+ggsave(t1_vaf_histograms, file = "../figures/t1_vaf_histograms.png", height = 7, width = 10)
 
 t2_vaf_histograms <- ggplot(t2_vaf_df, (aes(x=t_alt_vaf, fill = ifelse(edgeP == 1, "edge", "center")))) +
-    geom_histogram(color = "black", bins = 50) + theme_bw() +
-    geom_histogram(color = "black", fill = "grey", data = t2_vaf_df_marked, alpha = 0.5, bins = 50) +
-    facet_wrap(~sample) +
+    geom_histogram(color = "black", bins = 30) + theme_bw() +
+    geom_histogram(color = "black", fill = "grey", data = t2_vaf_df_marked, alpha = 0.5, bins = 30) +
+    facet_wrap(~sample, ncol = 4) +
     #geom_vline(xintercept = 0.25, linetype = "dashed") +
     scale_fill_manual(values = edge_center_colors) +
-    theme(legend.position = "none") #+
+    theme(legend.position = "none")  +
+    theme(text=element_text(size = 15)) +
+    xlab("Variant Allele Frequency")
     #geom_point(data = t2_vaf_df_marked, color = "black", y=0)
 t2_vaf_histograms 
+
+ggsave(t2_vaf_histograms, file = "../figures/t2_vaf_histograms.png", height = 7*0.75, width = 10)
 # t1_vaf_df %>% 
 #     group_by(sample) %>% 
 #     summarize(n_variants = sum(variant, na.rm = TRUE),

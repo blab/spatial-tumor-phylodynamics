@@ -1489,12 +1489,19 @@ prune_simulated_tree <- function (tree, sampled_cells_indices, add_all_states = 
           all_cells = NULL, cell_locations_df_file = NULL){
   sampled_cells <- paste0("cell_", sampled_cells_indices, sep = "")
   pruned.phylo <- ape::drop.tip(tree@phylo, tree@phylo$tip.label[-match(sampled_cells, 
-                                                                        tree@phylo$tip.label)])
+                                                                        tree@phylo$tip.label)],
+                                collapse.singles = TRUE)
   pruned.tree <- treeio::as.treedata(pruned.phylo)
   pruned.tree@data <- tibble(cell_name = c(pruned.phylo$tip.label, 
                                            pruned.phylo$node.label)) %>% dplyr::left_join(., tree@data, 
                                                                                           by = "cell_name") %>% dplyr::mutate(node = 1:(length(pruned.phylo$node.label) + 
                                                                                                                                           length(pruned.phylo$tip.label)))
+  
+  #manually add root
+  
+  pruned.tree@phylo$root.edge <- min(pruned.tree@data$deathdate)
+  
+  
   if (add_all_states) {
     if (is.null(all_cells)) {
       error("To add all states need data.frame of all cells in simulation")

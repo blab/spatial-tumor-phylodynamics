@@ -156,6 +156,7 @@ terminal_branch_ratios_df_comb <- read_csv("../physicell/stats/terminal_branch_d
 ##### Plotting branching ratio histogram #####
 sim_colors <- c("#fba500", "#244e70")
 
+
 dim_comparison_plot <- ggplot(terminal_branch_ratios_df_comb, aes(x=1/terminal_branch_length_ratio, fill = sim)) + 
     geom_histogram(color = "black", bins = 20) + theme_classic() + #scale_fill_brewer(type ="qual", palette = 7) +
     xlab("Mean center / edge terminal branch length ratio") + scale_fill_manual(values=sim_colors) + theme(legend.position = "none") +

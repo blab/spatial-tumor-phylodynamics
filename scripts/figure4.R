@@ -378,12 +378,12 @@ d_baseplot <- growth_rate_posteriors_2D_net_bdg_n100 %>%
     theme_classic() + geom_errorbar(aes(ymin = birthRate_hdi95_lower, ymax = birthRate_hdi95_upper), width = 0, alpha = 0.5, size = 1) +
     geom_point(aes( y = mean_birth_rate_diff), alpha = 0.8, size = 2) + scale_color_viridis(option = "mako", discrete = TRUE, direction = -1) +
     geom_abline(intercept = 0, slope = 1, linetype = "dashed") + xlab("True birth rate difference (edge - center)") +
-    ylab("True birth rate difference (edge - center)") + theme(text=element_text(size=15))
+    ylab("Estimated birth rate difference (edge - center)") + theme(text=element_text(size=15))
     #ggtitle("Physicell 2D Neutral Boundary-Driven Growth") +    theme(text=element_text(size=15))
 
 d_baseplot
 
-ggsave(plot=d_baseplot , file ="../figures/physicell_2D_neutral_bdg.png", height = 5, width = 6)
+ggsave(plot=d_baseplot , file ="../figures/physicell_2D_neutral_bdg.png", height = 5, width = 5)
 
 ############# PHYSICELL 3D NEUTRAL BOUNDARY-DRIVEN GROWTH #####
 
@@ -393,9 +393,9 @@ e_baseplot <- growth_rate_posteriors_3D_net_bdg_n100 %>%
     ggplot(., aes(x = true_birth_rate_diff, y = mean_birth_rate_diff), color = "black") +
     theme_classic() + geom_errorbar(aes(ymin = birthRate_hdi95_lower, ymax = birthRate_hdi95_upper), width = 0, alpha = 0.5, size = 1) +
     geom_point(aes( y = mean_birth_rate_diff), alpha = 0.8, size = 2) + 
-    geom_abline(intercept = 0, slope = 1, linetype = "dashed") + xlab("True birth rate difference (edge - center)") +
+    geom_abline(intercept = 0, slope = 1, linetype = "dashed") + xlab(" True birth rate difference (edge - center)") +
     theme(text=element_text(size=15)) +
-    ylab("True birth rate difference (edge - center)")
+    ylab("Estimated birth rate difference (edge - center)")
 
 e_baseplot
 ggsave(plot=e_baseplot, file ="../figures/physicell_3D_neutral_bdg.png", height = 5, width = 5)
@@ -409,7 +409,7 @@ f_baseplot <- growth_rate_posteriors_2D_sel_bdg_n100 %>%
     theme_classic() + geom_errorbar(aes(ymin = birthRate_hdi95_lower, ymax = birthRate_hdi95_upper), width = 0, alpha = 0.5, size = 1) +
     geom_point(aes( y = mean_birth_rate_diff), alpha = 0.8, size = 2) +
     geom_abline(intercept = 0, slope = 1, linetype = "dashed") + xlab("True birth rate difference (edge - center)") +
-    ylab("True birth rate difference (edge - center)") +
+    ylab("Estimated birth rate difference (edge - center)") +
     theme(text = element_text(size = 15))
 
 f_baseplot
