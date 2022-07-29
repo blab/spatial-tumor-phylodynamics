@@ -12,11 +12,11 @@ Spatial properties of tumor growth have profound implications for cancer progres
 ## Analyses and figures
 
 ### Eden simulation studies
-Scripts to generate simulated tumors under boundary-driven and unrestricted growth in a 2D lattice can be found in simulated_data/spatial_tumor_simulation.ipynb.
-Simulated tumors are recorded .csv files recording all cells in tumor simulation. For pushing simulation, cell positions in lattic are
+Scripts to generate simulated tumors under boundary-driven and unrestricted growth in a 2D lattice can be found in `simulated_data/spatial_tumor_simulation.ipynb`.
+Simulated tumors are recorded .csv files recording all cells in tumor simulation. For pushing simulation, cell positions in lattice are
 recorded in locs.csv at each time slice.
 
-scripts/reconstruct_simulated_trees.R contains code to convert simulated cells records into treeio S4 tree objects containing edge/center state information.
+`scripts/reconstruct_simulated_trees.R` contains code to convert simulated cells records into treeio S4 tree objects containing edge/center state information.
 Install local R package _tumortree_ for necessary functions.
 
 ### Physicell simulation studies
@@ -30,6 +30,7 @@ Scripts to generate input XML files from PhysiCell outputs can be found here: `s
 Make XML files with strict clock by `running create_strict_clock.R`, where input is state clocks XML file generated above.
 
 ### HCC Tumor analysis with SDevo
-Scripts to generate input DNA sequences HCC sequence data can be found in scripts/process_li_data.R and li-application. Data will be available pending approval of original authors, but temporarily, a template xml is included for reference.
+Scripts to generate input DNA sequences HCC sequence data can be found in `scripts/process_li_data.R` and `li-application/`. Data will be available pending approval of original authors. Temporarily, a template xml is included for reference.
+
 ### Figures
 Local R package _tumortree_ is needed for most figures.
