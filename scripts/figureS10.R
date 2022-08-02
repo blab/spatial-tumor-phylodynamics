@@ -90,7 +90,7 @@ t1_wgs_ratio_posteriors_plot<- all_logs_birthRate_df %>%
     geom_vline(xintercept = 1, linetype="dashed")
 
 print(mean(all_logs_birthRate_df$birthRateRatio))
-
+hdi(all_logs_birthRate_df$birthRateRatio, credMass = 0.9)
 t1_wgs_ratio_posteriors_plot
 ggsave(plot=t1_wgs_ratio_posteriors_plot,
        file ="../figures/t1_li_wgs_ratio_posteriors_oristates_stateclock_rt1l13.png", height = 5, width = 5)
