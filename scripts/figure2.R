@@ -14,7 +14,8 @@ library(ape)
 
 figures_dir <- "../figures"
 
-sim_colors <- tumortree::get_color_palette(c("boundary_driven", "unrestricted"))
+#sim_colors <- tumortree::get_color_palette(c("boundary_driven", "unrestricted"))
+sim_colors <- c("boundary_driven" = "#e49a8b", "unrestricted" = "#3C3C3C")
 colors_edge_center <- tumortree::get_color_palette(c("edge", "center"))
 
 
@@ -28,7 +29,7 @@ get_edge_time <- function(leaf, tree_full) {
 
 # Read in example simulated tumors to compare
 ## BOUNDARY_DRIVEN
-all_cells_boundary_driven <- read_csv("../simulation_data/cells_death_rate_validation_pop_1000_dr_0.10.csv") %>%
+all_cells_boundary_driven <- read_csv("../eden/simulation_data/cells_death_rate_validation_pop_1000_dr_0.10.csv") %>%
     normalize_locs
 
 
@@ -39,7 +40,7 @@ alive_cells_boundary_driven <- all_cells_boundary_driven %>%
 alive_cells_boundary_driven <- mark_boundary(alive_cells_boundary_driven, alive_cells_boundary_driven)
 
 ## UNRESTRICTED 
-all_cells_unrestricted <- read_csv("../simulation_data/cells_pushing_pop_1000_dr_0.10.csv") %>%
+all_cells_unrestricted <- read_csv("../eden/simulation_data/cells_pushing_pop_1000_dr_0.10.csv") %>%
     normalize_locs
 
 alive_cells_unrestricted <- all_cells_unrestricted %>%
@@ -48,8 +49,8 @@ alive_cells_unrestricted <- all_cells_unrestricted %>%
 alive_cells_unrestricted <- mark_boundary(alive_cells_unrestricted, alive_cells_unrestricted)
 
 # Read in subsampled boundary-driven trees
-tree_boundary_driven <- readRDS(file = "../analysis/simtrees/boundary_driven_timetree.rds")
-tree_molecular_boundary_driven <- readRDS(file = "../analysis/simtrees/boundary_driven_moleculartree.rds")
+tree_boundary_driven <- readRDS(file = "../eden/simtrees/boundary_driven_timetree.rds")
+tree_molecular_boundary_driven <- readRDS(file = "../eden/simtrees/boundary_driven_moleculartree.rds")
 
 
 # Get sampled cells from saved trees
@@ -62,8 +63,8 @@ sampled_cells_boundary_driven <- sampled_cells_boundary_driven %>%
 
 ### Saved trees for unrestricted growth
 
-tree_unrestricted <- readRDS(file = "../analysis/simtrees/unrestricted_timetree2.rds")
-tree_molecular_unrestricted <- readRDS(file = "../analysis/simtrees/unrestricted_moleculartree2.rds")
+tree_unrestricted <- readRDS(file = "../eden/simtrees/unrestricted_timetree.rds")
+tree_molecular_unrestricted <- readRDS(file = "../eden/simtrees/unrestricted_moleculartree.rds")
 
 
 ## Also created sampled cells data frame from saved tree for unrestricted growth simulation
@@ -82,16 +83,23 @@ sampled_cells_unrestricted <- sampled_cells_unrestricted %>%
 ## Time tree
 tree_boundary_driven_full <- convert_all_cells_to_tree_fast(all_cells = all_cells_boundary_driven,
                                             add_all_states = TRUE,
-                                            sampled_cells_indices = all_cells_boundary_driven$index, 
                                             branch_unit = "time",
                                             cell_locations_df_file = NULL)
 
+
+tree_boundary_driven_full <- prune_simulated_tree(tree_boundary_driven_full, sampled_cells_indices = alive_cells_boundary_driven$index)
 ## Genetic (molecular) tree
 tree_molecular_boundary_driven_full <- convert_all_cells_to_tree_fast(all_cells = all_cells_boundary_driven,
                                                                    add_all_states = FALSE,
-                                                                   sampled_cells_indices = alive_cells_boundary_driven$index, 
                                                                    branch_unit = "genetic",
                                                                    cell_locations_df_file = NULL)
+
+tree_molecular_boundary_driven_full <- prune_simulated_tree(tree_molecular_boundary_driven_full,
+                                                            sampled_cells_indices = alive_cells_boundary_driven$index, 
+                                                            branch_unit = "genetic")
+
+tree_molecular_boundary_driven_full@phylo$edge.length[is.na(tree_molecular_boundary_driven_full@phylo$edge.length)] <- 0
+
 ## Add lineage time on edge for each tip
 tree_boundary_driven_full@data$frac_time_on_edge <- NA
 tree_boundary_driven_full@data$frac_time_on_edge[1:length(tree_boundary_driven_full@phylo$tip.label)] <- purrr::map_dbl(1:length(tree_boundary_driven_full@phylo$tip.label), function(l) get_edge_time(leaf = l, tree_full = tree_boundary_driven_full))
@@ -100,7 +108,7 @@ tree_boundary_driven_full@data$frac_time_on_edge[1:length(tree_boundary_driven_f
 ## Add clock rate info
 tree_boundary_driven_full@data <- tree_boundary_driven_full@data %>% 
     dplyr::mutate(n_muts = str_count(mutations, ",") + 1) %>% 
-    dplyr::mutate(clock_rate = n_muts/ape::node.depth.edgelength(tree_boundary_driven_full@phylo)[1])
+    dplyr::mutate(clock_rate = n_muts/max(tree_boundary_driven_full@data$deathdate))
 
 ## Visualizations of lineage time spend on edge in extant tumor
 tree_boundary_driven_full@data %>% 
@@ -111,16 +119,22 @@ tree_boundary_driven_full@data %>%
 
 tree_unrestricted_full <- convert_all_cells_to_tree_fast(all_cells = all_cells_unrestricted,
                                                             add_all_states = TRUE,
-                                                            sampled_cells_indices = alive_cells_unrestricted$index, 
-                                                            cell_locations_df_file =  "../simulation_data/cells_pushing_pop_1000_dr_0.10_locs.csv",
+                                                            cell_locations_df_file =  "../eden/simulation_data/cells_pushing_pop_1000_dr_0.10_locs.csv",
                                                             branch_unit = "time")
+
+tree_unrestricted_full <- prune_simulated_tree(tree_unrestricted_full, sampled_cells_indices = alive_cells_unrestricted$index)
 
 
 tree_molecular_unrestricted_full <- convert_all_cells_to_tree_fast(all_cells = all_cells_unrestricted,
                                                          add_all_states = FALSE,
-                                                         sampled_cells_indices = alive_cells_unrestricted$index, 
                                                          cell_locations_df_file = NULL,
                                                          branch_unit = "genetic")
+
+tree_molecular_unrestricted_full <- prune_simulated_tree(tree_molecular_unrestricted_full,
+                                                         sampled_cells_indices = alive_cells_unrestricted$index, 
+                                                         branch_unit = "genetic")
+
+tree_molecular_unrestricted_full@phylo$edge.length[is.na(tree_molecular_unrestricted_full@phylo$edge.length)] <- 0
 
 # Add fraction time on edge per tip
 tree_unrestricted_full@data$frac_time_on_edge <- NA
@@ -128,10 +142,9 @@ tree_unrestricted_full@data$frac_time_on_edge[1:length(tree_unrestricted_full@ph
 
 
 # Add clock rate info
-
 tree_unrestricted_full@data <- tree_unrestricted_full@data %>% 
     dplyr::mutate(n_muts = str_count(mutations, ",") + 1) %>% 
-    dplyr::mutate(clock_rate = n_muts/node.depth.edgelength(tree_unrestricted_full@phylo)[1])
+    dplyr::mutate(clock_rate = n_muts/max(tree_unrestricted_full@data$deathdate))
 
 # Transfer info to genetic tree
 tree_molecular_unrestricted_full@data <- tree_unrestricted_full@data
@@ -154,17 +167,17 @@ tree_molecular_boundary_driven <- prune_simulated_tree(tree_molecular_boundary_d
                                                        sampled_cells_indices = sampled_cells_boundary_driven$index)
 
 # Save trees
-#saveRDS(tree_unrestricted_full, file = "../analysis/simtrees/unrestricted_timetree_full.rds")
-#saveRDS(tree_boundary_driven_full, file = "../analysis/simtrees/boundary_driven_timetree_full.rds")
-#saveRDS(tree_molecular_boundary_driven_full, file = "../analysis/simtrees/boundary_driven_molecular_full.rds")
-#saveRDS(tree_molecular_unrestricted_full, file = "../analysis/simtrees/unrestricted_molecular_full.rds")
+# saveRDS(tree_unrestricted_full, file = "../eden/simtrees/unrestricted_timetree_full.rds")
+# saveRDS(tree_boundary_driven_full, file = "../eden/simtrees/boundary_driven_timetree_full.rds")
+# saveRDS(tree_molecular_boundary_driven_full, file = "../eden/simtrees/boundary_driven_molecular_full.rds")
+# saveRDS(tree_molecular_unrestricted_full, file = "../eden/simtrees/unrestricted_molecular_full.rds")
 
 # To skip above steps load trees directly 
 
-#tree_boundary_driven_full <- readRDS(file = "../analysis/simtrees/boundary_driven_timetree_full.rds")
-#tree_unrestricted_full <- readRDS(file = "../analysis/simtrees/unrestricted_timetree_full.rds")
-#tree_molecular_boundary_driven_full <- readRDS(file = "../analysis/simtrees/boundary_driven_molecular_full.rds")
-#tree_molecular_unrestricted_full <- readRDS(file = "../analysis/simtrees/unrestricted_molecular_full.rds")
+#tree_boundary_driven_full <- readRDS(file = "../eden/simtrees/boundary_driven_timetree_full.rds")
+#tree_unrestricted_full <- readRDS(file = "../eden/simtrees/unrestricted_timetree_full.rds")
+#tree_molecular_boundary_driven_full <- readRDS(file = "../eden/simtrees/boundary_driven_molecular_full.rds")
+#tree_molecular_unrestricted_full <- readRDS(file = "../eden/simtrees/unrestricted_molecular_full.rds")
 
 ##### FIGURES 2A and 2D #######
 
@@ -203,20 +216,24 @@ get_sim_edge_dist_versus_divisions <- function(all_cells_file, cell_locations_df
 }
 
 
-all_cells_files_unrestricted_dr_0.10 <- list.files(path="../simulation_data",
+all_cells_files_dr_0.10 <- list.files(path="../eden/simulation_data",
+                                      pattern="cells_death_rate_validation_pop_1000_dr_0.10_i_[0-9]+.csv",
+                                      full.names = TRUE)
+
+all_cells_files_unrestricted_dr_0.10 <- list.files(path="../eden/simulation_data",
                                       pattern="cells_pushing_pop2_1000_dr_0.10_i_[0-9]+.csv",
                                       full.names = TRUE)
 
-all_cells_files_unrestricted_dr_0.10_locs <- list.files(path="../simulation_data",
+all_cells_files_unrestricted_dr_0.10_locs <- list.files(path="../eden/simulation_data",
                                                    pattern="cells_pushing_pop2_1000_dr_0.10_i_[0-9]+_locs.csv",
                                                    full.names = TRUE)
 
 #get distance to edge versus birth rate calculations for dr 0.10 + boundary-driven growth
 all_sims_edge_dist_versus_divisions_dr_0.10_df <- purrr::map(all_cells_files_dr_0.10, function(cells) get_sim_edge_dist_versus_divisions(all_cells_file = cells,
-                                                                                                                                         time_cutoff = 0)) %>% 
+                                                                                                                                         time_cutoff = 0)) %>%
     bind_rows()
 
-#get distance to edge versus birth rate calculations for dr 0.10 + unrestricted
+# get distance to edge versus birth rate calculations for dr 0.10 + unrestricted
 all_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df <- purrr::map2(all_cells_files_unrestricted_dr_0.10,all_cells_files_unrestricted_dr_0.10_locs,
                                                                            function(cells,locs) get_sim_edge_dist_versus_divisions(all_cells_file = cells,
                                                                                                                                    cell_locations_df_file = locs,
@@ -226,17 +243,18 @@ all_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df <- purrr::map2(all_c
 
 # Save calculations to CSV file
 
-write.csv(all_sims_edge_dist_versus_divisions_dr_0.10_df,
-          file="../analysis/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10.csv")
-
-
-write.csv(all_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df,
-          file="../analysis/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10.csv")
+## These files are too large for github
+# write.csv(all_sims_edge_dist_versus_divisions_dr_0.10_df,
+#           file="../eden/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10.csv")
+# 
+# 
+# write.csv(all_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df,
+#           file="../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10.csv")
 
 
 # To skip calculations and get output directly
-# all_sims_edge_dist_versus_divisions_dr_0.10_df <- read_csv(file = "../analysis/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10.csv")
-# all_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df <- read_csv(file = "../analysis/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10.csv")
+# all_sims_edge_dist_versus_divisions_dr_0.10_df <- read_csv(file = "..eden/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10.csv")
+# ll_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df <- read_csv(file = "../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10.csv")
 
 #Calculate mean and se of birth rate across binned disistances from the tumor edge
 time_step <- 2/24
@@ -270,6 +288,12 @@ all_dr_0.10_sims_boundary_driven_summary <- all_dr_0.10_sims_boundary_driven_sum
 #get bin width to fit bars together
 binWidth <- mean(all_dr_0.10_sims_boundary_driven_summary$binEnd - all_dr_0.10_sims_boundary_driven_summary$binStart, na.rm = TRUE)
 
+
+#Write summary stats for quick plotting
+write.csv(all_dr_0.10_sims_boundary_driven_summary,
+          file="../eden/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10_summary.csv")
+
+all_dr_0.10_sims_boundary_driven_summary <- read.csv("../eden/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10_summary.csv")
 #plotting
 all_dr_0.10_sims_boundary_driven_hist <- ggplot(all_dr_0.10_sims_boundary_driven_summary,
                                                 alpha = 0.5,
@@ -316,6 +340,10 @@ all_dr_0.10_sims_unrestricted_summary <- all_dr_0.10_sims_unrestricted_summary %
 #get bin width to fit bars together
 binWidth <- mean(all_dr_0.10_sims_unrestricted_summary$binEnd - all_dr_0.10_sims_unrestricted_summary$binStart, na.rm = TRUE)
 
+write.csv(all_dr_0.10_sims_unrestricted_summary,
+          file="../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10_summary.csv")
+
+all_dr_0.10_sims_unrestricted_summary <- read.csv("../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10_summary.csv")
 #plotting
 all_dr_0.10_sims_unrestricted_hist <- ggplot(all_dr_0.10_sims_unrestricted_summary, alpha = 0.5,
                                              aes(x = binMid, y = birth_rate_mean),color = "black") +
@@ -351,7 +379,7 @@ c <- ggtree(tree_molecular_boundary_driven, aes(color = frac_time_on_edge)) +
 
 c + geom_tiplab()
 c
-c <- viewClade(c, MRCA(c,"cell_1962", "cell_2779"))
+c <- viewClade(c, MRCA(c,"cell_2620", "cell_1408"))
 c
 ### Figure 2F INSET UNRESTRICTED ###
 tree_molecular_unrestricted@data <- tree_unrestricted@data
@@ -362,12 +390,12 @@ d <- ggtree(tree_molecular_unrestricted, aes(color = frac_time_on_edge)) +
     theme(legend.position = "none") #+ geom_tiplab(color = "black")
 d + geom_tiplab()
 
-d <- viewClade(d, MRCA(d,"cell_1876", "cell_2065"))
+d <- viewClade(d, MRCA(d,"cell_1919", "cell_880"))
 d
 
 ## BOUNDARY-DRIVEN Growth Figure 1C
 
-# Normalize axes
+# Normalize axe
 ymax <- max(c(tree_boundary_driven_full@data$clock_rate, tree_unrestricted@data$clock_rate), na.rm = TRUE)
 ymin <- min(c(tree_boundary_driven_full@data$clock_rate, tree_unrestricted@data$clock_rate), na.rm = TRUE)
 #tree_boundary_driven@data$clock_rate <- sampled_cells_boundary_driven$clock_rate[match(tree_boundary_driven@data$index, sampled_cells_boundary_driven$index)]
@@ -389,7 +417,7 @@ e <- ggplot(alive_boundary_driven_data, aes(x = frac_time_on_edge,  y = clock_ra
     ylab("Mean clock rate") +
     # theme(axis.title.x=element_blank(),
     #       axis.text.x=element_blank()) +
-    annotate("text", x = 0.8, y = 0.43, size = 4,
+    annotate("text", x = 0.8, y = 0.35, size = 4,
              label = paste0("R ** {2} == ", format(boundary_driven_r_squared , digits = 2)), 
              color = "black", parse = TRUE) +
     theme(text=element_text(size = 15)) +
@@ -451,15 +479,15 @@ ggsave(file = "mean_clock_rate_vs_frac_lineage_time_on_edge_with_tree_unrestrict
 
 
 #compare variance in terminal branch lengths
-tree_height_boundary_driven <- node.depth.edgelength(tree_boundary_driven@phylo)[1]
-tree_height_unrestricted <- node.depth.edgelength(tree_unrestricted@phylo)[1]
-terminal_branch_length_df <- data.frame("norm_terminal_branch_length" = c(tree_boundary_driven@phylo$edge.length[which(tree_boundary_driven@phylo$edge[,2] <= 100)]/tree_height_boundary_driven,
-                                                                     tree_unrestricted@phylo$edge.length[which(tree_unrestricted@phylo$edge[,2] <= 100)]/tree_height_unrestricted),
-                                        "state" = c(tree_boundary_driven@data$state[1:100],
-                                                    tree_unrestricted@data$state[1:100]),
-                                        "model" = c(rep("boundary-driven", 100), rep("unrestricted",100)),
-                                        "frac_time_on_edge" = c(tree_boundary_driven@data$frac_time_on_edge[1:100],
-                                                                tree_unrestricted@data$frac_time_on_edge[1:100]))
+tree_height_boundary_driven <- max(tree_boundary_driven@data$deathdate)
+tree_height_unrestricted <- max(tree_unrestricted@data$deathdate)
+terminal_branch_length_df <- data.frame("norm_terminal_branch_length" = c(tree_boundary_driven_full@phylo$edge.length[which(tree_boundary_driven_full@phylo$edge[,2] <= length(tree_boundary_driven_full@phylo$tip.label))]/tree_height_boundary_driven,
+                                                                     tree_unrestricted_full@phylo$edge.length[which(tree_unrestricted_full@phylo$edge[,2] <= length(tree_unrestricted_full@phylo$tip.label))]/tree_height_unrestricted),
+                                        "state" = c(tree_boundary_driven_full@data$state[1:length(tree_boundary_driven_full@phylo$tip.label)],
+                                                    tree_unrestricted_full@data$state[1:length(tree_unrestricted_full@phylo$tip.label)]),
+                                        "model" = c(rep("boundary-driven", length(tree_boundary_driven_full@phylo$tip.label)), rep("unrestricted",length(tree_unrestricted_full@phylo$tip.label))),
+                                        "frac_time_on_edge" = c(tree_boundary_driven_full@data$frac_time_on_edge[1:length(tree_boundary_driven_full@phylo$tip.label)],
+                                                                tree_unrestricted_full@data$frac_time_on_edge[1:length(tree_unrestricted_full@phylo$tip.label)]))
 
 ## BOUNDARY-DRIVEN GROWTH ##
 mean_ratio_branch_length <- mean(terminal_branch_length_df$norm_terminal_branch_length[terminal_branch_length_df$state == 0 & terminal_branch_length_df$model == "boundary-driven"]) / mean(terminal_branch_length_df$norm_terminal_branch_length[terminal_branch_length_df$state == 1  & terminal_branch_length_df$model == "boundary-driven"])
@@ -481,10 +509,10 @@ i <- terminal_branch_length_df %>%
     theme(legend.position = "none") +
     # theme(axis.title.x=element_blank(),
     # #       axis.text.x=element_blank())   +
-    annotate("text", x = 1, y = 1.2, size = 4,
+    annotate("text", x = 1, y = 0.9, size = 4,
              label = paste0("frac('Mean center TBL', 'Mean edge TBL') == ", format(mean_ratio_branch_length, digits = 2)),
                                                     color = "black", parse = TRUE) +
-    ylim(c(0,1.3)) 
+    ylim(c(0,1)) 
 
 i
 
@@ -503,10 +531,10 @@ j <- terminal_branch_length_df %>%
     xlab("") + ylab("Terminal branch length") +
     theme(text=element_text(size = 15)) +
     theme(legend.position = "none")  +
-    annotate("text", x = 1, y = 1.2, size = 4,
+    annotate("text", x = 1, y = 0.9, size = 4,
              label = paste0("frac('Mean center TBL', 'Mean edge TBL') == ", format(mean_ratio_branch_length_unrestricted, digits = 2)), 
              color = "black", parse = TRUE) +
-    ylim(c(0,1.3))
+    ylim(c(0,1))
 
 j
 
@@ -517,7 +545,7 @@ i_sub <- ggtree(tree_boundary_driven, aes(color = ifelse(state == 1 & node <= 10
     coord_cartesian(clip = "off") +
     theme(legend.position = "none")
 
-i_sub <- viewClade(i_sub, MRCA(i_sub,"cell_2528", "cell_1474"))
+i_sub <- viewClade(i_sub, MRCA(c,"cell_2620", "cell_1408"))
 i_sub
 ### UNRESTRICTED ###
 
@@ -527,7 +555,8 @@ j_sub <- ggtree(tree_unrestricted, aes(color = ifelse(state == 1 & node <= 100, 
     coord_cartesian(clip = "off") +
     theme(legend.position = "none")
 
-j_sub <- viewClade(j_sub, MRCA(j_sub,"cell_1876", "cell_2065"))
+j_sub <- viewClade(j_sub, MRCA(d,"cell_1919", "cell_880"))
+
 j_sub
 
 # ###COMBINED FIGURE.png ###
@@ -545,10 +574,6 @@ j.with.inset
 
 ggsave(file = "terminal_branch_length_violin_with_tree_boundary_driven.png", plot = i.with.inset, path = figures_dir, height = 5, width = 5)
 ggsave(file = "terminal_branch_length_violin_with_tree_unrestricted.png", plot = j.with.inset, path = figures_dir, height = 5, width = 5)
-
-# Get saved simulated tree files to load 
-## These are generated by reconstruct_sim_trees.R
-tree_files <- list.files(path = "../analysis/simtrees", pattern = "[0-9][0-9].rds", full.names = TRUE)
 
 
 # Function to get tree stats broken into edge and center states from trees
@@ -589,7 +614,9 @@ get_corr_edge_time_clock_rate_with_tree <- function(sim_tree_file) {
 
 #### Get stats for range of simulations (boundary-driven and unrestricted)
 
-sim_trees_files <- list.files(path="../analysis/simtrees",
+# Get saved simulated tree files to load 
+## These are generated by reconstruct_sim_trees.R
+sim_trees_files <- list.files(path="../eden/simtrees",
                               pattern = "[0-9][0-9].rds", include.dirs = TRUE, full.names = TRUE)
 
 sim_trees_files <- sim_trees_files[(! grepl("_i_", sim_trees_files))]
@@ -599,15 +626,14 @@ summary_stats <- purrr::map(sim_trees_files, function(file) get_corr_edge_time_c
     bind_rows()
 
 # Save to CSV
-#write.csv(summary_stats, file="../analysis/stats/model_summary_stats.csv")
+write.csv(summary_stats, file="../eden/stats/model_summary_stats.csv")
 
 # To get these stats without having trees generated
-# summary_stats <- read_csv(file="../analysis/stats/model_summary_stats.csv")
+# summary_stats <- read_csv(file="../eden/stats/model_summary_stats.csv")
 # Extract values to highlight from example tumors
 highlighted_sims <- summary_stats  %>% 
-    dplyr::filter(dr == 0.10) 
+    dplyr::filter(dr == "0.10") 
 
-write.csv(all_r_squared_values, "../analysis/stats/model_summary_stats2.csv")
 
 k <- ggplot(summary_stats, aes(x = as.numeric(dr)/2, y = terminal_branch_ratio, color = model)) +
     geom_point( size = 2) + theme_classic() + scale_color_manual(values = sim_colors,
@@ -626,7 +652,7 @@ ggsave(file = "center_over_edge_terminal_branch_length.png", plot = k, path = fi
 
 #edge_time_vs_clock_rate_r_squared_df <- read_csv(file = "../analysis/stats/edge_time_vs_clock_rate_r_squared2.csv", col_names = FALSE)
 #colnames(edge_time_vs_clock_rate_r_squared_df) <- c("r_squared", "dr", "model")
-l <- ggplot(summary_stats, aes(x=dr/2, y=r_squared, color = model)) +
+l <- ggplot(summary_stats, aes(x=as.numeric(dr)/2, y=r_squared, color = model)) +
     geom_point(size = 2) +
     geom_point(data = highlighted_sims, color = "darkgrey", size = 5, alpha = 0.5) +
     theme_classic() +

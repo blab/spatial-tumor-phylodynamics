@@ -1,6 +1,6 @@
 library(tumortree)
 library(tidyverse)
-setwd("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li")
+#setwd("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li")
 
 ##Whole genome estimated to be ~3Gb
 ###41% GC content
