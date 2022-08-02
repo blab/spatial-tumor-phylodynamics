@@ -1395,6 +1395,8 @@ convert_all_cells_to_tree_fast <- function (all_cells, add_all_states = FALSE, s
                                                                                                                                                              ":", branch_length))
   }
   else if (branch_unit == "genetic") {
+    
+    #print("Computing genetic distance")
     all_cells$collapsed_sequence <- purrr::map_chr(all_cells$sequence,
                                                    extract_sequences)
     
@@ -1461,6 +1463,7 @@ convert_all_cells_to_tree_fast <- function (all_cells, add_all_states = FALSE, s
                                               cell_locations_df_file = cell_locations_df_file) %>% 
       dplyr::select(index, state)
     tree@data <- tree@data %>% dplyr::left_join(., states_df, by = "index")
+    tree@phylo$edge.length[is.na(tree@phylo$edge.length)] <- 0
   }
   return(tree)
 }
@@ -1481,12 +1484,13 @@ convert_all_cells_to_tree_fast <- function (all_cells, add_all_states = FALSE, s
 #' @importFrom treeio as.treedata
 #' @importFrom ape read.tree
 #' @importFrom phangorn Ancestors
+#' @importFrom stringr str_count
 #'
 #' @return numeric
 
 #' @importFrom ape read.tree drop.tip
 prune_simulated_tree <- function (tree, sampled_cells_indices, add_all_states = FALSE, 
-          all_cells = NULL, cell_locations_df_file = NULL){
+          all_cells = NULL, cell_locations_df_file = NULL, branch_unit = "time"){
   sampled_cells <- paste0("cell_", sampled_cells_indices, sep = "")
   pruned.phylo <- ape::drop.tip(tree@phylo, tree@phylo$tip.label[-match(sampled_cells, 
                                                                         tree@phylo$tip.label)],
@@ -1498,8 +1502,16 @@ prune_simulated_tree <- function (tree, sampled_cells_indices, add_all_states = 
                                                                                                                                           length(pruned.phylo$tip.label)))
   
   #manually add root
-  
-  pruned.tree@phylo$root.edge <- min(pruned.tree@data$deathdate)
+  if (branch_unit == "time") {
+    
+    #get deathdate of MRCA of all sampled cells
+    pruned.tree@phylo$root.edge <- min(pruned.tree@data$deathdate)
+    
+  } else {
+    
+    #get number of mutations accumulated by MRCA of all sampled cells
+    pruned.tree@phylo$root.edge <- str_count(pruned.tree@data$mutations[which.min(pruned.tree@data$deathdate)], pattern = ",")
+  }
   
   
   if (add_all_states) {

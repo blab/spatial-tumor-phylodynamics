@@ -526,8 +526,7 @@ find_all_cell_state_at_death <- function (all_cells, cell_locations_df_file = NU
         if (!is.null(cell_locations_df_file)) {
             
             
-            cell_locations_df_t <- cell_locations_df %>% dplyr::filter(round(t, 
-                                                                             2) == round(time, 2))
+            cell_locations_df_t <- cell_locations_df %>% dplyr::filter(t < time & t >= time - 2/24)
             alive_cells <- alive_cells %>% dplyr::select(-locx, 
                                                          -locy) %>% dplyr::left_join(., cell_locations_df_t, 
                                                                                      by = "index")
