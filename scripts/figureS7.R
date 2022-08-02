@@ -1,5 +1,7 @@
 #figureS7.R
 
+library(tumortree)
+library(tidyverse)
 ##### PLOT POSTERIORS ####
 
 #Record of local directory
@@ -8,15 +10,13 @@
 #                         full.names = TRUE)
 
 log_files <- list.files(path = "../li-application/out",
-                        pattern=".log",
+                        pattern="rep[0-2].log",
                         full.names = TRUE)
 
 
-#temporarily get rid of last corrupted log file
-log_files <- log_files[! grepl("T1_wgs_newstates_bidir_state_rep2.log", log_files)]
-
-#logs <- purrr::map(log_files, readLog)
-
+log_files <- log_files[!grepl("T1_wgs_newstates_bidir_state_rep2.log", log_files)]
+colors_loc <- tumortree::get_color_palette(names = c("edge", "center"))
+names(colors_loc) <- c("loc1", "loc0")
 process_logs <- function(log_file) {
     print(log_file)
     rep_extract <- regmatches(basename(log_file),
@@ -80,3 +80,56 @@ t2_wgs_posteriors_plot_oldstates_clock_comparison
 ggsave(plot=t2_wgs_posteriors_plot_oldstates_clock_comparison,
        file ="../figures/t2_li_wgs_posteriors_oldstates_clock_comparison.png", height = 5, width = 5)
 
+##### Plot estimated edge/center ratios
+
+## Tumor 1
+t1_wgs_clock_comparison_ratios <- all_logs_birthRate_df %>% 
+    filter(migration_model == "unidirectional",
+           states == "oldstates",
+           tumor == "T1") %>% 
+    mutate(clock_model = factor(clock_model, levels = c("strict", "state-dependent"))) %>% 
+    group_by(clock_model) %>% 
+    summarise(mean = mean(birthRateRatio),
+              hpd_lower = hdi(birthRateRatio, credMass = 0.95)[1],
+              hpd_upper = hdi(birthRateRatio, credMass = 0.95)[2]) %>% 
+    ggplot(., aes(x=clock_model, y=mean), color = "black") +
+    geom_point() +
+    geom_errorbar(aes(ymin = hpd_lower, ymax= hpd_upper), width = 0) +
+    theme_classic() +
+
+    theme(text=element_text(size=20))+
+    ylab("") +
+    xlab("") +
+    geom_hline(yintercept = 1, linetype = "dashed") +
+    coord_flip()
+    
+
+t1_wgs_clock_comparison_ratios
+ggsave(plot=t1_wgs_clock_comparison_ratios,
+       file ="../figures/t1_li_wgs_posteriors_oldstates_clock_comparison.png", height = 2, width = 5)
+
+## Tumor 20
+t2_wgs_clock_comparison_ratios <- all_logs_birthRate_df %>% 
+    filter(migration_model == "unidirectional",
+           states == "oldstates",
+           tumor == "T2") %>% 
+    mutate(clock_model = factor(clock_model, levels = c("strict", "state-dependent"))) %>% 
+    group_by(clock_model) %>% 
+    summarise(mean = mean(birthRateRatio),
+              hpd_lower = hdi(birthRateRatio, credMass = 0.95)[1],
+              hpd_upper = hdi(birthRateRatio, credMass = 0.95)[2]) %>% 
+    ggplot(., aes(x=clock_model, y=mean), color = "black") +
+    geom_point() +
+    geom_errorbar(aes(ymin = hpd_lower, ymax= hpd_upper), width = 0) +
+    theme_classic() +
+    
+    theme(text=element_text(size=20))+
+    ylab("") +
+    xlab("") +
+    geom_hline(yintercept = 1, linetype = "dashed") +
+    coord_flip()
+
+
+t2_wgs_clock_comparison_ratios
+ggsave(plot=t2_wgs_clock_comparison_ratios,
+       file ="../figures/t2_li_wgs_posteriors_oldstates_clock_comparison.png", height = 2, width = 5)

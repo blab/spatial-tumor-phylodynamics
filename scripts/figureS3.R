@@ -143,4 +143,4 @@ birth_rate_strict_clock_fig <- growth_rate_posteriors %>%
     theme(text = element_text(size = 15)) +
     facet_wrap(~n)
 birth_rate_strict_clock_fig
-ggsave(file = "../figures/birth_rate_strict_clock_fig.png", birth_rate_strict_clock_fig, height = 5, width = 7)    
+ggsave(file = "../figures/birth_rate_strict_clock_fig.png", birth_rate_strict_clock_fig, height = 6, width = 9)    
