@@ -1,0 +1,49 @@
+<itsabeastystatewerein version='2.0' sample='10000000'>
+<statenode id='Tree.t:HCCtumor'>(12:2.014570606769619,((((8:0.16309203251930907,(9:0.11966405121045812,((10:0.09719775403929624,5:0.09719775403929624)19:0.007607794746278818,2:0.10480554878557506)18:0.014858502424883055)20:0.04342798130885095)21:0.10659574908707117,(11:0.09534561951587478,(0:0.08048088267086066,(6:0.06291441865942307,1:0.06291441865942307)15:0.01756646401143759)16:0.014864736845014118)17:0.17434216209050546)23:0.07212780815680941,7:0.34181558976318965)22:1.363867223761228,((4:1.7041504858104861,14:1.7041504858104861)24:0.0013677632720860977,(3:0.52029040705533,13:0.52029040705533)25:1.1852278420272422)26:1.6456444184531627E-4)27:0.30888779324520144)28:0.0</statenode>
+<statenode id='birthRateCanonical.t:HCCtumor'>birthRateCanonical.t:HCCtumor[2 1] (-Infinity,Infinity): 4.387074201101651 20.596416402410703 </statenode>
+<statenode id='deathRateCanonical.t:HCCtumor'>deathRateCanonical.t:HCCtumor[2 1] (-Infinity,Infinity): 5.216556292308162 21.121377240179857 </statenode>
+<statenode id='originBDMMPrime.t:HCCtumor'>originBDMMPrime.t:HCCtumor[1 1] (0.0,70001.0): 2.0965809769153996 </statenode>
+<statenode id='typeFrequencies.t:HCCtumor'>typeFrequencies.t:HCCtumor[2 1] (0.0,1.0): 0.028299287838769446 0.9717007121612337 </statenode>
+<statenode id='migrationRateCanonical.t:HCCtumor'>migrationRateCanonical.t:HCCtumor[2 1] (0.0,Infinity): 0.0 0.668631661956028 </statenode>
+<statenode id='clockRate.c:HCCtumor'>clockRate.c:HCCtumor[1 1] (0.0,Infinity): 0.1 </statenode>
+<statenode id='rhoSampling.t:HCCtumor'>rhoSampling.t:HCCtumor[2 1] (0.0,1.0): 0.40148085402400446 0.1408553002712573 </statenode>
+<statenode id='meanBirthRate'>meanBirthRate[1 1] (-Infinity,Infinity): 20.0 </statenode>
+<statenode id='meanMigrationRate'>meanMigrationRate[1 1] (-Infinity,Infinity): 5.0 </statenode>
+<statenode id='meanDeathRate'>meanDeathRate[1 1] (-Infinity,Infinity): 15.0 </statenode>
+<statenode id='relativeScaler'>relativeScaler[2 1] (-Infinity,Infinity): 1.0 1.0 </statenode>
+<statenode id='rateAC.s:t1_wgs'>rateAC.s:t1_wgs[1 1] (0.0,Infinity): 0.5082372840712137 </statenode>
+<statenode id='rateAG.s:t1_wgs'>rateAG.s:t1_wgs[1 1] (0.0,Infinity): 1.192603107346497 </statenode>
+<statenode id='rateAT.s:t1_wgs'>rateAT.s:t1_wgs[1 1] (0.0,Infinity): 1.6975486194597091 </statenode>
+<statenode id='rateCG.s:t1_wgs'>rateCG.s:t1_wgs[1 1] (0.0,Infinity): 1.8561399322414205 </statenode>
+<statenode id='rateGT.s:t1_wgs'>rateGT.s:t1_wgs[1 1] (0.0,Infinity): 0.5659436687581085 </statenode>
+<statenode id='freqParameter.s:t1_wgs'>freqParameter.s:t1_wgs[4 1] (0.0,1.0): 0.44089146127655515 0.0549097764729931 0.05549636090276461 0.44870240134768735 </statenode>
+<statenode id='gammaShape.s:t1_wgs'>gammaShape.s:t1_wgs[1 1] (0.0,Infinity): 0.5662821048658433 </statenode>
+</itsabeastystatewerein>
+<!--
+{"operators":[
+{"id":"BDMMPrimeLeafToSA.t:HCCtumor","p":"NaN","accept":0,"reject":566150,"acceptFC":0,"rejectFC":565142,"rejectIv":566150,"rejectOp":566150},
+{"id":"BDMMPrimeSAWilsonBalding.t:HCCtumor","p":"NaN","accept":3357,"reject":562423,"acceptFC":3348,"rejectFC":561431,"rejectIv":42867,"rejectOp":20204},
+{"id":"BDMMPrimeSAWide.t:HCCtumor","p":"NaN","accept":6254,"reject":560163,"acceptFC":6244,"rejectFC":559170,"rejectIv":293385,"rejectOp":293385},
+{"id":"BDMMPrimeSANarrow.t:HCCtumor","p":"NaN","accept":68881,"reject":495983,"acceptFC":68784,"rejectFC":495080,"rejectIv":96709,"rejectOp":96709},
+{"id":"BDMMPrimeSAUniformOperator.t:HCCtumor","p":"NaN","accept":256315,"reject":875100,"acceptFC":255902,"rejectFC":873584,"rejectIv":0,"rejectOp":0},
+{"id":"BDMMPrimeSAUnifodsrmOperator.t:HCCtumor","p":0.05081036076922792,"accept":492465,"reject":1770970,"acceptFC":492081,"rejectFC":1767506,"rejectIv":266288,"rejectOp":261766},
+{"id":"BDMMPrimeSATreeRootScaler.t:HCCtumor","p":0.9070372796803835,"accept":15124,"reject":41361,"acceptFC":15087,"rejectFC":41297,"rejectIv":4013,"rejectOp":1},
+{"id":"BDMMPrimeSATreeScaler.t:HCCtumor","p":0.9243995395743962,"accept":144864,"reject":421474,"acceptFC":144576,"rejectFC":420858,"rejectIv":32490,"rejectOp":0},
+{"id":"originBDMMPrimeScaler.t:HCCtumor","p":0.41586267096358764,"accept":43753,"reject":125725,"acceptFC":43596,"rejectFC":125600,"rejectIv":28526,"rejectOp":0},
+{"id":"typeFrequenciesExchanger.t:HCCtumor","p":2.1569530787857425,"accept":10655,"reject":46287,"acceptFC":10561,"rejectFC":46275,"rejectIv":41943,"rejectOp":41943},
+{"id":"meanMigrationRateCanonicalScaler.t:HCCtumor1","p":0.7926231006707075,"accept":286452,"reject":844724,"acceptFC":285867,"rejectFC":843344,"rejectIv":0,"rejectOp":0},
+{"id":"meanbirdasdasthRateCanonicalScaler.t:HCCtumor1","p":0.7273969573623592,"accept":272041,"reject":860349,"acceptFC":271070,"rejectFC":859382,"rejectIv":0,"rejectOp":0},
+{"id":"AllUpDown","p":0.9195950259407093,"accept":41284,"reject":128749,"acceptFC":41221,"rejectFC":128547,"rejectIv":0,"rejectOp":0},
+{"id":"birthRateCanonicalScaler.t:HCCtumor","p":0.8105881242514827,"accept":70051,"reject":213005,"acceptFC":70002,"rejectFC":212548,"rejectIv":0,"rejectOp":0},
+{"id":"deathRateCanonicalScaler.t:HCCtumor","p":0.7795872903678656,"accept":65251,"reject":218076,"acceptFC":65165,"rejectFC":217658,"rejectIv":0,"rejectOp":0},
+{"id":"migrationRateCanonicalScaler.t:HCCtumor","p":0.4551059628088739,"accept":61275,"reject":221673,"acceptFC":61247,"rejectFC":221190,"rejectIv":141611,"rejectOp":141611},
+{"id":"RateACScaler.s:t1_wgs","p":0.5581649254698731,"accept":1045,"reject":4540,"acceptFC":1043,"rejectFC":4532,"rejectIv":0,"rejectOp":0},
+{"id":"RateAGScaler.s:t1_wgs","p":0.620836642427184,"accept":842,"reject":4902,"acceptFC":838,"rejectFC":4896,"rejectIv":0,"rejectOp":0},
+{"id":"RateATScaler.s:t1_wgs","p":0.7228449582473986,"accept":793,"reject":4796,"acceptFC":789,"rejectFC":4795,"rejectIv":0,"rejectOp":0},
+{"id":"RateCGScaler.s:t1_wgs","p":0.5033362318409539,"accept":1311,"reject":4242,"acceptFC":1309,"rejectFC":4234,"rejectIv":0,"rejectOp":0},
+{"id":"RateGTScaler.s:t1_wgs","p":0.5497800586814429,"accept":989,"reject":4667,"acceptFC":984,"rejectFC":4661,"rejectIv":0,"rejectOp":0},
+{"id":"FrequenciesExchanger.s:t1_wgs","p":0.02241505446150832,"accept":802,"reject":4988,"acceptFC":797,"rejectFC":4983,"rejectIv":0,"rejectOp":0},
+{"id":"RateGTScalerdsa.s:t1_wgs","p":0.16247853124397646,"accept":1629,"reject":4031,"acceptFC":1625,"rejectFC":4027,"rejectIv":0,"rejectOp":0},
+{"id":"rho.t:HCCtumor","p":0.19312148472035115,"accept":47915,"reject":122275,"acceptFC":47814,"rejectFC":122111,"rejectIv":62406,"rejectOp":62406}
+]}
+-->

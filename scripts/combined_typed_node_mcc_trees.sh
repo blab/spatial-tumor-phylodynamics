@@ -23,10 +23,17 @@
 -o T2_wgs_newstates_unidir_state_comb.HCCtumor.typed.node.trees \
 -b 10
 ## Old states / unidirectional
-/Applications/BEAST\ 2.6.2/bin/LogCombiner -log T2_wgs_oristates_unidir_state_rep0.HCCtumor.typed.node.trees \
+/Applications/BEAST\ 2.6.2/bin/LogCombiner -log T1_wgs_oristates_unidir_state_rep0_r.HCCtumor.typed.node.trees \
 -log T2_wgs_oristates_unidir_state_rep1.HCCtumor.typed.node.trees \
 -log T2_wgs_oristates_unidir_state_rep2.HCCtumor.typed.node.trees \
 -o T2_wgs_oristates_unidir_state_comb.HCCtumor.typed.node.trees \
+-b 10
+
+# Remove single tip
+/Applications/BEAST\ 2.6.2/bin/LogCombiner -log T1_wgs_oristates_unidir_state_rep0_rt1l13.HCCtumor.typed.node.trees \
+-log T1_wgs_oristates_unidir_state_rep1_rt1l13.HCCtumor.typed.node.trees \
+-log T1_wgs_oristates_unidir_state_rep2_rt1l13.HCCtumor.typed.node.trees \
+-o T1_wgs_oristates_unidir_state_comb_rt1l13.HCCtumor.typed.node.trees \
 -b 10
 
 for trees_file in *_comb.HCCtumor.typed.node.trees

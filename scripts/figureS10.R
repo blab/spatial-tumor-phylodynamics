@@ -1,6 +1,6 @@
 #figureS6.R
 
-#scripts to generate alternate states
+#scripts to generate figures for Li et al with T1L13 removed
 
 library(tidyverse)
 library(ggtree)
@@ -16,97 +16,6 @@ edge_center_colors <- tumortree::get_color_palette(names = c("edge", "center"))
 colors_loc <- tumortree::get_color_palette(names = c("edge", "center"))
 names(colors_loc) <- c("loc1", "loc0")
 
-###### SPATIAL MAPS ######
-# These are modified into 3D format in Affinity Designer
-#Published edge/center labels from Li et al (Table S8)
-
-t1_li_edge_labels <- data.frame("Punch" = c("t1z5", "t1l13", "t1z1", "t1f24", "t1z3", "t1f23", "t1f11", "t1l8", "t1f14", "t1f9", "t1l1", "t1l10", "t1l3", "t1f2", "t1l6", "t1f4"),
-                                "edgeP" = c(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)) %>% 
-    dplyr::mutate("Punch" = toupper(Punch))
-
-
-t2_li_edge_labels <- data.frame("Punch" = c("t2z11", "t2z13", "t2z1", "t2f9", "t2f5", "t2f2", "t2f13", "t2z9", "t2z6"),
-                                "edgeP" = c(1, 1, 1, 0, 0, 0, 0, 0, 0))  %>% 
-    dplyr::mutate("Punch" = toupper(Punch))
-
-
-#Spatial data formatted in process_li_wgs_data.R
-T1_punch_coordinates <- read_csv(file = "../li-application/li_hcc_data/T1_punch_coordinates.csv") %>% 
-    dplyr::left_join(.,t1_li_edge_labels, by="Punch") %>% 
-    dplyr::mutate("punch_label" = gsub("T1", "", Punch))
-
-#Boundary points
-T1_boundary_coordinates <- read_csv(file = "../li-application/li_hcc_data/T1_boundary_coordinates.csv") 
-
-T1_slice_order <- c("T1F", "T1H","T1K","T1L","T1O","T1Q","T1S","T1V","T1Y","T1Z","T1AB")
-T1_punch_coordinates$Slice <- factor(T1_punch_coordinates$Slice, levels = T1_slice_order)
-
-# Punch coordinates frm 
-T1_wgs_punch_coordinates <- T1_punch_coordinates %>% 
-    dplyr::filter(! is.na(edgeP))
-
-T2_punch_coordinates <- read_csv(file = "../li-application/li_hcc_data/T2_punch_coordinates.csv") %>% 
-    dplyr::left_join(.,t2_li_edge_labels, by="Punch")  %>% 
-    dplyr::mutate("punch_label" = gsub("T2", "", Punch))
-
-T2_boundary_coordinates <- read_csv(file = "../li-application/li_hcc_data/T2_boundary_coordinates.csv")
-
-T2_wgs_punch_coordinates <- T2_punch_coordinates %>% 
-    dplyr::filter(! is.na(edgeP))
-
-#### ALTERNATE STATES (10% to boundary)
-
-t1_map_plot_alt_states <- T1_punch_coordinates %>% 
-    
-    #filter(! is.na(edgeP)) %>% 
-    ggplot(., aes(X,-Y)) + geom_polygon(data = T1_boundary_coordinates,
-                                        fill = "lightgrey",
-                                        alpha = 0.5,
-                                        color = "black",
-                                        linetype = "dashed",
-                                        aes(group = Slice)) +
-    geom_point(size = 1, color = "darkgrey") +
-    geom_point(data = T1_wgs_punch_coordinates, size = 4, shape = 21, color = "black",
-               aes(fill = ifelse(edge, "edge", "center"))) +
-    #scale_fill_manual(values = sim_colors ) +
-    # labs(fill = "") +
-    #facet_wrap(~factor(Slice, levels = T1_slices), scales = "free") +
-    theme_void() + theme(legend.position = "none") +
-    scale_fill_manual(values = edge_center_colors) +
-    geom_label_repel(data=T1_wgs_punch_coordinates,
-                     label.size = 0,
-                     fill = NA,
-                     nudge_x = 0,
-                     nudge_y = 2,
-                     size = 5,
-                     aes(label = punch_label))
-t1_map_plot_alt_states 
-ggsave(plot=t1_map_plot_alt_states,
-       file ="../figures/t1_li_wgs_punch_map_alt_states.png", height = 5, width = 5*t1_coord_ratio)
-t2_map_plot_alt_states <- T2_punch_coordinates %>% 
-    
-    #filter(! is.na(edgeP)) %>% 
-    ggplot(., aes(X,-Y)) + geom_polygon(data = T2_boundary_coordinates,
-                                        fill = "lightgrey",
-                                        alpha = 0.5,
-                                        color = "black",
-                                        linetype = "dashed",
-                                        aes(group = Slice)) +
-    geom_point(size = 1, color = "darkgrey") +
-    geom_point(data = T2_wgs_punch_coordinates, size = 4, shape = 21, color = "black",
-               aes(fill = ifelse(edge, "edge", "center"))) +
-    theme_void() + theme(legend.position = "none") +
-    scale_fill_manual(values = edge_center_colors) +
-    geom_label_repel(data=T2_wgs_punch_coordinates,
-                     label.size = 0,
-                     fill = NA,
-                     nudge_x = 0,
-                     nudge_y = 2,
-                     size = 5,
-                     aes(label = punch_label))
-t2_map_plot_alt_states
-ggsave(plot=t2_map_plot_alt_states,
-       file ="../figures/t2_li_wgs_punch_map_alt_states.png", height = 5, width = 5*t2_coord_ratio)
 ##### PLOT POSTERIORS ####
 
 #Record of local directory
@@ -115,15 +24,10 @@ ggsave(plot=t2_map_plot_alt_states,
 #                         full.names = TRUE)
 
 log_files <- list.files(path = "../li-application/out",
-                        pattern=".log",
+                        pattern="T1_wgs_oristates_unidir_state_rep[0-2]_rt1l13.log",
                         full.names = TRUE)
 
-
-#temporarily get rid of last corrupted log file
-log_files <- log_files[! grepl("T1_wgs_newstates_bidir_state_rep2.log", log_files)]
-
-#logs <- purrr::map(log_files, readLog)
-
+log_files <- log_files[! grepl("chain1", log_files)]
 process_logs <- function(log_file) {
     print(log_file)
     rep_extract <- regmatches(basename(log_file),
@@ -156,10 +60,9 @@ all_logs_birthRate_df <- all_logs_df %>%
 
 # Also for supplement -- compare published states versus 10% diameter cutoff
 ## Tumor 1
-t1_wgs_posteriors_plot_alt_states <- all_logs_birthRate_df %>% 
+t1_wgs_posteriors_plot <- all_logs_birthRate_df %>% 
     filter(migration_model == "unidirectional",
            clock_model == "state-dependent",
-           states == "newstates",
            tumor == "T1") %>% 
     ggplot(., aes(x=birthRate), color = "black") +
     geom_density(aes(fill = state), alpha=0.8) +
@@ -168,31 +71,14 @@ t1_wgs_posteriors_plot_alt_states <- all_logs_birthRate_df %>%
     theme(text=element_text(size=20))+
     xlab("Estimated birth rate") +
     theme(legend.position = "none") +ylab("") 
-t1_wgs_posteriors_plot_alt_states
-ggsave(plot=t1_wgs_posteriors_plot_alt_states ,file ="../figures/t1_li_wgs_posteriors_newstates.png", height = 5, width = 5)
+t1_wgs_posteriors_plot
+ggsave(plot=t1_wgs_posteriors_plot ,file ="../figures/t1_li_wgs_posteriors_rt1l13.png", height = 5, width = 5)
 
-# Tumor 2
-t2_wgs_posteriors_plot_alt_states <- all_logs_birthRate_df %>% 
-    filter(migration_model == "unidirectional",
-           clock_model == "state-dependent",
-           states == "newstates",
-           tumor == "T2") %>% 
-    ggplot(., aes(x=birthRate), color = "black") +
-    geom_density(aes(fill = state), alpha=0.8) +
-    #facet_grid(cols = vars(tumor)) +
-    theme_classic() + scale_fill_manual(values=colors_loc) +
-    theme(text=element_text(size=20))+
-    xlab("Estimated birth rate") +
-    theme(legend.position = "none") +ylab("") 
-t2_wgs_posteriors_plot_alt_states
-ggsave(plot=t2_wgs_posteriors_plot_alt_states ,file ="../figures/t2_li_wgs_posteriors_newstates.png", height = 5, width = 5)
 
-#Ratios posteriors
 ## Tumor 1
-t1_wgs_ratio_posteriors_plot_newstates_state_clock <- all_logs_birthRate_df %>% 
+t1_wgs_ratio_posteriors_plot<- all_logs_birthRate_df %>% 
     filter(migration_model == "unidirectional",
            clock_model == "state-dependent",
-           states == "newstates",
            tumor == "T1") %>% 
     ggplot(., aes(x=birthRateRatio), color = "black",  fill = "black") +
     geom_density(alpha=0.8, fill = "black") +
@@ -203,37 +89,19 @@ t1_wgs_ratio_posteriors_plot_newstates_state_clock <- all_logs_birthRate_df %>%
     theme(legend.position = "none") +ylab("") +
     geom_vline(xintercept = 1, linetype="dashed")
 
-t1_wgs_ratio_posteriors_plot_newstates_state_clock
-ggsave(plot=t1_wgs_ratio_posteriors_plot_newstates_state_clock,
-       file ="../figures/t1_li_wgs_ratio_posteriors_newstates_stateclock.png", height = 5, width = 5)
+print(mean(all_logs_birthRate_df$birthRateRatio))
 
-# Tumor 2
-t2_wgs_ratio_posteriors_plot_newstates_state_clock <- all_logs_birthRate_df %>% 
-    filter(migration_model == "unidirectional",
-           clock_model == "state-dependent",
-           states == "newstates",
-           tumor == "T2") %>% 
-    ggplot(., aes(x=birthRateRatio), color = "black",  fill = "black") +
-    geom_density(alpha=0.8, fill = "black") +
-    #facet_grid(cols = vars(tumor)) +
-    theme_classic() + 
-    theme(text=element_text(size=20))+
-    xlab("Estimated birth rate ratio (edge / center)") +
-    theme(legend.position = "none") +ylab("") +
-    geom_vline(xintercept = 1, linetype="dashed")
+t1_wgs_ratio_posteriors_plot
+ggsave(plot=t1_wgs_ratio_posteriors_plot,
+       file ="../figures/t1_li_wgs_ratio_posteriors_oristates_stateclock_rt1l13.png", height = 5, width = 5)
 
-t2_wgs_ratio_posteriors_plot_newstates_state_clock
-ggsave(plot=t2_wgs_ratio_posteriors_plot_newstates_state_clock,
-       file ="../figures/t2_li_wgs_ratio_posteriors_newstates_stateclock.png", height = 5, width = 5)
-
-####### MCC TREES ###############
 
 ####### MCC TREES ###############
 
 #To generate MCC run combined_typed_node_mcc_trees.sh in li-application/out directory
 
 mcc_tree_files <- list.files(path = "../li-application/out",
-                             pattern="newstates_unidir_state_comb.HCCtumor_mcc.tree", 
+                             pattern="T1_wgs_oristates_unidir_state_comb_rt1l13_mcc.tree", 
                              full.names = TRUE)
 
 #only do unidirectional
@@ -269,7 +137,7 @@ for (mcc_file in mcc_tree_files) {
                        clock_extract,  "_",
                        states_extract, "_",
                        
-                       "mcc_tree.png")
+                       "rt1l13_mcc_tree.png")
     print(fig_file)
     ggsave(plot=treeplot_pie,
            file=fig_file, height = 10, width = 7)
