@@ -9,7 +9,10 @@
 #' @export
 get_color_palette <- function(names = c("edge", "center", "boundary_driven", "unrestricted")){
 
-  all_colors <- c("edge" = "#A2D2E2", "center" = "#89352F", "boundary_driven" = "#849324", "unrestricted" = "#FFB30F")
+  all_colors <- c("edge" = "#A2D2E2",
+                  "center" = "#89352F",
+                  "boundary_driven" = "#e49a8b",
+                  "unrestricted" = "#3C3C3C")
   return(all_colors[names])
 
 }

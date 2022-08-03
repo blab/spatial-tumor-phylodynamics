@@ -8,21 +8,25 @@ prune_simulated_tree(
   tree,
   sampled_cells_indices,
   add_all_states = FALSE,
-  all_cells = NULL
+  all_cells = NULL,
+  cell_locations_df_file = NULL,
+  branch_unit = "time"
 )
 }
 \arguments{
-\item{tree}{treedata object of simulated tree}
+\item{tree}{treeio S4 tree of simulated tumor}
 
-\item{add_all_states}{Default: FALSE. If TRUE, will find all edge/center states at cell death. Takes some time.}
+\item{sampled_cells_indices}{Vector of indices of sampled cells. If NULL, all cells will be included in tree.}
 
-\item{all_cells}{data.frame of simulated cells, required for state assignment.}
+\item{add_all_states}{logical. Default FALSE. If included edge/center states, which takes more time.}
 
-\item{sampled_cell_indices}{Vector of indices of sampled cells.}
+\item{all_cells}{data.frame of all simulated cells. Default NULL but necessary to get edge/center states.}
+
+\item{cell_locations_df_file}{File to find locations through time for pushing simulation.}
 }
 \value{
-treedata object with simulated tree
+numeric
 }
 \description{
-Prune simulated tree while preserving tree data. Output tree will not contain single-child nodes, and state-assignment will be at node level.
+Prune full simulated tree to subsampled tips
 }

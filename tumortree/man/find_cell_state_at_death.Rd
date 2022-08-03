@@ -4,12 +4,14 @@
 \alias{find_cell_state_at_death}
 \title{Find cell state at death}
 \usage{
-find_cell_state_at_death(index, all_cells)
+find_cell_state_at_death(index, all_cells, cell_locations_df_file = NULL)
 }
 \arguments{
-\item{index}{integer}
+\item{index}{integer of cell index}
 
-\item{all_cells}{data.frame}
+\item{all_cells}{data.frame of all simulated cells}
+
+\item{cell_locations_df_file}{CSV file for locations of cells through time. If NULL, which is default, assume current locations have not changed.}
 }
 \value{
 integer

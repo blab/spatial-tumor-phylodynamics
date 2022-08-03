@@ -4,7 +4,12 @@
 \alias{get_edge_dist_versus_divisions_at_t}
 \title{Edge distances versus cell divisions over time}
 \usage{
-get_edge_dist_versus_divisions_at_t(all_cells, time, time_interval = 1/24)
+get_edge_dist_versus_divisions_at_t(
+  all_cells,
+  time,
+  time_interval = 2/24,
+  cell_locations_df_file = NULL
+)
 }
 \arguments{
 \item{all_cells}{data.frame}

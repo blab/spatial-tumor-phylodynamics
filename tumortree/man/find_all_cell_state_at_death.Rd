@@ -2,18 +2,18 @@
 % Please edit documentation in R/get_spatial_info.R
 \name{find_all_cell_state_at_death}
 \alias{find_all_cell_state_at_death}
-\title{Find all cells states at death}
+\title{Get all cell states at death}
 \usage{
 find_all_cell_state_at_death(all_cells, cell_locations_df_file = NULL)
 }
 \arguments{
 \item{all_cells}{data.frame}
 
-\item{cell_locations_df_file}{default:NULL file for csv of cell locations through time.}
+\item{cell_locations_df_file}{CSV file of cell locations. Default: null}
 }
 \value{
-integer
+number of cell divisions
 }
 \description{
-Find binary edge/center spatial state at time of cell division or death for all cells
+Get states of cells as death by time slice, this method is faster than going cell by cell.
 }

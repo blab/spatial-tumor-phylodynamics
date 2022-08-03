@@ -2,7 +2,7 @@
 % Please edit documentation in R/tumortree.R
 \name{convert_all_cells_to_tree_fast}
 \alias{convert_all_cells_to_tree_fast}
-\title{Convert all cells to tree fast}
+\title{Make full tree from simulated cells fast}
 \usage{
 convert_all_cells_to_tree_fast(
   all_cells,
@@ -13,17 +13,20 @@ convert_all_cells_to_tree_fast(
 )
 }
 \arguments{
-\item{all_cells}{data.frame of all cells in simulation}
+\item{all_cells}{data.frame of all simulated cells in tumor}
 
-\item{add_all_states}{Default: FALSE. If TRUE, will find all edge/center states at cell death. Takes some time.}
+\item{add_all_states}{logical. Default FALSE. If included edge/center states, which takes more time.}
 
-\item{cell_locations_df_file}{Default: Null. CSV file with locations of cells through simulation time.}
+\item{sampled_cells_indices}{Vector of indices of sampled cells. If NULL, all cells will be included in tree.}
 
-\item{sampled_cell_indices}{Default: Null. Vector of sampled cells if making multitype tree with single child nodes}
+\item{branch_unit}{string. Default "time". Other options are "genetic" and "none".}
+
+\item{cell_locations_df_file}{File to find locations through time for pushing simulation.}
 }
 \value{
-treedata object with simulated tree
+numeric
 }
 \description{
-Convert all simulated cells to tree data using faster algorithm
+Make tree from simulated cells including spatial constraints but faster by converted to nwk string first.
+Use prune_simulated tree to convert to subsampled tree.
 }
