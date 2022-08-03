@@ -65,7 +65,7 @@ t2_node_height_comparison_df$strict_clock_node_height <- as.numeric(T2_strict_cl
 joint_posterior_min <- min(t1_node_height_comparison_df$posterior, t2_node_height_comparison_df$posterior)
 #close to 0, so just use 0-1 as the range
 t1_node_height_comparison_plot <- ggplot(t1_node_height_comparison_df, aes(x=as.numeric(height), y=strict_clock_node_height, fill = type)) +
-    geom_point(size = 4, alpha =0.8, shape = 21) + theme_classic() +
+    geom_point(size = 5, alpha =0.8, shape = 21) + theme_classic() +
     scale_fill_manual(values = colors_loc) +
     geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
     scale_y_continuous(trans='log10') +
@@ -83,7 +83,7 @@ ggsave(plot=t1_node_height_comparison_plot,file ="../figures/t1_clocks_height_co
 
 t2_node_height_comparison_plot <- ggplot(t2_node_height_comparison_df, aes(x=as.numeric(height), y=strict_clock_node_height,
                                                                            fill= type)) +
-    geom_point(size = 4, alpha =0.8, shape = 21) + theme_classic() +
+    geom_point(size = 5, alpha =0.8, shape = 21) + theme_classic() +
     scale_fill_manual(values = colors_loc) +
     geom_abline(slope = 1, intercept = 0, linetype = "dashed")+
     scale_y_continuous(trans='log10') +

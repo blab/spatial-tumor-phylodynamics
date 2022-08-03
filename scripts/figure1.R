@@ -12,8 +12,8 @@ library(cowplot)
 figures_dir <- "../figures"
 
 #color palette
-#sim_colors <- get_color_palette(c("boundary_driven", "unrestricted"))
-sim_colors <- c("boundary_driven" = "#e49a8b", "unrestricted" = "#3C3C3C")
+sim_colors <- get_color_palette(c("boundary_driven", "unrestricted"))
+#sim_colors <- c("boundary_driven" = "#e49a8b", "unrestricted" = "#3C3C3C")
 
 ##### REPRESENATIVE SIMULATIONS -- TUMOR GROWTH PATTERNS AND TREES (Figure 1 A-F) ######
 
@@ -464,13 +464,12 @@ ggsave(file = "molecular_tree_growth_rate_unrestricted_unlabeled.png", plot = c_
 
 
 #Local directory 
-sim_cells_dr_0.1_files <- paste("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation/",
-                                list.files(path = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation",
-                                                                                                                                                   pattern = "*i_[0-9][0-9]_dr_0.10.csv"), sep = "")
+# sim_cells_dr_0.1_files <- paste("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation/",
+#                                 list.files(path = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation",
+#                                            pattern = "*i_[0-9]+_dr_0.10.csv"), sep = "")
 
-# sim_cells_dr_0.1_files <- list.files(path = "../eden/simulation_data",
-#                                            pattern = "*i_[0-9][0-9]_dr_0.10.csv", full.names = TRUE)
-#tree_rds_file <- "manuscript/analysis/simtrees/sampled_cells_death_rate_validation_pop_1000_dr_0.04_diversified_sampling_timetree.rds"
+sim_cells_dr_0.1_files <- list.files(path = "../eden/simulation_data",
+                                           pattern = "*i_[0-9]+_dr_0.10.csv", full.names = TRUE)
 get_tree_stats <- function(sim_cells_file) {
     print(sim_cells_file)
     all_cells <- read_csv(sim_cells_file)
@@ -479,19 +478,19 @@ get_tree_stats <- function(sim_cells_file) {
         dplyr::mutate(n_muts = str_count(mutations, ",") + 1,
                       seq_length = str_count(sequence, ",") + 1) 
     
-    
-    # sampled_cells <- alive_cells %>% 
-    #     sample_alive_cells(., n = 100, diversified_sampling = TRUE) %>% 
-    #     filter(sampled)
-    
-    simtree <- convert_all_cells_to_tree_fast(all_cells)
-    simtree <- prune_simulated_tree(simtree, sampled_cells_indices = alive_cells$index)
-
-
     endpoint <- max(alive_cells$deathdate)
-
+    
     alive_cells <- alive_cells %>% 
         dplyr::mutate(clock_rate = n_muts/endpoint)
+    
+    # sampled_cells <- alive_cells %>%
+    #     sample_alive_cells(., n = 100, diversified_sampling = TRUE) %>%
+    #     filter(sampled)
+    # 
+    simtree <- convert_all_cells_to_tree_fast(all_cells)
+    simtree <- prune_simulated_tree(simtree, sampled_cells_indices = alive_cells$index)
+    #simtree <- prune_simulated_tree(simtree, sampled_cells_indices = sampled_cells$index)
+
     
     i_extract <- regmatches(basename(sim_cells_file),
                             gregexpr("(?<=i_)[[:digit:]]+", basename(sim_cells_file), perl = TRUE))[[1]]
@@ -503,6 +502,7 @@ get_tree_stats <- function(sim_cells_file) {
     norm_terminal_branch_length_variance <- var(terminal_branch_length_df$norm_terminal_branch_length) 
     terminal_branch_length_variance <- var(terminal_branch_length_df$terminal_branch_length) 
     clock_rate_variance <- var(alive_cells$clock_rate) 
+    #clock_rate_variance <- var(sampled_cells$clock_rate) 
 
 
 
@@ -510,7 +510,9 @@ get_tree_stats <- function(sim_cells_file) {
                       "norm_terminal_branch_length_variance" = norm_terminal_branch_length_variance,
                       "clock_rate_variance" = clock_rate_variance, 
                       "i" = i_extract,
-                      "model" = ifelse(grepl("pushing", sim_cells_file), "unrestricted", "boundary_driven")))
+                      "model" = ifelse(grepl("pushing", sim_cells_file),
+                                       "unrestricted",
+                                       "boundary_driven")))
     
 }
 
@@ -531,10 +533,7 @@ tbl_var_unrestricted <- mean(tree_terminal_branch_lengths$norm_terminal_branch_l
 
 clock_rate_var_boundary_driven <- mean(tree_terminal_branch_lengths$clock_rate_variance[tree_terminal_branch_lengths$model == "boundary_driven"])
 clock_rate_var_var_unrestricted <- mean(tree_terminal_branch_lengths$clock_rate_variance[tree_terminal_branch_lengths$model == "unrestricted"])
-#sim_colors <- c("boundary_driven" = "#F59CA9", "unrestricted" = "#3C3C3C")
 
-#sim_colors <- c("boundary_driven" = "#8E8CAC", "unrestricted" = "#3C3C3C")
-#sim_colors <- c("boundary_driven" = "#7F708C", "unrestricted" = "#3C3C3C")
 
 ## Terminal branch length plot for example boundary-driven tumor (Figure 1H)
 d <- tree_terminal_branch_lengths %>% 
@@ -549,7 +548,7 @@ d <- tree_terminal_branch_lengths %>%
                  size = 0.25) +
     theme(legend.position = "none") +
     theme(text=element_text(size=15)) +
-    scale_x_discrete(labels=c("boundary_driven" = "Boundary\nDriven", "unrestricted" = "Unrestricted"), color = "black")
+    scale_x_discrete(labels=c("boundary_driven" = "Boundary-\nDriven", "unrestricted" = "Unrestricted"))
     #ggtitle("variance_model_comparison_term_branchh")
 d
 
@@ -564,7 +563,7 @@ e <- tree_terminal_branch_lengths %>%
                  size = 0.25) +
     theme(legend.position = "none") +
     theme(text=element_text(size=15)) +
-    scale_x_discrete(labels=c("boundary_driven" = "Boundary\nDriven", "unrestricted" = "Unrestricted"), color  = "black")
+    scale_x_discrete(labels=c("boundary_driven" = "Boundary-\nDriven", "unrestricted" = "Unrestricted"))
     #ggtitle("Lineage clock rate")
 e    
 #e_d_comb <- grid.arrange(d, e, ncol=2)
