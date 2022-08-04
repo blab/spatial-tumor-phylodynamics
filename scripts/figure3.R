@@ -19,6 +19,22 @@ example_mcmc_log_file <- "../eden/logs/death_rate_validation_pop_1000_dr_0.29_n_
 
 example_mcmc_log <- as.data.frame(readLog(example_mcmc_log_file))
 
+# Get true simulated rates
+#From extract_validation_sims_rates.R
+true_example_diff_df <- read_csv("../eden/stats/validation_growth_and_death_rates_weighted.csv") %>% 
+    dplyr::mutate(true_birth_rate_diff_weighted = mean_edge_birth_rate - mean_center_birth_rate) %>% 
+    dplyr::select(dr, true_birth_rate_diff_weighted) %>% 
+    dplyr::filter(dr == "0.29")
+
+#Get HPD intervals
+
+example_birth_rates_diff_posteriors_summary <- example_mcmc_log %>% 
+    dplyr::mutate(birthRateDiff = birthRateCanonical.1 -  birthRateCanonical.0) %>% 
+    dplyr::summarise(mean = mean(birthRateDiff),
+                  hpd_90_lower = hdi(birthRateDiff,
+                                     credMass =0.9)[1],
+                  hpd_90_upper = hdi(birthRateDiff,
+                                     credMass =0.9)[2])
 # Example edge - center difference posterior distibution
 example_birth_rates_diff_posteriors <- example_mcmc_log %>% 
     dplyr::mutate(birthRateDiff = birthRateCanonical.1 -  birthRateCanonical.0) %>% 
@@ -28,7 +44,8 @@ example_birth_rates_diff_posteriors <- example_mcmc_log %>%
           axis.text.y=element_blank(),
           axis.ticks.y=element_blank(),
           axis.line.y=element_blank()) +
-    theme(text = element_text(size = 20))
+    theme(text = element_text(size = 20)) +
+    geom_vline(xintercept = true_example_diff_df$true_birth_rate_diff_weighted[1], linetype = "dashed")
 
 # Example edge - center posterior distibutions
 example_birth_rates_posteriors <- example_mcmc_log %>% 
@@ -51,9 +68,9 @@ example_birth_rates_posteriors <- example_mcmc_log %>%
 example_birth_rates_diff_posteriors
 example_birth_rates_posteriors
 
-ggsave(plot=example_birth_rates_diff_posteriors, file ="manuscript/figures/example_birth_rates_diff_posteriors.png", height = 5, width = 4.5)
+ggsave(plot=example_birth_rates_diff_posteriors, file ="../figures/example_birth_rates_diff_posteriors.png", height = 5, width = 4.5)
 
-ggsave(plot=example_birth_rates_posteriors, file ="manuscript/figures/example_birth_rates_posteriors.png", height = 5, width = 4.5)
+ggsave(plot=example_birth_rates_posteriors, file ="../figures/example_birth_rates_posteriors.png", height = 5, width = 4.5)
 
 ############## EXAMPLE ANCESTRAL STATE RECONSTRUCTION TREE #####
 
