@@ -87,7 +87,7 @@ anc_state_nodes <- mcc_tree@data %>%
     dplyr::mutate(center = type.prob * as.integer(type == "loc0") + (1 - type.prob)*as.integer(type == "loc1")) %>% 
     dplyr::select(center, edge, type, node)
 
-#colors_edge_center <- c("edge" = "#75ACBA", "center" = "#A28F7B")
+
 pies <- nodepie(anc_state_nodes, cols=1:2, alpha=0.8, color = colors_edge_center)
 g <- ggtree(mcc_tree, color = "darkgrey") +
     #geom_point(size = 2) +
@@ -95,19 +95,28 @@ g <- ggtree(mcc_tree, color = "darkgrey") +
     theme(legend.position = "none")
 g_pie <- ggtree::inset(g, pies, width = 0.066, height = 0.066) + theme(legend.position = "none")
 
+## To visualize tip labels
 # ggtree(mcc_tree, aes(color = type)) +
 #     #geom_point(size = 2) +
 #     scale_color_manual(values = colors_loc) +
-#     theme(legend.position = "none")
-# g2 <- ggtree(mcc_tree, color = "darkgrey") +
-#     #geom_point(size = 2) +
-#     scale_color_manual(values = colors_loc) +
-#     theme(legend.position = "none")
-# g2_pie <- ggtree::inset(g2, pies, width = 0.07, height = 0.07) + theme(legend.position = "none")
-# g2_pie_toy <- viewClade(g2_pie, MRCA(g,"cell5338loc1", "cell5378loc1"))
+#     theme(legend.position = "none") + geom_tiplab()
 
-#ggsave(plot=g2_pie_toy, file ="manuscript/figures/toy_ancestral_state_recon_tree.png", height = 5, width = 5)
-g_pie
+## Toy tree for model schematic
+pies2 <- nodepie(anc_state_nodes, cols=1:2, alpha=1, color = colors_edge_center)
+
+g2 <- ggtree(mcc_tree, color = "darkgrey", size = 2) +
+    geom_point(size = 2) +
+    scale_color_manual(values = colors_loc) +
+    theme(legend.position = "none") 
+g2_pie <- ggtree::inset(g2, pies2, width = 0.08, height = 0.08) + theme(legend.position = "none")
+
+g2_pie_toy <- viewClade(g2_pie, MRCA(g2,"cell4628loc1", "cell4232loc0"))
+
+
+
+ggsave(plot=g2_pie_toy,
+       file ="../figures/toy_ancestral_state_recon_tree.png", height = 5, width = 5)
+
 ggsave(plot=g_pie, file ="../figures/example_ancestral_state_recon_tree.png", height = 5, width = 5)
 
 

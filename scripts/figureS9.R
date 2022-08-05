@@ -1,6 +1,6 @@
 library(tumortree)
 library(tidyverse)
-#setwd("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li")
+setwd("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li")
 
 ##Whole genome estimated to be ~3Gb
 ###41% GC content
@@ -32,12 +32,22 @@ colnames(tumor_purities) <- c("sample", "mapping_rate", "depth", "n_snvs", "puri
 #     add_column("mark" = "truncal")
 #tumor 1
 #note: files are named w/ .csv extension but are actually tab-delimited
+
+#Local directories
 t1_wgs_snvs_files <- list.files(path = "data/All_SNV_MBE2022Li", pattern = "t1", full.names = TRUE)
 
 #tumor 2
 t2_wgs_snvs_files <- list.files(path = "data/All_SNV_MBE2022Li", pattern = "t2", full.names = TRUE)
 
 header_info <- read.table(file = "data/All_SNV_MBE2022Li/head.csv")
+
+
+t1_wgs_snvs_files <- list.files(path = "../li-appliation/li_hcc_data/All_SNV_MBE2022Li", pattern = "t1", full.names = TRUE)
+
+#tumor 2
+t2_wgs_snvs_files <- list.files(path = "../li-appliation/li_hcc_data/All_SNV_MBE2022Li", pattern = "t2", full.names = TRUE)
+
+header_info <- read.table(file = "../li-appliation/li_hcc_data/data/All_SNV_MBE2022Li/head.csv")
 
 
 # subclone_labels <- read.csv("data/T1_subclone_labels.csv") %>% 
@@ -109,33 +119,6 @@ t2_all_sites_df <- t2_all_sites_list %>%
     bind_rows %>%
     distinct
 
-# #punch_snvs <- t2_snv_list[[1]]
-# #all_sites <- t2_all_sites_df
-# 
-# #Amplicon variants
-# T1_data_amp <- read.csv("data/T1_snvs.csv", header = TRUE) %>% 
-#     dplyr::select(-T1F47.1)
-# T2_data_amp <- read.csv("data/T2_snvs.csv", header = TRUE)
-# 
-# min_var_allele_freq <- 0.1 #threshold to call presense of variant allele
-# 
-# #pivot data, this takes some wrangling because there are multiple columns per punch
-# T1_data_amp_long <- T1_data_amp %>%
-#     tidyr::pivot_longer(cols = contains("T1"), names_to = c("Punch"),values_to = "VAF")  %>%
-#     dplyr::mutate("basecall" = ifelse(is.na(VAF), "N", ifelse(VAF>= min_var_allele_freq, Alt, Ref))) %>%
-#     dplyr::filter(! is.na(Position)) %>% 
-#     dplyr::mutate(Punch = tolower(Punch))  %>% 
-#     dplyr::rename(contig = "Chromosome", position =  "Position", ref_allele = "Ref", alt_allele = "Alt", t_alt_vaf = "VAF") %>% 
-#     dplyr::filter(Punch != "t1f47.1")
-# 
-# T2_data_amp_long <- T2_data_amp %>%
-#     tidyr::pivot_longer(cols = contains("T2"), names_to = c("Punch"), values_to = "VAF") %>%
-#     dplyr::mutate("basecall" = ifelse(is.na(VAF), "N", ifelse(VAF>= min_var_allele_freq, Alt, Ref))) %>%
-#     dplyr::filter(! is.na(Position)) %>%
-#     dplyr::mutate(Punch = tolower(Punch)) %>%
-#     dplyr::rename(contig = "Chromosome", position =  "Position", ref_allele = "Ref", alt_allele = "Alt", t_alt_vaf = "VAF")
-# 
-# 
 # #function to make vafs for wgs
 make_vafs <- function(punch_snvs, all_sites, vaf_cutoff = 0.1) {
 
@@ -208,7 +191,7 @@ t2_vaf_df_marked <- t2_vaf_df %>%
 
 edge_center_colors <- get_color_palette(names = c("edge", "center"))
 t1_vaf_histograms <- ggplot(t1_vaf_df, (aes(x=t_alt_vaf, fill = ifelse(edgeP == 1, "edge", "center")))) +
-    geom_histogram(color = "black", bins = 30) + theme_bw() + facet_wrap(~sample, ncol = 4) +
+    geom_histogram(color = "black", bins = 30) + theme_bw() + facet_wrap(~toupper(sample), ncol = 4) +
     geom_histogram(color = "black", bins = 30, fill = "grey", data = t1_vaf_df_marked, alpha = 0.5) + 
     #geom_vline(xintercept = 0.25, linetype = "dashed") +
     scale_fill_manual(values = edge_center_colors) +
@@ -223,7 +206,7 @@ ggsave(t1_vaf_histograms, file = "../figures/t1_vaf_histograms.png", height = 7,
 t2_vaf_histograms <- ggplot(t2_vaf_df, (aes(x=t_alt_vaf, fill = ifelse(edgeP == 1, "edge", "center")))) +
     geom_histogram(color = "black", bins = 30) + theme_bw() +
     geom_histogram(color = "black", fill = "grey", data = t2_vaf_df_marked, alpha = 0.5, bins = 30) +
-    facet_wrap(~sample, ncol = 4) +
+    facet_wrap(~toupper(sample), ncol = 4) +
     #geom_vline(xintercept = 0.25, linetype = "dashed") +
     scale_fill_manual(values = edge_center_colors) +
     theme(legend.position = "none")  +
