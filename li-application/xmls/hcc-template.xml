@@ -180,11 +180,11 @@ name="alignment">
                         <frequencies id="estimatedFreqs.s:t1_wgs" spec="Frequencies" frequencies="@freqParameter.s:t1_wgs"/>
                     </substModel>
                 </siteModel>
-                <branchRateModel id="StrictClock.c:HCCtumor" spec="bdmm.stateclock.BdmmStateClock" normalize="true">
+                <branchRateModel id="StrictClock.c:HCCtumor" spec="sdevo.bdmm.BdmmStateClock" normalize="true">
                         <parameter idref="clockRate.c:HCCtumor" name = "clock.rate"/>
                         <relativeClockRates idref="birthRateCanonical.t:HCCtumor"/>
                         <relativeClockScalerRates idref="relativeScaler"/>
-                        <typedTree spec="bdmm.stateclock.FlatTypeMappedTree" parameterization="@CanonicalBDMMPrimeParameterization.t:HCCtumor" typeLabel="loc" frequencies="@typeFrequencies.t:HCCtumor" untypedTree="@Tree.t:HCCtumor" typeTraitSet="@typeTraitSet.t:HCCtumor"/>
+                        <typedTree spec="sdevo.bdmm.FlatTypeMappedTree" parameterization="@CanonicalBDMMPrimeParameterization.t:HCCtumor" typeLabel="loc" frequencies="@typeFrequencies.t:HCCtumor" untypedTree="@Tree.t:HCCtumor" typeTraitSet="@typeTraitSet.t:HCCtumor"/>
                 </branchRateModel>
             </distribution>
         </distribution>

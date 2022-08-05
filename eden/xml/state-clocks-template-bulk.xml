@@ -118,10 +118,10 @@ insert_sequence
                     <substModel id="JC69.s:state_dependent_clock_sim" spec="JukesCantor"/>
                 </siteModel>
                 	<!-- 	<branchRateModel id="StrictClock.c:H3N2" spec="beast.evolution.branchratemodel.StrictClockModel" clock.rate="@clockRate.c:state_dependent_clock_sim"/>-->
-			<branchRateModel id="StrictClock.c:H3N2" spec="bdmm.stateclock.BdmmStateClock" clock.rate="@clockRate.c:state_dependent_clock_sim" normalize="true">
+			<branchRateModel id="StrictClock.c:H3N2" spec="sdevo.bdmm.BdmmStateClock" clock.rate="@clockRate.c:state_dependent_clock_sim" normalize="true">
     				<relativeClockRates idref="birthRateCanonical.t:state_dependent_clock_sim"/>
 
-    				<typedTree spec="bdmm.stateclock.FlatTypeMappedTree" parameterization="@CanonicalBDMMPrimeParameterization.t:state_dependent_clock_sim" typeLabel="loc" frequencies="@typeFrequencies.t:state_dependent_clock_sim" untypedTree="@Tree.t:state_dependent_clock_sim" typeTraitSet="@typeTraitSet.t:state_dependent_clock_sim"/>
+    				<typedTree spec="sdevo.bdmm.FlatTypeMappedTree" parameterization="@CanonicalBDMMPrimeParameterization.t:state_dependent_clock_sim" typeLabel="loc" frequencies="@typeFrequencies.t:state_dependent_clock_sim" untypedTree="@Tree.t:state_dependent_clock_sim" typeTraitSet="@typeTraitSet.t:state_dependent_clock_sim"/>
     		 	</branchRateModel>
             </distribution>
         </distribution>
@@ -183,7 +183,7 @@ insert_sequence
         <log id="typedTreeStats.t:state_dependent_clock_sim" spec="bdmmprime.mapping.TypedTreeStatsLogger" includeRootEdgeChanges="true" typeLabel="type" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
             <typedTree id="typeMappedTree.t:state_dependent_clock_sim" spec="bdmmprime.mapping.TypeMappedTree" bdmmDistrib="@BDMMPrime.t:state_dependent_clock_sim" frequencies="@typeFrequencies.t:state_dependent_clock_sim" mapOnInit="false" remapOnLog="true" typeLabel="type" typeTraitSet="@typeTraitSet.t:state_dependent_clock_sim" untypedTree="@Tree.t:state_dependent_clock_sim"/>
         </log>
-        <log spec="bdmm.stateclock.OriginLogger" typedTree="@typeMappedTree.t:state_dependent_clock_sim" typeLabel="type"/>
+        <log spec="sdevo.bdmm.OriginLogger" typedTree="@typeMappedTree.t:state_dependent_clock_sim" typeLabel="type"/>
         <log idref="birthRateCanonical.t:state_dependent_clock_sim"/>
         <log idref="deathRateCanonical.t:state_dependent_clock_sim"/>
         <log idref="migrationRateSMEpi.t:state_dependent_clock_sim"/>
