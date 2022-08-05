@@ -1,0 +1,410 @@
+%\documentclass{article}
+\documentclass[12pt]{elife_based}
+\usepackage{lipsum} % Required to insert dummy text
+\usepackage[version=4]{mhchem}
+\usepackage{siunitx}
+\DeclareSIUnit\Molar{M}
+
+\usepackage[utf8]{inputenc}
+\usepackage{array}
+\usepackage{graphicx}
+
+\usepackage[font=small,labelfont=bf,font={stretch=1.2}]{subcaption}
+%Make caption labels smaller 
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{placeins}
+%\usepackage{xcolor}
+\usepackage{bbm}
+%\usepackage[letterpaper, margin=1in]{geometry}
+
+%\usepackage{multicol}
+%\usepackage{authblk}
+%\title{\vspace{-2.0cm}Stuff}
+
+
+
+\title{State-dependent evolutionary models reveal modes of solid tumor growth}
+
+\author[1,2$\dagger$]{Maya A. Lewinsohn}
+\author[1,2,3]{Trevor Bedford}
+\author[2*$\dagger$]{Nicola F. M\"{u}ller}
+\author[1*$\dagger$]{Alison F. Feder}
+\affil[1]{Department of Genome Sciences, University of Washington, Seattle, WA, USA}
+\affil[2]{Vaccine and Infectious Disease Division, Fred Hutchinson Cancer Center, Seattle, WA, USA}
+\affil[3]{Howard Hughes Medical Institute, Seattle, WA, USA}
+\affil[*]{These authors jointly supervised this work; $\dagger$ To whom correspondence should be addressed (lewinsom@uw.edu / nicola.felix.mueller@gmail.com / affeder@uw.edu)}
+
+
+
+
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{lineno}
+%\renewcommand{\thesubfigure}{\Alph{subfigure}}
+%\captionsetup[subfigure]{font={bf,small}, skip=1pt, singlelinecheck=false}
+
+\setcitestyle{authoryear, open={(},close={)}}
+%\newsavebox{\bigimage}
+\begin{document}
+
+%\linenumbers 
+ 
+\maketitle
+%\thispagestyle{empty}
+\begin{abstract}
+
+%Format for Nature Eco Evo
+%Main text – up to 3,500 words, excluding abstract, Methods, references and figure legends.
+%Abstract – up to 200 words, unreferenced. 
+%Display items – up to 6 items (figures and/or tables). 
+%Extended Data – up to 10 items (figures and/or tables, linked from the main text in the html version of the paper).
+%Article should be divided as follows: 
+%Introduction (without heading, up to 500 words of referenced text on the background of the work) 
+%Results (concise, focused account of the findings)
+%Discussion
+%Online Methods.
+%Results and Methods should be divided by topical subheadings; the Discussion does not contain subheadings.
+%References – as a guideline, we typically recommend up to 50.
+
+Spatial properties of tumor growth have profound implications for cancer progression, therapeutic resistance and metastasis. Yet, how spatial position governs tumor cell division remains difficult to evaluate in clinical tumors. Here, we demonstrate that elevated cellular growth rates on the tumor periphery leave characteristic patterns in the genomes of cells sampled from different parts of a tumor, which become evident when they are used to construct a tumor phylogenetic tree. Namely, rapidly-dividing peripheral lineages branch more extensively and acquire more mutations than slower-dividing lineages in the tumor center. We develop a Bayesian state-dependent evolutionary phylodynamic model (SDevo) that quantifies these patterns to infer the differential cell division rates between peripheral and central cells jointly from the branching and mutational patterns of single-time point, multi-region sequencing data. We validate this approach on simulated tumors by demonstrating its ability to accurately infer spatially-varying birth rates under a range of growth conditions and sampling strategies. We then show that SDevo outperforms state-of-the-art, non-cancer multi-state phylodynamic methods which ignore differential mutational acquisition. Finally, we apply SDevo to multi-region sequencing data from clinical hepatocellular carcinomas and find evidence that cells on the tumor edge divide 2-4x faster than those in the center. As multi-region and single-cell sequencing increase in resolution and availability, we anticipate that SDevo will be useful in interrogating spatial restrictions on tumor growth and could be extended to model non-spatial factors that influence tumor progression, including hypoxia and immune infiltration.
+
+\end{abstract}
+
+\section{Introduction}
+
+Tumors develop and progress via an evolutionary and ecological process wherein cellular subpopulations expand and diversify. Over the course of tumor development, tumor cells acquire genetic mutations and new phenotypes that potentially help them compete for resources and adapt for success in their microenvironment. Understanding this process is critical to predicting clinically significant events such as if, how, and when cells metastasize or develop resistance to therapy. 
+
+Although tumor cell growth and success is often attributed to genetic and epigenetic aberrations, an additional important determinant of cell growth is physical location within the tumor. Position governs which cells have sufficient access to oxygen or pro-growth signaling from the stroma, and which cells suffer from hypoxia or glucose deprivation.  
+It has been suggested that these effects combine to create an environment in which cells on the boundary of a tumor have higher growth rates compared to those in the center (i.e., ``boundary-driven growth"). Boundary-driven growth changes the evolutionary processes underlying tumor progression and the genetic signatures we might expect in these populations, as has been explored via evolutionary theory \citep{edmonds2004mutations, klopfstein2006fate}, microbial experiments \citep{hallatschek2007genetic, korolev2012selective, gralka2016allele}, and cancer computational models \citep{waclaw2015spatial, sottoriva2015big, sun2017between, ahmed2018intratumor, Chkhaidze:2019uw, noble2022}. Such investigations have revealed that boundary-driven growth blunts the efficacy of natural selection in selecting for beneficial (i.e, driver) mutations, and purging slower growing (but potentially drug resistant) lineages \citep{kayser2019collective}. Boundary-driven growth should also enhance the effectiveness of adaptive therapy \citep{bacevic2017spatial, strobl2022spatial} and cell-cell competition in the tumor interior. Further, such growth patterns should distort our expectations for the neutral variant allele frequency spectrum \citep{fusco2016excess}, which has been used as a null model for identifying signatures of natural selection \citep{williams2016identification}, and it has been qualitatively suggested in tumor simulation studies that boundary-driven growth could be misinterpreted as selection on tumor trees \citep{Chkhaidze:2019uw}. Therefore, establishing and incorporating these null expectations and models for boundary-driven tumor growth is essential in the context of the increasing interest in applying evolutionary theory to clinical disease, for example, in designing adaptive therapy \citep{You:2017vg}, identifying driver events \citep{Turajlic2018_tracerx, Gerstung2020}, or estimating timings of metastases \citep{Yachida2010_mets, ahmed2018intratumor}. 
+
+Mounting evidence from xenograft and organoid experiments supports the existence of boundary-driven growth in spatially-organized tumors. Such studies have found that labeled cells randomly seeded near the boundary of xenografts tend to grow larger \citep{lamprecht2017multicolor, lenos2018stem, van2019spatiotemporal} and that clone size distributions show offspring jackpotting events that mimic classical descriptions of range expansions \citep{lenos2018stem}. \cite{reeves2018multicolour} and \cite{lamprecht2017multicolor} further found that fluorescently-tracked tumor cellular populations exhibit clonal ``sectoring'' characteristic of boundary-growing populations in microbial settings. Stains for cell division markers (i.e., Ki67) have been found exclusively on the boundaries of certain organoid models \citep{florian2019human}, and are twice as likely to be present in cells on the edge versus the center of primary and xenograft samples \citep{lamprecht2017multicolor}. 
+
+However, these experiments often rely on cells with genetically-manipulated tracking, or \textit{ex vivo} environments, and recent studies have found conflicting evidence for  boundary-driven growth in clinical tumors. \cite{Heide2021.07.14.451265} found that some, but not all, colorectal tumors showed genetic patterns consistent with boundary-driven growth, and multi-region sequencing studies have found instances of greater accumulation of mutations on the tumor periphery \citep{ling2015extremely, Li2022}. These genetic findings are corroborated by spatial transcriptomic studies which have identified differential cell states and programs on the tumor periphery \citep{berglund2018, Wu2021.10.21.465135, wu2021single}, lending credibility to the hypothesis that cell phenotype and growth rate may be dependent on spatial context.  On the other hand, a recent genetic analysis of renal cell carcinomas found the most recent common ancestors of metastatic lineages in the resected tumor interiors as opposed to the tumor boundaries \citep{zhao2021selection}.
+
+A primary challenge in reconciling these conflicting observations is that clinical sequencing often only captures a limited snapshot of tumor diversity and growth. However, this sampled tumor diversity still offers a window into past population dynamics via phylogenetic and phylodynamic tools. \textit{Phylogenetic} approaches, which reconstruct how cells within a tumor are related, have already proven useful in interrogating cancer evolution -- for example, in determining the relative ordering of driver mutations \citep{gerlinger2012intratumor, kim2014using}, detecting parallel evolution of gene hits within a tumor \citep{turajlic2018tracking, turati2021chemotherapy}, and resolving whether metastases emerge early or late in tumor development \citep{leung2017single, hu2019quantitative}. 
+In contrast, \textit{phylodynamic} methods, which link shapes of phylogenetic trees to underlying population dynamics, have only rarely been used in cancer genomics \citep{Alves:2019wk}, despite widespread application in other fields \citep{Stadler2021, Attwood2022}. % - for example population growth or substructure,  %- often towards inferring those underlying population parameters.
+%\textit{Phylodynamic} methods extend phylogenetic trees by pairing them with dynamical models to infer past population structure and growth.
+%have found widespread application in other fields, for example, in macro-evolution and infectious disease dynamics research \citep{Maddison2007a}, but have only rarely been used in cancer genomics \citep{Alves:2019wk}. 
+%With increasing availability of genomic sequence data from individual tumors, phylodynamic models have the potential to become a similarly powerful approach in cancer genomics to study tumor growth in clinical settings.
+
+Although phylodynamic approaches have high potential impact in cancer clinical settings, they are generally not adapted to study tumor biology or incorporate the complexities of cancer's spatial growth. To bridge this gap, we set out to develop a phylodynamic model suited for detecting boundary-driven growth in tumors. First, we quantify characteristic branching and genetic patterns in tumor trees simulated under boundary-driven growth and demonstrate that these patterns correspond to cellular lineages spending different amounts of time on the faster growing tumor edge versus in the tumor center.
+To fully exploit these patterns for inference, we develop a novel phylodynamic tool based on the multi-type birth-death process \citep{Maddison2007a,stadler2013uncovering,Kuhnert:2016vv}, in which cells have different birth and death rates on the tumor edge and center, and lineages can transition between states as the tumor grows. Crucially, we introduce an extension that links cell birth and mutation, and therefore incorporates rates of sequence evolution that depend on each cell lineage's inferred history of spatial locations (i.e. spatial states). 
+We provide this state-dependent evolution model (SDevo) as a package in the popular open source Bayesian software BEAST2 \citep{BouckaertBeast2}.
+We show that SDevo substantially improves our ability to infer boundary-driven growth dynamics in simulated tumors compared to non-cancer multi-type birth-death models, and validate this approach across a broad array of biological and sampling conditions, including those encompassing selection for driver mutations, 3-dimensional growth, and clinical sampling strategies. Finally, we apply SDevo to spatially-resolved multi-region sequencing data from hepatocellular carcinomas \citep{Li2022} and estimate that cells in the tumor boundary may have birth rates up to 2-4 times faster than those in the interior. More broadly, SDevo is a general tool for quantifying growth processes linked to any discrete state, and future investigations will expand beyond boundary-driven growth. 
+
+\section*{Results}
+
+
+\subsection*{Boundary-driven growth creates distinct phylogenetic tree structures}
+
+In order to characterize signatures of boundary-driven growth in tumor trees, we simulate spatially-constrained growth via a cellular agent-based model in a 2D lattice, as in \cite{Chkhaidze:2019uw}, which shares key features with other spatial cancer growth models. Simulated tumors grow from single cells over discrete time steps and gain mutations at cell division. Under spatially-constrained \textit{boundary-driven growth}, a cell can only divide if there is an empty lattice spot in its Moore (8-cell) neighborhood, effectively tying its fitness to neighborhood density (Figure \ref{figsupp:sf1}). Therefore, extant lineages closer to the tumor periphery have progressively higher mean birth rates than those in the center (Figure \ref{fig:f1}A). For comparison, we simulated a non-spatially constrained \textit{unrestricted growth} model (Figure \ref{fig:f1}D), in which all cells can divide regardless of density and push their neighbors to create space. 
+
+We first investigated how such growth processes affect the shape and structure of cancer phylogenetic trees to identify detectable tree signals of boundary-driven growth. We consider two types of tree representations -- 1) time trees (Figure \ref{fig:f1}B and E), where the branch lengths are in units of simulation time, and 2) genetic trees (Figure \ref{fig:f1}C and F), where the branch lengths are in units of number of mutations. We first compare the \textit{time tree} of a tumor simulated under boundary-driven growth (Figure \ref{fig:f1}B) with one simulated with no spatial restrictions (Figure \ref{fig:f1}D). In the boundary-driven growth tree, we observe certain leaves (cells) with long terminal branches (i.e., cell 1) and other leaves with much shorter terminal branches (i.e., cell 2). These differential terminal branch lengths directly correspond to both mean lineage birth rate and spatial position within the tumor. Intuitively, lineages trapped in dense center neighborhoods (i.e., cell 1, Figure \ref{fig:f1}A and B) divide slowly and therefore exhibit longer times since diverging from another sampled cell. Conversely, lineages at the tumor boundary (i.e., cell 2) divide rapidly, and are therefore more likely to be recently related to another sampled cell. We quantify terminal branch lengths in the simulated tumor time trees and find that the asymmetries in birth rates due to spatial constraints result in an overall higher variance in terminal branch lengths under boundary-driven growth (Figure \ref{fig:f1}H) than under unrestricted growth (Figure \ref{fig:f1}I).
+
+In Figures \ref{fig:f1}C and \ref{fig:f1}F, we reconstruct the \textit{genetic trees} from the same boundary-driven and unrestricted tumor simulations. 
+From this representation of the tumor trees, we observe that if mutation is linked to cellular division, then asymmetries in birth rates across tumor space logically correspond to varying rates of sequence evolution (Figure \ref{fig:f1}G). 
+This leads to repeated ladder-like patterns of genetic divergence that arise across multiple subclades of the boundary-driven growth tree in which fast-dividing cells on the tumor boundary accumulate more mutations than those in the interior (Figure \ref{fig:f1}C). These patterns are not observed in the unrestricted growth tree (Figure \ref{fig:f1}F). We quantify these patterns by measuring variance in mean clock rate (defined by total lineage mutations / simulation time) from extant cells in each simulation and demonstrate that clock rate is more variable across trees derived from boundary-driven growth than in trees simulated under the unrestricted growth model (Figure \ref{fig:f1}I). 
+
+\begin{figure}
+    \includegraphics[width=0.95\linewidth]{figures/fig1_2022_08_01.pdf}
+    \caption{\textbf{Boundary-driven growth causes characteristic tree patterns associated with asymmetrical division.} Representative simulated tumors ($death = 0.1$) showing variation in mean birth rate in 2D tumor space under \textbf{A.} boundary-driven growth via neighborhood-based spatial constraints, and \textbf{D.} unrestricted growth. Brighter colors represent higher birth rate (total number of divisions in cell lineage / simulation time) throughout all panels of the figure. \textbf{B.} Time tree of the representative boundary-driven growth tumor (subsampled to 100 cells for visualization) shows high variation in branching rates, leading to long terminal branches of center-trapped lineages. \textbf{C.} Genetic tree of the representative boundary-driven tumor (subsampled to the same 100 cells) shows ladder-like patterns due to mutation being tied to cell division. \textbf{E.} Time and \textbf{F.} genetic trees for the representative tumor under unrestricted growth (100 tips visualized) reveal less variation in branching rates and genetic distance. \textbf{G.} Cartoon schematic of the two signals of boundary-driven growth in trees left by asymmetric birth rates: variation in branching rates and variation in the number of mutations. Variance in \textbf{H.} terminal branch length (TBL) and \textbf{I.} clock rate (CR) in tumors under boundary-driven growth and unrestricted growth trees built from all extant tumor cells. Insets show distributions of TBL and CR signals for tumors plotted in \textbf{A.} and \textbf{B.}. Violin plots summarize statistics across 100 simulated tumors.}
+
+    \label{fig:f1}
+\end{figure}
+
+\subsection*{Boundary-driven growth can be modeled using a two-state birth-death process}
+As tree structures differ between tumors simulated under boundary-driven and unrestricted spatial constraints, we sought a phylodynamic approach that could differentiate between these two growth modes. One such model is the multi-type birth-death model \citep{Maddison2007a,stadler2013uncovering,Kuhnert:2016vv}, which ties differential rates of birth, death, and sampling of lineages to multiple, discrete states. In our simulation studies, we observe that boundary-driven growth can be effectively simplified into two states. We find that the instantaneous cell birth rate under boundary-driven growth is elevated only in cells immediately adjacent to the tumor edge, but is uniformly low in all cells in the interior (Figure \ref{Fig2}A). We can further decompose the tree patterns observed in Figure \ref{fig:f1} into edge and center-linked dynamics. As shown in the representative tumor from Figure \ref{fig:f1}A, all edge-associated cells have short terminal branch lengths. Whereas most of the variation in terminal branch length can be attributed to cells in the center and the mean terminal branch length of cells in the center is more than five times that of cells on the tumor edge (Figure \ref{Fig2}B). If we trace the lineages of extant cells back to the root, the fraction of time cell lineages spend on the edge is highly correlated with the variation in mean clock rate observed in Figure \ref{fig:f1} (Figure \ref{Fig2}C, $R^2 = 0.63$). In other words, the most mutated cells have spent the majority of their lineage history on the tumor edge. Under unrestricted growth (Figure \ref{Fig2}D), we observed no difference between edge and center terminal branch lengths (Figure \ref{Fig2}E, ratio of center to edge mean terminal branch lengths = 0.98) and lineage time spent in the edge state is not correlated to clock rate (Figure \ref{Fig2}F, $R^2 = 0.0016$).
+
+To investigate the robustness of these patterns, we next simulated tumors under a wide range of cell turnover rates. Under boundary-driven growth, increasing cell turnover decreases spatial constraints and therefore lessens the growth advantage between edge and center states (Figure \ref{figsupp:sf1}, Figure \ref{Fig2}G). We measured the ratio of mean center to edge terminal branch lengths as in Figure \ref{Fig2}B and E across these different effect sizes and found that this ratio is a consistent indicator of boundary-driven growth that decreases as spatial constraints are relaxed (Figure \ref{Fig2}H). The correlation between fraction of lineage time spent on the edge and mean clock rate is also specific to the boundary-driven growth model and sensitive to effect size (Figure \ref{Fig2}I). Therefore, we conclude that the patterns left by boundary-driven growth can be effectively approximated by a two-state birth-death model.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/fig2_ML_aff_ML2.pdf}
+
+
+        \caption{\textbf{Asymmetries in cell birth rate and signals of boundary-driven growth in trees can be modeled by two-state dynamics.} \textbf{A.} Histogram of instantaneous cell birth rate as a function of distance from the tumor edge (normalized by maximum distance). Rates are averages over 10 simulations under boundary-driven growth ($death = 0.1$) with standard error bars. \textbf{B.} Distributions of normalized terminal branch lengths (TBL) in a representative tumor under boundary-driven growth (Figure \ref{fig:f1}A) categorized by leaf edge or center state (inset). \textbf{C.} Mean clock rate (total number of mutations / time) of cells in the example boundary-driven tumor versus the fraction of time a cell lineage spends on the tumor edge. Color gradient spans mostly center-associated lineages in blue to mostly edge-associated lineages in maroon. Dashed line is $y=x$. \textbf{D.} Histogram of instantaneous cell birth rate versus binned distance from tumor edge unrestricted growth simulations (average over 10 simulations with standard error bars, $death$ = 0.1). \textbf{E.} Distributions of terminal branch lengths for edge and center leaves in the representative unrestricted tumor (Figure \ref{fig:f1}D). \textbf{F.} Average lineage clock rates versus fraction of time a lineage spends on the tumor edge in the example unrestricted tumor. \textbf{G.} Schematic comparing simulated spatial constraints under boundary-driven growth (coral) and unrestricted growth (black).  
+        \textbf{H.} Ratios of center to edge mean terminal branch lengths across simulations with decreasing spatial constraint (as modulated by cell death rate) under either boundary-driven or unrestricted growth modes. \textbf{I.} Correlations (measured via $R^2$) between fraction of the lineage time spent on the edge and mean clock rate across the same range of spatial constraints and growth modes.}
+        \label{Fig2}
+\end{figure}
+
+
+\subsection*{Phylodynamic models can recover signals of boundary-driven growth in tumor phylogenies}
+Two-state birth-death models incorporate how lineages divide, die, change states, and are sampled. In this class of models, birth events correspond to observed branching events on the tree and the rate of these branching events depends on an underlying type or state. Although existing phylodynamic models, such as BDMM'\citep{Kuhnert:2016vv, Vaughan2022} and BiSSE \citep{Maddison2007a}, permit asymmetrical division rates based on state, they do not link birth and mutation. 
+Therefore, although they are well-positioned to infer faster birth rates from branching structure, they cannot learn from differential rates of genetic divergence, a key hallmark of boundary-driven growth we observed in simulations. Additionally, branching patterns are prone to artificial inflation if more cells from a particular state are sampled in a clustered manner \citep{Hohna2011_sampling}. Thus, existing models both do not incorporate all potential signals (i.e., clock rate differences) and, importantly, may be biased by sampling procedures in clinical tumor biopsies. To address these shortcomings, we introduce a \textbf{S}tate-\textbf{D}ependent sequence \textbf{evo}lution (SDevo) model to directly tie state-dependent birth rate to clock rate. This enables the model to learn from both clock rate and branching rate signals that arise from boundary-driven growth (Figure \ref{Fig3}A). SDevo accepts genetic sequences sampled from distinct spatial locations, along with a cell-state label (i.e., center versus edge). It generates posterior distributions of phylogenetic trees alongside joint estimates of phylodynamic model parameters. Inferred trees are time trees, which encompass the order and timing of cellular divergence events and include inferred internal node states, representing the location of unsampled ancestral cells. Model parameters include state-dependent birth and death rates, and the rate at which cells transition between states.
+
+We first demonstrate the utility of SDevo on simulated tumors undergoing boundary-driven growth. From the genetic sequences and labeled cell-states for sampled cells isolated at a simulated tumor endpoint (Figure \ref{Fig3}B inset), SDevo reconstructs the most likely relationship among sampled cells and the time at which those cells diverged (Figure \ref{Fig3}B). The birth rates for edge and center-associated cells are inferred from the branching and mutational structure of sampled extant cells (leaves on the tree), permitting quantification of overall birth rate differences between the two spatial compartments (Figure \ref{Fig3}C). SDevo correctly identifies that boundary-linked cells have a higher birth rate than center-linked cells (mean edge birth rate advantage = 0.20, 90\% HPD = 0.12 - 0.29, true value = 0.27 in the representative simulation). SDevo additionally reconstructs the probability of each spatial state (center versus edge) for the ancestors of the sampled population (plotted as pie charts on the internal nodes of Figure \ref{Fig3}B). These reconstructions suggest that the majority of ancestors divided on the tumor edge, consistent with the findings of \cite{Heide2021.07.14.451265} and our expectations of boundary-driven growth. SDevo's Bayesian approach further quantifies confidence in its ancestral reconstructions: ancestral cells with the highest posterior probability of existing on the tumor edge were indeed likely to have divided there (Figure \ref{Fig3}D). On the other hand, cells with more uncertain ancestral reconstructions are less likely to have been on the tumor edge at division (Figure \ref{Fig3}D). Finally, we applied SDevo to tumors simulated under a range of spatial constraints (see Materials and Methods). We find that at a moderate sample size ($n=50$), SDevo is able to accurately quantify birth rate differences, whereas a two-state birth-death model without a state-dependent clock (BDMM' under a strict clock) fails (Figure \ref{fig:f1}E). We further observed that SDevo remains accurate for as few as 10 samples, whereas a strict clock model requires >100 samples to reach close to the same accuracy (Figure \ref{fig:f1}F).
+
+
+ \subsection*{SDevo is robust to a variety of sampling approaches and tumor growth modes}
+
+To evaluate SDevo's strengths and limitations in clinical tumors, we sought to validate that SDevo detects boundary-driven growth under various sampling strategies. Whereas in the initial simulation studies we maximized the distance between sampled cells (i.e.\ diversified sampling), we also implemented a random sampling scheme as might be present in single-cell studies (Figure \ref{figsupp:sf4}A). Under random sampling, cells sampled close together provide minimal additional genetic information, but may create spurious signatures of rapid branching. Despite this, SDevo successfully estimates edge-driven birth advantages from randomly sampled cells (Figure \ref{Fig4}A). In contrast, even with a large number of cells sampled ($n=100$), the strict clock multi-type birth death model often fails to detect the same birth rate differences (Figure \ref{figsupp:sf4}B). We also assessed SDevo's robustness to punch biopsy sampling, in which a population of nearby cells are captured. We biopsy-sampled our simulated tumors, and only called mutations exceeding a 0.3 cellular fraction threshold within a punch (see Materials and Methods). We find that while punch-style sampling adds more random error due to variation in sampled diversity, especially in tumors with high turnover rates, SDevo largely still detects state-dependent birth rate effects (Figure \ref{Fig4}B).
+
+Next, we assessed SDevo's robustness to more complex growth by exploring an off-lattice model. We simulated under a continuous space model of tumor growth implemented using the agent-based cellular engine PhysiCell \citep{ghaffarizadeh2018physicell}. To mimic boundary-driven conditions, we linked division probability to mechanical pressure - cells crowded by their neighbors could not divide (see Materials and Methods, Figure \ref{Fig4}C). As in the lattice-based simulations, higher cell turnover relaxes mechanical pressure, modulating spatial constraint. We first verified that SDevo continued to identify birth rate differences in these more complex simulations. We simulated 2D neutral growth, and found that SDevo sensitively detects an elevated birth rate at the tumor edge, even when birth rate differences were minimal (Figure \ref{Fig4}D). However, SDevo slightly underestimates the birth rate differences at high death rates (i.e., low birth rate differences). We next simulated tumors grown in 3 dimensions and sampled across multiple $z$-slices, mimicking clinical sampling approaches. We determined that SDevo accurately reconstructs birth rate differences, albeit with wider posterior intervals (Figure \ref{Fig4}E). We note that trees reconstructed from the 3D simulations tend to deviate more from expected edge-biased branching patterns than those from the 2D simulations (Figure \ref{figsupp:sf4-1}) , reflecting more complicated growth dynamics and potential obfuscation via the sampling scheme. These observations further highlight the necessity of incorporating both branching and clock rate patterns to quantify boundary-driven growth in clinical scenarios. 
+
+Finally, we tested the extent to which SDevo detects boundary-driven growth dynamics when both spatially-determined and cell-intrinsic fitness differences influence growth, as the action of strong positive selection has been previously shown to distort the shape of tumor phylogenetic trees \citep{Chkhaidze:2019uw, Heide2021.07.14.451265, Li2022}. We find that SDevo continues to detect differences in birth rates between center and periphery-associated cells even in the presence of strong selection (Figure \ref{Fig4}F, see Materials and Methods). Notably, even as lineages with driver mutations expand, these cells are still subject to spatial constraints. As a result, similar patterns of branching and clock rate differences between center and periphery-associated cells re-emerge. However, we anticipate that if cell death is sufficiently high, a driver mutation could lead to rapid expansion of a center-bound lineage and mask signals of boundary-driven growth.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.65\textwidth]{figures/fig3_ML_aff_ML2.pdf}
+
+    \caption{\textbf{State-Dependent sequence evolution model (SDevo) estimates boundary-driven growth in simulated tumors}. \textbf{A.} SDevo model schematic. Using input sequences and states (edge in maroon versus center in blue) of sampled tumor cells, SDevo reconstructs a tree with ancestral states (state probabilities represented by node pie charts) and estimates model parameters. SDevo links state-dependent clock rates to birth rates. \textbf{B.} Reconstructed time tree estimated by SDevo on an example simulated tumor ($death = 0.29$). At each internal node, the posterior probabilities for ancestral edge or center states are shown as a pie chart. The inset shows the sampling scheme for the tumor. \textbf{C.} Marginal posterior distributions of estimated edge and center birth rates, which are summarized by birth rate differences between edge and center cells (inset, dashed line indicates the true difference). \textbf{D.} Posterior probabilities of ancestral state reconstructions versus true state assignments. \textbf{E.} SDevo (green) estimates of birth rate differences between edge and center samples across a variety of true birth rate differences ($death$ varies between 0 and 0.87, $n = 50$) compared with estimates under a strict clock (gold). Points and bars represent mean and 95\% HPD intervals, respectively. Dashed line is $y=x$. \textbf{F.} Mean squared error (MSE) of estimated birth rate differences in simulated tumors ($death$ varies between 0 and 0.87) versus input sample size for SDevo (green) and strict clock sequence evolution (gold) models. Error bars represent standard error of MSE.}
+    \label{Fig3}
+\end{figure} 
+
+\begin{figure}
+
+     \includegraphics[width=\textwidth]{figures/fig4_ML_aff_ML2.pdf}
+%        \centering
+        \caption{\textbf{SDevo is robust to a variety of sampling approaches and growth modes}. 
+        \textbf{A.} Estimated versus true edge - center birth rate differences with random sampling ($n = 100$ cells/tumor). \textbf{B.} Mean and 95\% HPD intervals of SDevo estimates of birth rate differences between edge and center when sequences are constructed from variants above 30\% frequency in a simulated punch biopsy (inset). \textbf{C.} Schematic of continuous-space tumor growth simulation governed by biomechanics using PhysiCell \citep{ghaffarizadeh2018physicell}. Only cells under low physical mechanical pressure from their neighbors (visualized in yellow as opposed to blue) can divide, generating boundary-driven growth. SDevo recovers growth rate differences generated through variable death rates under \textbf{D.} neutral 2D growth, \textbf{E.} neutral 3D growth, and \textbf{F.} 2D growth in the presence of strong driver mutations ($\mu_{driver} = 0.01$, $s_{driver} = 1.1$, see Materials and Methods). Tumor snapshots below the x-axes show representative examples of growth dynamics under variable death rates (right to left: $d = 0, 0.2, 0.4, 0.6, 0.8$) and resultant pressure. In the case of the tumors under selection shown in \textbf{F.}, darker colors represent cells with driver mutations.}
+
+    \label{Fig4}
+\end{figure} 
+
+
+\subsection*{SDevo detects growth rate differences in hepatocellular carcinomas}
+
+To quantify boundary-driven growth in a clinical tumor setting, we applied SDevo to multi-region sequencing data of two hepatacellular carcinoma (HCC) cancers published by \cite{Li2022} (Figure \ref{Fig5}). The authors sequenced two HCC tumors from a single patient, carried out 3-dimensional spatial micro-biopsy sampling followed by whole-genome sequencing (Figure \ref{Fig5}A and E) and classified punches as ``edge'' or ``center''. We created input pseudo-sequences for each punch using SNVs identified in the original study. We assumed unidirectional migration from edge to center, in line with biological expectations of solid tumor growth, to constrain death and migration rate parameter space (see Materials and Methods). Using SDevo, we reconstructed the time trees of both HCC tumors (Figures \ref{Fig5}B and F) and found strong support for birth rate differences between edge and center (Figures \ref{Fig5}C and \ref{Fig5}G). We estimated that cells on the edge have a mean 3.95x birth rate advantage over center cells in Tumor 1 (Figure \ref{Fig5}D, 90\% HPD = 2.90 - 4.89x) and a mean 2.52x birth rate advantage in Tumor 2 (Figure \ref{Fig5}H, 90\% HPD = 2.04 - 3.03x). SDevo also reconstructed the most likely ancestral state of internal nodes (Figures \ref{Fig5}B and F), inferring that while most ancestral cells divided on the tumor periphery, some population expansion occurred in the tumor center. To confirm that these results are not sensitive to small differences in state classifications, we also called alternate edge/center states based on a threshold of 10\% of the tumor diameter (~2mm and ~1.5mm for Tumor 1 and Tumor 2, respectively) from the schematic boundary and found consistent results (Figure \ref{figS5_wgs_alt_states}). We also found consistent results when removing a single punch from Tumor 1 which may have captured multiple subclones (Figure \ref{figsupp:sf5-6}). 
+
+Although we inferred a higher birth rate on the edge in these clinical tumors, the branching rate pattern qualitatively did not match our expectations from simulations. These branching patterns are potentially influenced by selection, as noted originally by \cite{Li2022}, or by the non-uniform sampling scheme (Figures \ref{Fig5}A and \ref{Fig5}E). Likely due to these branching patterns, we find a strict clock model, which assumes independence of sequence evolution and cell division, did not detect boundary-driven growth. Instead it estimated that center cells have a higher birth rate (Figure \ref{figsupp:sf5-3}). We note that the sample sizes of Tumor 1 and Tumor 2 were well below the sample size requirements in simulations to detect boundary-driven growth with a strict clock model (Figure \ref{Fig3}F). In addition, we found that incorporating a state-dependent sequence evolution model changed the estimated internal node timings (Figure \ref{figsupp:sf5-4}). Specifically, reconstructed center-bound nodes were estimated to have occurred more recently under a strict clock than under a state-dependent evolution model in which center cells would be expected to divide less frequently.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/fig5_wgs_aff_ML.pdf}
+
+    \caption{\textbf{Quantification of boundary-driven growth in hepatocellular carcinomas}. 
+    \textbf{A.} Multi-region 3D sampling map for Tumor 1 adapted from \cite{Li2022}. Sampling locations are marked and labeled in $z$-slices, and center and edge classifications (taken from the original study) are shown in blue and maroon, respectively. 
+    \textbf{B.} Tumor 1 phylogeny reconstructed from pseudo-sequences of sub-sampled variable sites. Tip colors indicate sampled punch state and pie charts on internal tree nodes represent posterior probabilities of ancestral state reconstructions. 
+    \textbf{C.} Marginal posterior distributions for edge (maroon) and center (blue) birth rates, and \textbf{D.} estimated edge to center birth ratio (mean 3.95x). Dashed line marks ratio of 1. \textbf{E.} Tumor 2 multi-region 3D sampling map, \textbf{F.} reconstructed phylogeny, \textbf{G.} marginal posterior estimates of edge and center birth rates, and \textbf{H.} their ratio (mean 2.52x). Labeling conventions follow Tumor 1 \textbf{(A-D)} and dashed lines are $y=x$ for all panels. Tumor cartoons are vertically inverted for ease of visualization.}
+    
+    \label{Fig5}
+\end{figure} 
+
+\section*{Discussion}
+
+Tumor evolutionary progression is a complex process driven by genetic, epigenetic, environmental, and immune factors. Quantitatively disentangling the contribution of spatial factors to tumor growth dynamics is an important component of both reconstructing tumor clinical histories and predicting future growth. Our understanding of spatial drivers of tumor growth has largely been informed by xenograft models, as we have had limited ability to assay for these effects in clinical tumors. Here, we introduce SDevo, a new Bayesian phylodynamic model that learns differential cell birth rates of discrete classes (here, tumor periphery or center-associated). Although SDevo is general in scope and applicability, in this study, we demonstrate that it successfully infers birth rate differences between the tumor edge and center from multi-region sequencing data. We show that SDevo is relatively robust to sampling choices (i.e., punch biopsies and locations) and biological factors (i.e., cancer driver mutations and 3D versus 2D growth modes). We further find quantitative evidence for boundary-driven growth in clinically-derived hepatocellular carcinomas resected at a single time point.
+
+Our assessment of boundary-driven growth in HCC quantitatively expands the observations of \cite{Li2022}. The authors originally hypothesized that Tumor 1's tree structure matched a simulated scenario of  boundary-driven growth followed by the expansion of a selected clone in the center, and that Tumor 2's tree structure matched dominant boundary driven growth. The authors made these assessments by simulating tumors and comparing the distributions of clones and variant allele frequencies to the sequenced tumors. They further noted that genetic divergence was higher in punches collected from the tumor periphery. 
+
+Our study quantifies these patterns by estimating these birth rate differences directly with joint inference of tree topology and sequence evolution. Notably, although small sample sizes, clustered sampling, and the hypothesized selection for an internal clone in Tumor 1 may have distorted the branching structure of the trees, SDevo is able to detect past boundary-driven growth from clock rate differences. By explicitly incorporating the mutational process, SDevo leverages data more effectively than models that only learn from state-dependent branching. This approach is particularly important when only a few areas of a tumor are sequenced. These findings, along with previous \textit{in silico} evidence that selection changes the shapes of tumor trees \citep{Chkhaidze:2019uw, yang2022lineage}, highlight the importance of employing multiple tree patterns to quantify interacting modes of tumor growth. Although future work should more comprehensively profile how multiple spatial and non-spatial drivers of growth can impact observed tree patterns, our analysis of non-neutral tumors (Figure \ref{Fig4}F) suggests that SDevo can detect boundary-driven growth in the presence of selection. 
+
+Quantifying the impact of spatial restrictions on clinical tumor growth informs how we understand, predict, and control cancer evolution. A robust literature has established that boundary-driven growth modulates the efficiency of positive and purifying selection \citep{kayser2019collective, fu2022spatial}, alters overall growth rates \citep{van2019spatiotemporal, colom2020spatial}, and increases the efficacy of adaptive therapy \citep{bacevic2017spatial, strobl2022spatial, fusco2016excess}. Spatial restrictions also change the expected distribution of genetic variation in solid tumors \citep{sun2017between, ahmed2018intratumor, waclaw2015spatial, fu2022spatial}, and impact how clinically informative biopsies should be collected \citep{kostadinov2016}. Although we find robust evidence for boundary-driven growth in HCC, its prevalence and strength likely varies by stage of tumor growth and tumor type \citep{noble2022}. For example, both increased vascularization and increased cell migration could relax spatial growth restrictions. Further applications of SDevo to other tumor cases and types will enable us to explore the generalizability of these growth phenomena.
+
+Importantly, the utility of SDevo is not limited to understanding the impact of boundary-driven growth, but in fact, can be applied in any instance in which sequenced tumor samples can be classified into discrete, observable states. Immediately, SDevo could be extended to test other proposed tumor growth modes -- for example, growth against a solid surface, such as bone in osteosarcoma, along a unidirectional invasive front \citep{Ryser2020}, or in different glandular compartments \citep{West2021}. Even more broadly, SDevo could be applied to study the growth impacts of other environmental or cell-intrinsic factors, for instance, immune invasion, hypoxia, or genetic features, by decomposing complex phenotypes into discrete states.
+
+Phylodynamic approaches such as SDevo have major advantages compared to our current approaches for estimating evolutionary information from tumors, namely approximate Bayesian computation (ABC) \citep{beaumont2002approximate} or other approaches that compare simulated and clinical tumors via summary statistics \citep{noble2022}. To be clear, these approaches have yielded extensive insights into tumor evolution, including patterns under boundary-driven growth \citep{sottoriva2015big, sun2017between, Chkhaidze:2019uw, Heide2021.07.14.451265}. However, these approaches are computationally costly, requiring the generation of often tens or hundreds of thousands of simulated tumors, on which one must compute extensive summary statistics. In addition, ABC comes with technical challenges, including the necessary choice (and potential unavailability of) low dimensional sufficient summary statistics. Although Bayesian phylodynamics comes with its own technical challenges (i.e. fundamental identifiability and sensitivity to model assumptions, see \cite{Louca2020, Louca2021}), it does not require tumor simulation. Furthermore, the generality of discrete traits affecting growth dynamics means it is easily adaptable to answer new questions. While both ABC and phylodynamics offer ways to understand clinically-derived samples, the full promise of phylodynamics has yet to be widely exploited.
+
+Phylodynamic approaches to understanding tumor evolution offer additional benefits: 1) used in conjunction with well-calibrated molecular clocks, inferred trees can help estimate the timing of clinically-important events, such as the emergence of subclones or metastatic events. While these analyses have been employed in the context of uniform growth rates \citep{lote2017carbon, hu2020multi, Alves:2019wk}, the expansion of tree models to permit differential birth rates could improve timing accuracy. 2) Incorporating differential growth rates across a tree can lead to more accurate tree topologies, as has been demonstrated in influenza evolving in multiple host species \citep{worobey2014synchronized}. 3) Inferring ancestral states can elucidate population history and tumor evolutionary processes at time points that cannot be clinically sampled. Recently, \cite{zhao2021selection} analyzed the intra-tumor spatial and genetic architecture of renal cancers and concluded cells in the tumor center are more likely to seed metastasis. However, the study was limited to observing the \emph{extant} position of these samples, whereas SDevo reconstructs these states at the time of clinical events (i.e. divergence of a metastatic clone). These three points suggest more broadly how tumor trees can be leveraged to gain new quantitative insights into tumor evolution, and demonstrate the broad utility of modeling evolutionary processes on trees. 
+
+Beyond its application to cancer evolution, SDevo is a novel phylodynamic model with broad usefulness to incorporate state-dependent clock rates into evolutionary inference. While the field of phylogenetics has developed a broad array of clock models, SDevo represents the first model in which clock rate is linked to population birth. SDevo could be particularly useful in microbial and viral populations where diversification and mutational accumulation operate on similar timescales, and may be linked to underlying state variables (for example, location). We demonstrated that incorporating clock rate differences, instead of relying solely on tree diversification rates (as in BDMM' and other multi-state birth-death models \citep{Maddison2007a,Kuhnert:2016vv,Vaughan2022}), can improve inference in cases where sampling may be non-uniform. This may be particularly important when sampling rates vary - for example, countries with variable rates of molecular surveillance for SARS-CoV-2. To facilitate access to these methods, SDevo will be released as a package in the popular Bayesian phylogenetic platform BEAST2 \citep{BouckaertBeast2} and is available on GitHub before publication. As with all phylodynamic models, identifiability represents a pervasive concern, but incorporating biological knowledge for determining priors can help constrain the model space. In our analysis of HCCs, we use information about cell migration and death rates to distinguish between multiple parameters that impact trees and estimation in interrelated ways.   
+
+Although SDevo is a powerful tool, we note several important limitations that require caution when applying it to data. First, strong selection can destroy signals of boundary-driven growth or otherwise complicate its signatures \citep{Chkhaidze:2019uw, Li2022}. Although we have shown that SDevo can detect differential birth rates despite non-spatial sources of birth rate heterogeneity, future work should further probe this robustness. Second, SDevo assumes mutations occur at cell division. If instead, most mutations emerge due to exogenous processes \citep{abascal2021somatic}, birth-driven genetic divergence could be masked. While this might decrease SDevo's power, exogenous mutational processes distributed evenly across a tumor are unlikely to generate false positive signals of boundary-driven growth. Third, extensive cell mobility could weaken signatures of boundary-driven growth even if boundary-associated cells have birth rate advantages. Fourth, as we demonstrate in Figure \ref{Fig3}, sample sizes must be sufficient to detect state-dependent effects. We maximize limited sample sizes by choosing priors that are biologically informed (for example, unidirectional migration), but larger sample sizes will enable inference with less informative priors. Data sets that meet this requirement are becoming rapidly available, so we anticipate phylodynamic models such as SDevo becoming increasingly powerful. 
+
+The expanded application of phylodynamics to cancer sequencing data relies both on developing methods to exploit single-cell sequencing data \citep{chen2021ignoring, Moravec2021.01.07.425804}, and understanding the relationship between sequenced multi-region punches and the many single cells that comprise them. As has been noted previously, multi-region sequence trees are not phylogenies \citep{alves2017multiregional}, and punch-wide genetic composition does not necessarily capture all cellular genotypes \citep{caravagna2020subclonal}. Although SDevo is fairly robust to our simulated punch-style sampling and we analysed HCC data from small, largely homogeneous punch biopsies, best practices for applying phylodynamic models to trees of deconvoluted clones is an important area for future research. %For instance, determining how to reconstruct subclonal variant distributions of single cells within a bulk population may be promising way to address this open problem. 
+ 
+Applying phylodynamic methods to tumor populations is in its infancy, but new methods that overcome the barriers of working with tumor data will help extend the applicability of these approaches \citep{alves2018sensitivity, chen2021ignoring}. Here, we demonstrate the utility of phylodynamic models in quantifying spatial factors driving cancer progression. As technologies enabling the widespread and high-throughput generation of tumor trees advance \citep{yang2022lineage, lim2020advancing}, we expect adapted phylodynamic approaches such as SDevo to provide a rigorous analytical toolkit for extracting quantitative insights from these data.
+
+\section*{Materials \& Methods}
+
+\subsection*{Tumor simulations}
+
+\subsubsection*{Eden model:} An agent-based model was implemented in Python3 which places simulated cells on a 2D lattice. Simulations are initiated with a single cell in the center of the lattice. At each time point $\Delta t$, a cell attempts division with rate $\lambda$ or dies with rate $\alpha$. Under boundary-driven growth, cells only successfully divide if there is an empty lattice spot in its Moore neighborhood. If multiple neighboring spaces are available then the cell randomly chooses the location for its daughter cell from open neighboring spaces. Under unrestricted growth, if a cell attempts division, its daughter cell will occupy an empty lattice spot in the Moore neighborhood if available, but if not, the cell will still divide and push cells in a random direction to make space. Overlapping cells are pushed in the same direction until a neighboring lattice spot is available, which the pushed cell will occupy. In both simulations, if a cell divides, each daughter cell can gain mutations with probability $\mu$. Mutations are then drawn from a Jukes-Cantor model of sequence evolution and follow an infinite-sites assumption. Therefore, each time a mutation is gained, a site is added to all cells in the simulation. Simulations are stopped when the number of living cells is more than 1000. The ground truth birth rates are assessed at discrete time points in the simulation by recording the current state of each cell and the proportion of cells that have progeny in the next time step. True birth rates are considered to be the mean across all time steps weighted by the number of cells. Effective spatial constraints in the boundary-driven model were controlled by changing cell death rate, where increased cell turnover allows center-trapped cells to divide more readily (Figure \ref{figsupp:sf1}). Input parameters are proliferation and death scalars, where $\lambda = \Delta t(1 - \textit{death})(\textit{proliferation})/2$ and $\alpha = \Delta t(\textit{death})/2$. To evaluate the accuracy of parameter estimation, we ran 1000-cell tumor simulations with $\textit{proliferation} = 1$, $\mu = 1$ and a range of $\textit{death} = (0-0.87)$. 
+
+\subsubsection*{Eden tree statistics}
+
+Tree statistics in Figures \ref{fig:f1} and \ref{Fig2} were calculated from simulated tumor trees that include all extant cells. Normalized terminal branch lengths were calculated by dividing terminal branch lengths of tumor time trees by total simulation time. Clock rates were calculated by dividing total number of mutations accumulated in each alive cell by simulation time. Edge and center states for terminal branch lengths are defined by cell location at the end of the simulation, where edge cells are defined by being the most extreme cell on either the X or Y spatial axis or within one cell of this boundary. Fraction of the lineage time spent on the edge is determined by averaging across all lineage node states weighted by time tree branch lengths. 
+
+\subsubsection*{Continuous space model:} To probe the robustness of SDevo to more complex selective events and higher dimensions, we implemented an additional set of simulations in the physics-based cellular simulator, PhysiCell \citep{ghaffarizadeh2018physicell}. Briefly, PhysiCell is an open-source, agent-based model implemented in C++ in which cell movement is governed by biomechanical interactions among cells. To simulate boundary-driven growth, we created a PhysiCell instance in which cells are only able to divide when under low mechanical pressure, using the cell state variable, $\textit{simple\_pressure}$. As a result, similar to the Eden model, most cell division is restricted to the tumor periphery, or to cells with adjacent space created by the recent death of a neighboring cell. Cells initially divide at a rate we arbitrarily set to 1, except when above the pressure threshold, $\tau$, in which case, they divide at rate 0. Cells die at rate $d$, regardless of their pressure status. To simulate selection, during each cell division, a daughter cell can acquire a driver mutation conferring a 10\% fitness advantage with probability $\mu_{driver}$, with up to two driver mutations allowed per cell, which act multiplicatively (i.e. a cell with two drivers has a 21\% faster growth rate than one with 0). Tumors are grown to a final size of $N$ extant cells, of which $n$ are sampled. After the simulation, a Poisson-distributed number of neutral mutations is augmented to each cell division with $\lambda = \mu_{passenger}$. Using the continuous space model, we investigated a 2D neutral, 2D selective and 3D neutral scenarios, and ran 25 tumor simulations for each combination of parameters ($\tau = 1$, $d = (0, 0.1, 0.2, ... 0.8)$, $\mu_{pass} = 1$, $n = 100$). For the 2D models, $N = 10,000$ and for the 3D model, $N = 15,000$. For the selective model, $\mu_{driver} = 0.01$ and for the neutral models, $\mu_{driver} = 0$. One outlier in the 3D boundary-driven growth simulations was removed due to convergence on a local optimum. Ground truth edge and center birth rates were determined by first classifying cells as within 10 microns (approximately 1 cell width) of the tumor periphery as edge, and those more than 10 microns from the edge as center. The average birth rate was computed separately within each of those classes over multiple discrete time points (10-40, depending on the overall rate of tumor growth) and combined by a weighted average according to the number of cells at each time point. Cells under too much pressure to divide at the sampled time ( $\textit{simple\_pressure} > \tau$) were calculated as having an instantaneous birth rate of 0. 
+
+\subsubsection*{Sampling procedures}
+2D simulations were sampled by maximizing the distance between sampled single cells in physical space (diversified sampling). This ensures that a sufficient number of edge and center classified cells were sampled and that sampled cells were not clustered. Bulk punch biopsy sampling was mimicked by choosing a center cell and a target of 8 cells immediately surrounding that were grouped into a single punch. Punches were iteratively drawn and shifted if they overlapped with a previously punched group of cells. Sampling ended when the target number of punches was reached (50 punches) or sampling was no longer possible without significant overlap. Punch sequences were generated using all mutations above a cellular fraction cutoff of 0.3. 3D sampling was approximated by taking 5 simulated slices through the tumor $z$-plane at 2/8ths, 3/8ths, 4/8ths, 5/8ths and 6/8ths of the range of the $z$ values of a given tumor. Within each slice, cells were sampled to maximize the inter-cell distance, as described above, and the number of cells per slice was proportional to the number of cells in the slice relative to the number of cells across all slices.
+
+\subsection*{Multi-type birth-death models applied to boundary-driven growth}
+The birth-death process describes how lineages duplicate (birth), die (death), and are sampled (where samples are tips on a phylogenetic tree) \citep{gernhard2008conditioned}.
+The multi-type birth-death model extends this by considering birth, death and sampling to occur in different states (sometimes also referred to as different sub-populations, traits, or types) and how lineages jump between these states. The rates of birth, death and sampling vary depending on the state of a lineage. For the case of boundary-driven growth, we model a two-state process, with one state denoting cells in the center of the tumor and the other state denoting cells on the edge of the tumor. 
+
+\subsection*{Posterior Probability}
+
+To perform Bayesian inference, we define the posterior probability $P(T,\sigma,\theta|D)$ of the timed phylogenetic tree $T$, the evolutionary model and parameters ($\sigma$), and the population model and parameters $\theta$, given the data, $D$.
+This posterior probability is typically expressed as:
+ \begin{equation}
+     P(T,\sigma,\theta|D)=\frac{P(D|\sigma,T)P(T|\theta)P(\sigma)P(\theta)}{P(D)}
+ \end{equation}
+ In the case of the state-dependent multi-type birth-death model, we cannot assume the tree likelihood $(D|\sigma,T)$ and the tree prior $P(T|\theta)$ to be independent, as the rate of evolution directly depends on the population model.
+In other words, how fast evolution happens on a lineage depends directly on the state of that lineage.
+ We therefore define $\mathcal{H}$ as a mapped migration history, that contains a random mapping of migration or state change events given a set of parameters $\theta$ of the multi-type birth-death model.
+ We then define the tree likelihood as $P(D|\sigma,\theta,T,\mathcal{H})$.
+ Additionally, we say that instead of computing $P(T|\theta)$ directly, we only compute the tree prior for one realization of the migration history, i.e.  $P(T,\mathcal{H}|\theta)$.
+ The posterior probability then becomes:
+  \begin{equation}
+     P(T,\mathcal{H},\sigma,\theta|D)=\frac{P(D|\sigma,\theta,T,\mathcal{H})P(T,\mathcal{H}|\theta)P(\sigma)P(\theta)}{P(D)}.
+ \end{equation}
+
+Performing MCMC inference to characterize this posterior probability distribution would require integrating over all migration histories $\mathcal{H}$ using MCMC.
+This is overall incredibly slow and limits the application of the method.
+Instead, we formally integrate over all possible migration histories $\mathcal{H}$, to get the following posterior probability:
+\begin{equation}
+     P(T,\sigma,\theta|D)=\frac{\int_{\mathcal{H}}P(D|\sigma,T,\mathcal{H})\int_{\mathcal{H}}P(T,\mathcal{H}|\theta)P(\sigma)P(\theta)}{P(D)}.
+ \end{equation}
+ $P(T|\theta)=\int_{\mathcal{H}} P(T,\mathcal{H}|\theta)$ is computed as described in~\cite{Kuhnert:2016vv}, which is achieved by treating the states of lineages probabilistically instead of discretely.
+ 
+Lastly, we set $\int^{\mathcal{H}}P(D|\sigma,T,\mathcal{H})=E[P(D|\sigma,\theta,T,\mathcal{H})=P(D|\sigma,\theta,T,E[\mathcal{H}])$, with $E[\mathcal{H}]$ being the expected/average migration history, which contains, for each lineage $i$ in the phylogeny, its expected time spent each state $s$.
+This leaves us with:
+\begin{equation}
+     P(T,\sigma,\theta|D)=\frac{P(D|\sigma,\theta,T,E[\mathcal{H}])P(T|\theta)P(\sigma)P(\theta)}{P(D,S)} .
+     \label{posterioreq}
+ \end{equation}
+
+\subsection*{Modeling birth dependent evolution}
+In order to model different rates of evolution for different states, we first compute the expected time each lineage in the phylogenetic tree $T$ spent in each state. 
+To do so, we use a stochastic mapping approach related to those described in~\cite{nielsen2002mapping,huelsenbeck2003stochastic}.
+%To do so, we use an approach to compute the expected time each lineage in the tree spent in any state that is related to the stochastic mapping approaches described in~\cite{nielsen2002mapping,huelsenbeck2003stochastic}
+We first compute the probability $g^{i,b}_s$ of each lineage $i$ in the phylogenetic tree being in any possible state $s$ over time $t$ from the tips to the root as described in~\cite{Kuhnert:2016vv}. 
+These state probabilities are conditional only on events that occurred more recently than $t$ and therefore not on all events in the phylogeny.
+During this backwards propagation, we keep track of the time dependent transition matrix $Q(t)^i$ that describes the rate of probability flow between any two states at time $t$ due to migration or birth events between states. 
+As a result, once we reach the root, $g^{i,b}_s$ contains all events in the phylogeny and is therefore equal to $g^{i,f}_s$, i.e. the forward probability of lineage $i$ being in state $s$. 
+%Once we reach the root, the information from all events in the phylogeny are included~\citep{muller2018mascot}. 
+
+Following~\citet{stolz2022joint}, we first define $q^i_{ab}$ as:
+
+\begin{equation*}
+q^i_{ab} =  \mu_{ab}\frac{g_b(t)^i_a}{g_b(t)^i_b}
+\end{equation*}
+with $\mu_{ab}$ being the rate of state change due to migration or cross-birth events.
+
+We then compute the probabilities of any lineage being in any possible state conditional on all events in the phylogeny $g^{i,f}_s$ forwards in time as:
+\begin{equation*}
+	\frac{dg^{i,f}_s}{dt} =  \sum_{a=1}^{states}\big(q^i_{as}g^{i,f}_a -q^i_{sa}g^{i,f}_s\big) .
+\end{equation*}
+
+
+By keeping track of the forward probabilities $g^{i,f}_s$ on each lineage, we can then compute the expected time $t^i_s$ that lineage $i$ spends in any of the possible states $s$. 
+The values for $t^i_s$ make up the entry for $E[\mathcal{H}]$ in the posterior distribution \eqref{posterioreq}.
+We then say that $c_s$ is the rate of evolution, that is the clock rate, of a lineage in state $s$.
+Next, we compute the average rate of evolution on branch $i$, $c^i$ as
+
+\begin{equation*}
+    c^i = \sum_s^{states} t^i_s * c_s .
+\end{equation*}
+
+\subsection*{Modeling birth dependent evolution}
+ At each replication, error in copying the genetic material of a cell can occur. 
+ These errors tend to be more likely in cancer cells, where cellular control mechanisms are often faulty. 
+ Phylogenetic methods typically assume the evolutionary processes to be independent of population processes, such as cell replication.
+ To model mutations happening at birth events, we assume that the birth rate $b_s$ in state $s$ and the clock rate in state $s$ are proportional such that $c_1 = c_{avg}b_1, c_2=c_{avg}b_2,...,c_n=c_{avg}b_n$.
+ 
+\subsection*{Implementation}
+We implemented the multi-type birth-death model with state-dependent clock rates as an addition to the Bayesian phylogenetics software BEAST2. SDevo depends on BDMM-prime (https://github.com/tgvaughan/BDMM-Prime) to compute the tree prior $P(T|\theta)$.
+To model mutations occurring at cell division, we set the relative rate of evolution in the different compartments (edge and center) to be proportional to the birth rates in these compartments.
+The implementation itself does not explicitly require this assumption and the relative rates of evolution can also be treated as a distinct parameter in the inference.
+
+\subsection*{Validation}
+To validate the implementation, we perform a well-calibrated simulation study.
+In it, we simulate phylogenetic trees under a two-state birth-death model in which we assume the rate of evolution to be proportional to the birth rate in either compartment.
+We randomly sample the birth, death, and migration rates from the prior distribution, while fixing the sampling rate to 0.001 and then simulate a phylogenetic tree using MASTER~\citep{vaughan2013stochastic}.
+We then simulate genetic sequences on top of the phylogenetic trees using different rates of evolution depending on the lineage's compartment.
+Next, we infer the birth, death, and migration rates from the genetic sequences and show that the 95$\%$ highest posterior density (HPD) interval cover the truth in 95$\%$ of the 100 runs (see Figure \ref{figsupp:SDevo_validation}).
+
+\subsection*{SDevo application to simulated tumors}
+We applied SDevo to outputs of the Eden and PhysiCell simulations generated as described above. For each simulated tumor we calculated clock rate (\textit{mutations/tree length/sequence length}) and edge and center sampling rates (\textit{sampled / alive cells}). We set exponential priors on birth, death, and migration rates. Full parameterization can be reproduced from XML templates. MCMC chains were run to convergence. We used only chains that had an minimum effective sample size (ESS) for birth rate parameters greater than 200 for analysis. We summarized the output posterior distributions by mean and 95\% HPD intervals. We further inferred maximum clade credibility (MCC) trees with median heights using BEAST 2.6.2 TreeAnnotator \citep{BouckaertBeast2}. TreeAnnotator also gives posterior state probabilities for each MCC internal node.  
+
+\subsection*{SDevo application to hepatocellular carcinoma tumors}
+To apply SDevo to the hepatocellular carcinoma data, we labeled punches based on edge/center state labels as published by \cite{Li2022}, Table S8 (reproduced in Figures \ref{Fig5}A and \ref{Fig5}E). For alternate states (Figures \ref{figS5_wgs_alt_states}A and \ref{figS5_wgs_alt_states}E), we labeled punches as edge if they were located within approximately 10\% (~2mm for Tumor 1 and ~1.5mm for Tumor 2) of the tumor diameter from the schematic boundaries. Slices were reported to be from tumor hemispheres. Assuming a 0.2mm slice thickness, we estimated that slices Tumor 1Z and Tumor 2Z fell within the boundary region. 
+%The original amplicon genotyping panel artificially increase the apparent diversity within some clones relative to others, so to avoid incorporating this bias into the model, we used only whole-genome sequenced punches. 
+\cite{Li2022} identified a large number of SNVs (254,268 for Tumor 1 and 142,032 for Tumor 2). To reduce computational requirements and improve convergence, we generated input pseudo-sequences by randomly subsampling 10,000 variable sites and called presence or absence of a variant at each site based on a VAF cutoff of 0.05. Variant allele frequency histograms displayed single-peaked distributions characteristic of a single major clone per sample, with the exception of tumor sample T1Z13 (Figure \ref{figsupp:sf5-5}). To ensure Tumor 1 results were not driven by over-counting mutations across multiple subclones of T1Z13, we repeated the analysis excluding this sample and found quantitatively similar results (Figure \ref{figsupp:sf5-6}).  
+
+We use a $\mathrm{GTR}+\Gamma_4$ site model, a fixed clock rate of 0.1 (units are arbitrary as we only use sites which are variable relative to healthy cells), and estimate sampling proportion (uniform prior). We use log-normal priors for birth (mean=20, S=0.5) and death rates (mean=15, S=0.5), and edge to center migration rate (mean=5, S=0.5). Note that these units are also arbitrary and are not calibrated to clinical time. In applying SDevo to these tumors, we constrain the parameter space in several ways to adapt to having relatively few samples, only a single observed time point, and unknown sampling proportion. 1) We assume unidirectional migration so that cells can only move from edge to center but not vice versa. As we only have a few observed state transition events, the migration rates would otherwise be relatively poorly informed. 2) We set priors on mean birth, death, and migration rates across the two states. Full parameterization can be found in the XML template. We combined posterior estimates across three independent runs for each tumor. We inferred MCC trees with ancestral state reconstructions with TreeAnnonator.
+
+\subsection*{Code and data availability}
+Custom scripts were used for simulation studies and data analyses. All code and data to generate figures are publicly available. Scripts to replicate analyses and figures are available at \href{https://github.com/blab/spatial-tumor-phylodynamics}{github.com/blab/spatial-tumor-phylodynamics}, including a local R package \textit{tumortree} (\href{https://github.com/blab/spatial-tumor-phylodynamics/tumortree}{github.com/blab/spatial-tumor-phylodynamics/tumortree}), which can be installed to build trees from the simulation outputs. The source code for SDevo is here: \href{https://github.com/nicfel/SDevo}{https://github.com/nicfel/SDevo}. The source code to run spatially-constrained PhysiCell simulations and generate trees can be found here: \href{https://github.com/federlab/PhysiCellTrees}{github.com/federlab/PhysiCellTrees}. All other packages used for analysis and visualization are also open source \citep{Yu2017ggtree,Wang2019treeio}.  %space for all R citations
+
+\section*{Acknowlegements}
+The authors would like to thank Xuemei Lu for answering questions and providing additional information about the hepatocellular carcinomas originally published in \cite{Li2022}, and Oskar Hallatschek, Chris McFarland and Jona Kayser for useful discussions. This work was supported by an ARCS Fellowship and Big Data for Genomics and Neuroscience Training Grant (MAL), the Howard Hughes Medical Institute (TB), a Swiss National Science Foundation Early Postdoc Mobility Fellowship (NFM) and the Miller Institute for Basic Research in Science (AFF). 
+
+\bibliographystyle{abbrvnat}
+\bibliography{refs}
+
+
+\pagebreak
+
+
+\setcounter{figure}{0}
+
+\makeatletter 
+\renewcommand{\thefigure}{S\@arabic\c@figure}
+\makeatother
+
+\begin{figure}
+\includegraphics[width=\textwidth]{figures/fig1_supp.pdf}
+\caption{\textbf{Cellular density creates fitness differences in expanding lattice-based simulations}. \textbf{A.} Fitness, here approximated by the probability a cell has a daughter cell in the population (P(progeny)) versus the number of adjacent free cells at birth under boundary-driven growth. Spatial impacts on cell fitness are relaxed with increasing cell death rate $\alpha$ (color tint). Means and standard error bars are summarized across 10 simulated tumors per death rate. \textbf{B.} Under unrestricted growth, most cells are born into a dense neighborhood (free cells = 0), but fitness is not impacted by spatial location.}
+\label{figsupp:sf1}
+\end{figure}
+
+\begin{figure}
+    \includegraphics[width=\textwidth]{figures/figure_3_supp_validation_study.pdf}
+    \caption{\textbf{Simulation study to validate SDevo implementation}. Birth, death, and migration rates, and ratios of state-dependent birth rates estimated by SDevo versus true population parameters of phylogenetic trees simulated under a two-state birth-death model (see Materials and Methods). Medians (points) and 95\% HPD intervals (bars) of estimated values are plotted for each parameter (columns) while either fixing or jointly inferring the tree topology (rows).}
+\label{figsupp:SDevo_validation}
+\end{figure} 
+
+\begin{figure}
+    \includegraphics[width=\textwidth]{figures/fig3_supp.pdf}
+    \caption{\textbf{Multi-state diversification models without state-dependent clocks do not sensitively detect growth rate differences in simulated tumors}. \textbf{A.} Schematic of BDMM-Prime, which does not link state-dependent effects on division to sequence evolution. \textbf{B.} True versus estimated means (points) and 95\% HPD intervals (bars) of birth rate differences between the edge and center of simulated boundary-driven tumors over a range of sample sizes (headers). Dashed line is $y=x$.}
+\label{figsupp:sf3}
+\end{figure} 
+
+\begin{figure}
+\includegraphics[width=\textwidth]{figures/figure_4_supp_random_sampling.pdf}
+\caption{\textbf{SDevo improves birth rate estimation with more variable (random) sampling over a strict clock model.} \textbf{A.} Example 2D tumors under either diversified or random sampling schemes. Cells are colored by edge (maroon) or center (blue). Grey-highlighted cells are sampled. Diversified sampling maximizes the physical distance between sampled cells. \textbf{B.} Estimated means (points) and 95\% HPD intervals (bars) of birth rate differences between the edge and center of simulated boundary-driven tumors based on 100 sampled cells versus true state-dependent effects ($death$ varies between 0 and 0.87). We compare SDevo (green) with strict clock model (gold) for either diversified or random sampling (rows).}
+\label{figsupp:sf4}
+\end{figure} 
+
+\begin{figure}
+\includegraphics[width=\textwidth]{figures/figure_2_supp_dim_comparison.pdf}
+\caption{\textbf{Complex growth and sampling in 3D tumors leads to more variable branching patterns.} \textbf{A.} Example inferred phylogeny of 2D PhysiCell tumor with reconstructed ancestral edge and center states ($d = 0.1$). Node pie charts represent posterior support for each state. 100 cells were sampled to maximize distance between cells (diversified sampling). \textbf{B.} Example inferred phylogeny of 3D PhysiCell tumor with reconstructed ancestral edge and center states ($d = 0.1$). Cells were sampled to maximize distance in 2D space across $z$-slices of the simulated tumor as described in Materials \& Methods. \textbf{C, E.} Comparisons of inferred terminal branch lengths between cells sampled on the edge and center of 2D and 3D tumors. \textbf{D.} Distribution of the relative ratio of center to edge mean terminal branch lengths across multiple simulations with equivalent spatial constraints. Asymmetric branching between edge and center states is observed more often in 2D (gold) than 3D (navy) tumors.}
+\label{figsupp:sf4-1}
+\end{figure} 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/fig5_wgs_supp_newstates_2.pdf}
+
+
+\caption{\textbf{Detection of boundary-driven growth in hepatocellular carcinoma is robust to some variation in edge/center state calling}. We called an alternate set of states based on a distance of $<10\% $of each tumor diameter instead of published edge/center labels. \textbf{A.} Multi-region sampling map for Tumor 1 adapted from \cite{Li2022} with alternate state labels. \textbf{B.} Inferred tumor phylogeny and reconstructed ancestral spatial states. \textbf{C.} Marginal posterior distributions for edge (maroon) and center (blue) birth rates estimated from the Tumor 1 WGS data. \textbf{D.} Posterior distribution of edge/center birth rate ratio. Dashed line indicates ratio of 1. We estimate a 2.0x higher birth rate on the edge compared to center. \textbf{E.} Multi-region sampling map with alternate states for Tumor 2 reproduced from \cite{Li2022}. \textbf{F.} Tumor 2 tree and ancestral edge/center states inferred from the sampled populations. \textbf{G.} Marginal posterior distributions for edge and center estimated birth rates and \textbf{H.} edge/center ratio. We estimate a 3.6x higher birth rate on the edge versus center based on the alternate state calls.} 
+    
+    \label{figS5_wgs_alt_states}
+\end{figure} 
+
+
+\begin{figure}
+\includegraphics[width=\textwidth]{figures/figure_5_supp_wgs_strict_clock_comparison.pdf}
+\caption{\textbf{SDevo infers boundary-driven growth in HCC tumors where a strict-clock fails}. We compared estimates of birth rate differences between edge and center under a state-dependent birth-death model (BDMM') using both our novel state-linked sequence evolution model or a strict clock (state-independent) sequence evolution model. For Tumor 1 \textbf{(A.)} and Tumor 2 \textbf{(B.)}, posteriors of edge and center birth rate estimates for each sequence evolution model are shown in maroon and blue, respectively. Means and 95\% HPD intervals for the inferred birth rate ratios between edge and center states for Tumor 1 \textbf{(C.)} and Tumor 2 \textbf{(D.)}. Dashed lines indicate ratio of 1. Note, power analyses on simulated tumors (Figure \ref{Fig3} and \ref{figsupp:sf3}) suggest that the strict clock model should be under-powered and sensitive to sampling variation at these sample sizes (Tumor 1: $n = 16$, Tumor 2: $n = 9$).} 
+\label{figsupp:sf5-3}
+\end{figure} 
+
+\begin{figure}
+\includegraphics[width=\textwidth]{figures/figure_5_supp_clocks_node_height_comparison_wgs.pdf}
+\caption{\textbf{State-dependent sequence evolution models infer shorter center node heights than strict clock model in HCC tumor trees}. We compared the inferred ancestral node heights under a state-dependent birth-death model (BDMM') using either SDevo or a strict clock (state-independent) sequence evolution model. For Tumor 1 \textbf{(A.)} and Tumor 2 \textbf{(B.)}, scatter plots show ancestral node heights inferred under strict clock versus heights inferred by SDevo colored by most probable ancestral state. Nodes are compared based on matching a subset of tips.} 
+\label{figsupp:sf5-4}
+\end{figure} 
+
+%HISTOGRAMS
+\begin{figure}
+\includegraphics[width=\textwidth]{figures/figS9.pdf}
+\caption{\textbf{Variant allele frequency (VAF) histograms reveal punches are largely clonal}. Variant allele frequencies for all non-truncal (opaque) and truncal (transparent) mutations observed in tumor punches from Tumor 1 (\textbf{A.}) and Tumor 2 (\textbf{B.}) reveal that punches contain only a single high frequency clone, with the exception of T1L13. Punches are colored by their edge (maroon) or center (blue) status, according to \cite{Li2022}, Table S8.}
+\label{figsupp:sf5-5}
+\end{figure} 
+
+%Minus T1L13
+\begin{figure}
+\includegraphics[width=\textwidth]{figures/figS10_remove_subclonal_punch.pdf}
+\caption{\textbf{SDevo analysis excluding heterogenous punch T1L13 also estimates birth rate differences between center and edge samples}. To ensure our results are not driven by an edge-associated sample (T1L13), which potentially contains multiple subclones, we repeated the analysis of Tumor 1 without this punch. \textbf{A.} Marginal posterior distributions for edge (maroon) and center (blue) birth rates estimated from the Tumor 1 WGS data excluding T1L13. \textbf{B.} We estimate a 5.09x higher birth rate on the edge compared to center (90\% HPD 3.68-6.4x).\textbf{C.} Inferred MCC tumor phylogeny and reconstructed ancestral spatial states.} 
+\label{figsupp:sf5-6}
+\end{figure} 
+
+
+
+
+\end{document}
+
+%Potential reviewers:
+% David Gisselsson 
