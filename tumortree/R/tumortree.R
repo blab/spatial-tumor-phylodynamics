@@ -1383,14 +1383,26 @@ convert_all_cells_to_tree_fast <- function (all_cells, add_all_states = FALSE, s
           branch_unit = "time", cell_locations_df_file = NULL){
   
   get_genetic_branch_length <- function(cell_index, all_cells) {
-    mut_curr_cell <- all_cells$collapsed_sequence[all_cells$index == 
+    mut_curr_cell <- all_cells$sequence[all_cells$index == 
                                                     cell_index]
     parent_cell_index <- all_cells$parent_index[all_cells$index == 
                                                   cell_index]
-    mut_parent_cell <- all_cells$collapsed_sequence[all_cells$index == 
+    mut_parent_cell <- all_cells$sequence[all_cells$index == 
                                                       parent_cell_index]
+    print(cell_index)
     return(adist(mut_curr_cell, mut_parent_cell)[1])
   }
+  
+  if (!is.null(sampled_cells_indices)) {
+    included_cell_indices <- c(unique(unlist(purrr::map(sampled_cells_indices, 
+                                                        function(child) collect_all_ancestors(index = child, 
+                                                                                              all_cells = all_cells)))), sampled_cells_indices)
+    print(length(included_cell_indices))
+  }
+  else {
+    included_cell_indices <- all_cells$index
+  }
+  
   if (branch_unit == "time") {
     all_cells <- all_cells %>% dplyr::mutate(cell_name = paste0("cell_", 
                                                                 index, sep = ""), branch_length = round(deathdate - 
@@ -1400,15 +1412,35 @@ convert_all_cells_to_tree_fast <- function (all_cells, add_all_states = FALSE, s
   else if (branch_unit == "genetic") {
     
     #print("Computing genetic distance")
-    all_cells$collapsed_sequence <- purrr::map_chr(all_cells$sequence,
-                                                   extract_sequences)
-    
-
-    all_cells$branch_length <- purrr::map_dbl(all_cells$index, 
+    all_cells$collapsed_sequence <- NA
+    # all_cells$collapsed_sequence[which(all_cells$index %in% included_cell_indices)] <- purrr::map_chr(all_cells$sequence[which(all_cells$index %in% included_cell_indices)],
+    #                                                 extract_sequences)
+    all_cells$collapsed_sequence[which(all_cells$index %in% included_cell_indices)] <- gsub(" ", "", gsub("[[:punct:]]", "",all_cells$sequence[which(all_cells$index %in% included_cell_indices)], perl=TRUE))
+    all_cells$branch_length <- NA
+    all_cells$branch_length[which(all_cells$index %in% included_cell_indices)] <- purrr::map_dbl(all_cells$index[which(all_cells$index %in% included_cell_indices)], 
                                               function(i) get_genetic_branch_length(i, all_cells = all_cells))
     all_cells <- all_cells %>% dplyr::mutate(cell_name = paste0("cell_", 
                                                                 index, sep = "")) %>% dplyr::mutate(nwk_node = paste0(cell_name, 
                                                                                                                       ":", branch_length))
+  } else if (branch_unit == "divisions") {
+      
+    all_cells$branch_length <- NA
+    
+    all_cells$divisions <- NA
+    all_cells$divisions[which(all_cells$index %in% included_cell_indices)] <- purrr::map_dbl(all_cells$index[which(all_cells$index %in% included_cell_indices)], 
+                                                                                                 function(i) get_n_divisions(index=i, all_cells = all_cells))
+    
+    all_cells$parent_divisions <- NA
+    all_cells$parent_divisions[which(all_cells$index %in% included_cell_indices & all_cells$index > 1)] <- purrr::map_dbl(all_cells$parent_index[which(all_cells$index %in% included_cell_indices & all_cells$index > 1)], 
+                                                                                                 function(i) get_n_divisions(index=i, all_cells = all_cells))
+    all_cells$parent_divisions[is.na(all_cells$parent_divisions)] <- 0
+    
+    all_cells$branch_length <- all_cells$divisions - all_cells$parent_divisions
+    
+    all_cells <- all_cells %>% dplyr::mutate(cell_name = paste0("cell_", 
+                                                                index, sep = "")) %>% dplyr::mutate(nwk_node = paste0(cell_name, 
+                                                                                                                      ":", branch_length))
+    
   }
   else {
     all_cells <- all_cells %>% dplyr::mutate(cell_name = paste0("cell_", 
@@ -1418,15 +1450,16 @@ convert_all_cells_to_tree_fast <- function (all_cells, add_all_states = FALSE, s
   curr_leaves <- c(1)
   curr_nwk_string <- paste0("(", all_cells$nwk_node[which(all_cells$index == 
                                                             1)], ");")
-  if (!is.null(sampled_cells_indices)) {
-    included_cell_indices <- c(unique(unlist(purrr::map(sampled_cells_indices, 
-                                                        function(child) collect_all_ancestors(index = child, 
-                                                                                              all_cells = all_cells)))), sampled_cells_indices)
-  }
-  else {
-    included_cell_indices <- all_cells$index
-  }
+  # if (!is.null(sampled_cells_indices)) {
+  #   included_cell_indices <- c(unique(unlist(purrr::map(sampled_cells_indices, 
+  #                                                       function(child) collect_all_ancestors(index = child, 
+  #                                                                                             all_cells = all_cells)))), sampled_cells_indices)
+  # }
+  # else {
+  #   included_cell_indices <- all_cells$index
+  # }
   while (length(curr_leaves) > 0) {
+    print(length(curr_leaves))
     new_leaves <- c()
     for (leaf in curr_leaves) {
       children_indices <- all_cells$index[which((all_cells$parent_index == 
@@ -1510,10 +1543,14 @@ prune_simulated_tree <- function (tree, sampled_cells_indices, add_all_states = 
     #get deathdate of MRCA of all sampled cells
     pruned.tree@phylo$root.edge <- min(pruned.tree@data$deathdate)
     
-  } else {
+  } else if (branch_unit == "genetic") {
     
     #get number of mutations accumulated by MRCA of all sampled cells
     pruned.tree@phylo$root.edge <- str_count(pruned.tree@data$mutations[which.min(pruned.tree@data$deathdate)], pattern = ",")
+  } else if (branch_unit == "divisions") {
+    
+    pruned.tree@phylo$root.edge <- get_n_divisions(index = which.min(pruned.tree@data$index), all_cells = all_cells)
+    
   }
   
   
