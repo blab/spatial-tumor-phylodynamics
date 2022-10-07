@@ -89,7 +89,7 @@ library(ggpubr)
 library(cowplot)
 ##### ANIMATIONS
 set.seed(2123)
-endpoints <- seq(30, max(all_cells$deathdate))
+endpoints <- seq(1, max(all_cells$deathdate))
 
 for (e in endpoints) {
 
@@ -107,7 +107,7 @@ for (e in endpoints) {
     #upper_color <- lighten("#ecf42f", amount = 0.1)
     upper_color <- lighten("#ffff00", amount = 0.1)
     #upper_color <- "#ffff00"
-    tumor_sun_step <- ggplot(alive_cells_step, aes(x=locx, y=locy, color= n_divisions)) +
+    tumor_sun_step <- ggplot(alive_cells, aes(x=locx, y=locy, color= n_divisions)) +
         geom_point(size=0.5) + theme_void() +
         scale_color_gradient(low = "#15948b", high = upper_color,
                              limits = c(0, max(alive_cells$n_divisions))) +

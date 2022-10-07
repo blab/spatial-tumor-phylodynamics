@@ -1,0 +1,159 @@
+#!/usr/bin/env Rscript
+#### set_up_simulated_tumor_xmls.R ####
+
+#Script to generate XML files from tumor simulations
+
+library(tumortree)
+library(tidyverse)
+
+#Get file names for simulation data
+## These data are outputs of simulated_data/spatial_tumor_simulation.ipynb
+
+# sim_cells_files <- list.files(path = "../../simulated_data",
+#                                     pattern = "cells_death_rate_validation_pop_10000_dr_0.[0-9][0-9][0-9].*",
+#                               full.names = TRUE)
+#
+# # Filter to only get range of simulations accross dr=0-0.87 and not other simulation studies for not
+# sim_cells_files <- sim_cells_files[! str_detect(sim_cells_files, "sampled")]
+# sim_cells_files <- sim_cells_files[! str_detect(sim_cells_files,"_i_")]
+#
+xml_template <- "../eden/xml/state-clocks-template.xml"
+#
+# set.seed(31241)
+#
+# #set to TRUE if want to regenerated XML files
+# overwrite = FALSE
+# sample_size <- 100
+# for (i in 1:length(sim_cells_files)) {
+#
+#   sim_cells_file <- sim_cells_files[i]
+#
+#
+#   dr_extract <- regmatches(basename(sim_cells_file),
+#                                  gregexpr("(?<=dr_)[[:digit:]]+\\.[[:digit:]][[:digit:]]+", basename(sim_cells_file), perl = TRUE))[[1]]
+#   print(dr_extract)
+#   xml_file <- paste("../eden/xml/death_rate_validation_pop_10000_dr_", dr_extract,
+#                            "_n_", sample_size, "_state_clock_estimate_dr.xml", sep = "")
+#
+#   #save sampled cells as record
+#   sampled_cells_file <- paste("../../simulated_data/sampled_cells_death_rate_validation_pop_10000_dr_",
+#                                 dr_extract, "_n_",
+#                                 sample_size,
+#                                 "_diversified.csv", sep = "")
+#
+#   if (file.exists(xml_file) & (! overwrite)) {
+#
+#     message("XML file exists, skipping....")
+#
+#   } else {
+#
+#
+#       write_state_clocks_xml(sim_cells_file = sim_cells_file,
+#                            sampled_cells_file = sampled_cells_file,
+#                            xml_file = xml_file,
+#                            template_file =  xml_template,
+#                            diversified = TRUE,
+#                            resample = FALSE,
+#                            n_samples = sample_size)
+#
+#
+#   }
+# }
+#
+# # Also generate files for random sampling
+# set.seed(21221)
+#
+# #Set overwrite to TRUE if want to regenerate XMLS that already exist
+# overwrite = FALSE
+#
+# for (i in 1:length(sim_cells_files)) {
+#
+#         sim_cells_file <- sim_cells_files[i]
+#
+#         # All random sampling at 100 for now
+#         sample_size <- 100
+#
+#         dr_extract <- regmatches(basename(sim_cells_file),
+#                                  gregexpr("(?<=dr_)[[:digit:]]+\\.[[:digit:]][[:digit:]]", basename(sim_cells_file), perl = TRUE))[[1]]
+#         print(dr_extract)
+#         xml_file <- paste("../eden/xml/death_rate_validation_pop_1000_dr_", dr_extract,
+#                           "_n_", sample_size, "_state_clock_estimate_dr_random_sampling.xml", sep = "")
+#
+#         sampled_cells_file <- paste("../../simulated_data/sampled_cells_death_rate_validation_pop_1000_dr_",
+#                                     dr_extract,
+#                                     "_n_",
+#                                     sample_size,
+#                                     "_random_sampling.csv",
+#                                     sep = "")
+#
+#         if (file.exists(xml_file) & (! overwrite)) {
+#
+#             message("XML file exists, skipping....")
+#
+#         } else {
+#
+#             write_state_clocks_xml(sim_cells_file = sim_cells_file,
+#                                    sampled_cells_file = sampled_cells_file,
+#                                    xml_file = xml_file,
+#                                    template_file =  xml_template,
+#                                    diversified = FALSE,
+#                                    resample = TRUE,
+#                                    n_samples = sample_size)
+#
+#
+#     }
+# }
+
+
+sim_cells_files_subset <- list.files(path = "../../simulated_data",
+                                    pattern = "cells_death_rate_validation_pop_10000_dr_0.[0-9][025][0-9].*",full.names = TRUE)
+
+# Filter to only get range of simulations accross dr=0-0.87 and not other simulation studies for not
+sim_cells_files_subset <- sim_cells_files_subset[! str_detect(sim_cells_files_subset, "sampled")]
+sim_cells_files_subset <- sim_cells_files_subset[! str_detect(sim_cells_files_subset,"_i_")]
+
+set.seed(5774)
+
+
+overwrite = FALSE
+
+sample_sizes <- c(5:20, 30, 40, 50, 60, 70, 80, 90, 100)
+for (sample_size in sample_sizes) {
+    for (i in 1:length(sim_cells_files_subset)) {
+
+        sim_cells_file <- sim_cells_files_subset[i]
+
+
+        dr_extract <- regmatches(basename(sim_cells_file),
+                                 gregexpr("(?<=dr_)[[:digit:]]+\\.[[:digit:]][[:digit:]]", basename(sim_cells_file), perl = TRUE))[[1]]
+        print(dr_extract)
+        xml_file <- paste("../eden/xml/death_rate_validation_pop_1000_dr_",
+                          dr_extract,
+                          "_n_",
+                          sample_size,
+                          "_state_clock_estimate_dr.xml", sep = "")
+
+        # xml_file_single_dr <- paste("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/xml_files/death_rate_validation_pop_1000_dr_", dr_extract,
+        #                             "_n_", sample_size, "_state_clock_estimate_single_dr.xml", sep = "")
+
+        sampled_cells_file <- paste("../../simulated_data/sampled_cells_death_rate_validation_pop_1000_dr_",
+                                    dr_extract, "_n_", sample_size,
+                                    "_diversified.csv", sep = "")
+
+        if (file.exists(xml_file) & (! overwrite)) {
+
+            message("XML file exists, skipping....")
+
+        } else {
+
+            write_state_clocks_xml(sim_cells_file = sim_cells_file,
+                                   sampled_cells_file = sampled_cells_file,
+                                   xml_file = xml_file,
+                                   template_file =  xml_template,
+                                   diversified = TRUE,
+                                   resample = FALSE,
+                                   n_samples = sample_size)
+
+        }
+    }
+}
