@@ -4,6 +4,12 @@ do
   sbatch submit_indiv_eden_sim.sh $dr
 done
 
+for dr in `seq -f "%f" 0.320 0.005 0.43`
+do
+  echo $dr
+  sbatch submit_indiv_eden_sim_lowmem.sh $dr
+done
+
 for file in eden/xml/death_rate_validation_pop_10000_mu_1_dr_0.[0-9][0-9][0-9]_n_50_state_clock_estimate_dr.xml
 do
   sbatch scripts/submit_beast_run.sh $file
@@ -81,24 +87,19 @@ done
 for file in ../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.[0-9][0-9][0-9].csv
 do
   echo $file
-  #sbatch sub_xmls_indiv.sh $file 40
+  sbatch sub_xmls_indiv.sh $file 40
 done
 
-for file in ../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.[0-9][0-9][0-9].csv
+#To test script
+#sh sub_xmls_indiv.sh ../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.320.csv 20
+
+# To create all state clock XMLS
+## Sampling should be reproducible for each individual run
+## Will not overwrite existing XML files unless set overwrite=TRUE
+
+file in ../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.[0-9][0-9][0-9].csv
 do
   for sample_size in 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 30 40 50 60 70 80 90 100
-  do
-
-    echo $file
-    echo $sample_size
-    sbatch sub_xmls_indiv.sh $file $sample_size
-
-  done
-done
-
-for file in ../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.[0-9][0-9][0-9].csv
-do
-  for sample_size in 5 6 7 8 9
   do
 
     echo $file
@@ -120,6 +121,49 @@ do
   echo $file
   sbatch bulk_sample_submit.sh $file
 done
+
+for file in ../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.[0-9][0-9][0-9].csv
+do
+  echo $file
+  sbatch rates_submit.sh $file
+done
+
+#Run in eden/stats to combine all simulations into single file
+#Add header
+head -n1 validation_growth_and_death_rates_weighted_large_0.000.tsv > validation_growth_and_death_rates_weighted_large.tsv
+
+#Add all rows after header (starting at line 2)
+for file in validation_growth_and_death_rates_weighted_large_0.[0-9][0-9][0-9].tsv
+do
+    tail -n+2 $file >> validation_growth_and_death_rates_weighted_large.tsv
+done
+
+for file in ../eden/simulation_data/*_mu_1_i_[0-9]_dr_0.050.csv
+do
+  echo $file
+  sbatch bl_stats_submit.sh $file
+done
+
+for file in ../eden/simulation_data/*_mu_1_i_[0-9][0-9]_dr_0.050.csv
+do
+  echo $file
+  sbatch bl_stats_submit.sh $file
+done
+
+
+#Run in eden/stats to combine all iterations into single file
+
+#Add header
+head -n1 terminal_bl_clock_rate_stats_full_large_boundary_driven_0.tsv > terminal_bl_clock_rate_stats_full_large.tsv
+
+#Add all rows starting after row 2 (should be only 2 rows per file, but could combine multiple simulations)
+for file in terminal_bl_clock_rate_stats_full_large_*
+do
+    echo $file
+    tail -n+2 $file >> terminal_bl_clock_rate_stats_full_large.tsv
+done
+
+rsync -a mlewinso@rhino:/fh/fast/bedford_t/users/mlewinsohn/tumors_sims/spatial-tumor-phylodynamics/eden/stats/* ~/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/eden/stats
 
 #rsyncing
 rsync -a mlewinso@rhino:/fh/fast/bedford_t/users/mlewinsohn/tumors_sims/spatial-tumor-phylodynamics/eden/simtrees/cells_death_rate_validation_pop_10000_mu_1_dr_0.050.rds ~/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/eden/simtrees

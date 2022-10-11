@@ -144,6 +144,8 @@ time_to_genetic_bl <- function(pruned_tree) {
     genetic_tree <- pruned_tree
     
     genetic_tree@phylo$edge.length <- bl
+    
+    return(genetic_tree)
 }
 tree_boundary_driven <- readRDS("../eden/simtrees/cells_death_rate_validation_pop_10000_mu_1_dr_0.050.rds")
 
@@ -152,30 +154,35 @@ tree_boundary_driven_pruned <- prune_simulated_tree(tree = tree_boundary_driven,
                                           sampled_cells_indices = sampled_cells_boundary_driven$index)
 
 # ## Genetic tree
-tree_molecular_boundary_driven <- convert_all_cells_to_tree_fast(all_cells = all_cells_boundary_driven,
-                                                              add_all_states = FALSE,
-                                                              branch_unit = "genetic")
+
+tree_molecular_boundary_driven_pruned <- time_to_genetic_bl(tree_boundary_driven_pruned)
+# tree_molecular_boundary_driven <- convert_all_cells_to_tree_fast(all_cells = all_cells_boundary_driven,
+#                                                               add_all_states = FALSE,
+#                                                               branch_unit = "genetic")
 
  
-tree_molecular_boundary_driven_pruned <- prune_simulated_tree(tree = tree_molecular_boundary_driven,
-                                                    sampled_cells_indices = sampled_cells_boundary_driven$index)
+# tree_molecular_boundary_driven_pruned <- prune_simulated_tree(tree = tree_molecular_boundary_driven,
+#                                                     sampled_cells_indices = sampled_cells_boundary_driven$index)
 
 # Unrestricted growth
 
 ## Time tree
-tree_unrestricted <- convert_all_cells_to_tree_fast(all_cells = all_cells_unrestricted,
-                               add_all_states = TRUE,
-                               branch_unit = "time")
+# tree_unrestricted <- convert_all_cells_to_tree_fast(all_cells = all_cells_unrestricted,
+#                                add_all_states = TRUE,
+#                                branch_unit = "time")
+
+tree_unrestricted <- readRDS("../eden/simtrees/cells_pushing_pop_10000_mu_1_dr_0.050.rds")
 tree_unrestricted_pruned <- prune_simulated_tree(tree = tree_unrestricted,
                                           sampled_cells_indices = sampled_cells_unrestricted$index)
 
 # ## Genetic tree
-tree_molecular_unrestricted <- convert_all_cells_to_tree_fast(all_cells = all_cells_unrestricted,
-                                                    add_all_states = TRUE,
-                                                    branch_unit = "genetic")
+# tree_molecular_unrestricted <- convert_all_cells_to_tree_fast(all_cells = all_cells_unrestricted,
+#                                                     add_all_states = TRUE,
+#                                                     branch_unit = "genetic")
 
-tree_molecular_unrestricted_pruned <- prune_simulated_tree(tree = tree_molecular_unrestricted,
-                                          sampled_cells_indices = sampled_cells_unrestricted$index)
+tree_molecular_unrestricted_pruned <- time_to_genetic_bl(tree_unrestricted_pruned)
+# tree_molecular_unrestricted_pruned <- prune_simulated_tree(tree = tree_molecular_unrestricted,
+#                                           sampled_cells_indices = sampled_cells_unrestricted$index)
 
 
 ### To save as RDS
@@ -324,7 +331,7 @@ tree_molecular_boundary_driven_pruned@data$mark <- purrr::map_chr(tree_molecular
 #labeled version for cells of interest reference(not shown)
 c <- ggtree(tree_molecular_boundary_driven_pruned, aes(color = mean_growth_rate)) +# geom_tippoint(color = sim_colors["boundary_driven"][[1]], alpha = 0.8, size = 2) +
     geom_tippoint(aes(color = mean_growth_rate), size = 2, alpha = 0.8) +theme(legend.position = "none") +
-    coord_cartesian(clip = "off") + scale_color_viridis() +
+    coord_cartesian(clip = "off") + scale_color_viridis(limits = growth_rate_limits) +
     geom_text(aes(label=mark), size = 6, nudge_x = 0.6, nudge_y = -0.6, color = "black") +
     scale_y_reverse() + geom_rootedge(color = "#939393")
     #ggtitle("Genetic tree")
@@ -482,69 +489,69 @@ ggsave(file = "molecular_tree_growth_rate_unrestricted_unlabeled_large.png", plo
 
 #tree_files <- list.files(path = "../eden/simtrees", pattern = "*_diversified_sampling_timetree.rds", full.names = TRUE)
 
-
+# Move to  cluster script
 #Local directory 
 # sim_cells_dr_0.1_files <- paste("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation/",
 #                                 list.files(path = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation",
 #                                            pattern = "*i_[0-9]+_dr_0.10.csv"), sep = "")
 
-sim_cells_dr_0.1_files <- list.files(path = "../eden/simulation_data",
-                                           pattern = "*i_[0-9]+_dr_0.10.csv", full.names = TRUE)
-get_tree_stats <- function(sim_cells_file) {
-    print(sim_cells_file)
-    all_cells <- read_csv(sim_cells_file)
-    alive_cells <- all_cells %>% 
-        filter_alive_cells %>% 
-        dplyr::mutate(n_muts = str_count(mutations, ",") + 1,
-                      seq_length = str_count(sequence, ",") + 1) 
-    
-    endpoint <- max(alive_cells$deathdate)
-    
-    alive_cells <- alive_cells %>% 
-        dplyr::mutate(clock_rate = n_muts/endpoint)
-    
-    # sampled_cells <- alive_cells %>%
-    #     sample_alive_cells(., n = 100, diversified_sampling = TRUE) %>%
-    #     filter(sampled)
-    # 
-    simtree <- convert_all_cells_to_tree_fast(all_cells)
-    simtree <- prune_simulated_tree(simtree, sampled_cells_indices = alive_cells$index)
-    #simtree <- prune_simulated_tree(simtree, sampled_cells_indices = sampled_cells$index)
-
-    
-    i_extract <- regmatches(basename(sim_cells_file),
-                            gregexpr("(?<=i_)[[:digit:]]+", basename(sim_cells_file), perl = TRUE))[[1]]
-    
-    #compare variance in terminal branch lengths
-    terminal_branch_length_df <- data.frame("terminal_branch_length" = c(simtree@phylo$edge.length[which(simtree@phylo$edge[,2] <= length(simtree@phylo$tip.label))])) %>% 
-        dplyr::mutate(norm_terminal_branch_length = terminal_branch_length / endpoint) 
-    
-    norm_terminal_branch_length_variance <- var(terminal_branch_length_df$norm_terminal_branch_length) 
-    terminal_branch_length_variance <- var(terminal_branch_length_df$terminal_branch_length) 
-    clock_rate_variance <- var(alive_cells$clock_rate) 
-    #clock_rate_variance <- var(sampled_cells$clock_rate) 
-
-
-
-    return(data.frame("terminal_branch_length_variance" = terminal_branch_length_variance,
-                      "norm_terminal_branch_length_variance" = norm_terminal_branch_length_variance,
-                      "clock_rate_variance" = clock_rate_variance, 
-                      "i" = i_extract,
-                      "model" = ifelse(grepl("pushing", sim_cells_file),
-                                       "unrestricted",
-                                       "boundary_driven")))
-    
-}
-
-set.seed(3182)
-tree_terminal_branch_lengths <- purrr::map(sim_cells_dr_0.1_files, function(tf) get_tree_stats(tf)) %>%
-    bind_rows
-
-#write to csv
-write_csv(tree_terminal_branch_lengths, file = "../eden/stats/terminal_bl_clock_rate_stats_full.csv")
+# sim_cells_dr_0.1_files <- list.files(path = "../eden/simulation_data",
+#                                            pattern = "*i_[0-9]+_dr_0.10.csv", full.names = TRUE)
+# get_tree_stats <- function(sim_cells_file) {
+#     print(sim_cells_file)
+#     all_cells <- read_csv(sim_cells_file)
+#     alive_cells <- all_cells %>% 
+#         filter_alive_cells %>% 
+#         dplyr::mutate(n_muts = str_count(mutations, ",") + 1,
+#                       seq_length = str_count(sequence, ",") + 1) 
+#     
+#     endpoint <- max(alive_cells$deathdate)
+#     
+#     alive_cells <- alive_cells %>% 
+#         dplyr::mutate(clock_rate = n_muts/endpoint)
+#     
+#     # sampled_cells <- alive_cells %>%
+#     #     sample_alive_cells(., n = 100, diversified_sampling = TRUE) %>%
+#     #     filter(sampled)
+#     # 
+#     simtree <- convert_all_cells_to_tree_fast(all_cells)
+#     simtree <- prune_simulated_tree(simtree, sampled_cells_indices = alive_cells$index)
+#     #simtree <- prune_simulated_tree(simtree, sampled_cells_indices = sampled_cells$index)
+# 
+#     
+#     i_extract <- regmatches(basename(sim_cells_file),
+#                             gregexpr("(?<=i_)[[:digit:]]+", basename(sim_cells_file), perl = TRUE))[[1]]
+#     
+#     #compare variance in terminal branch lengths
+#     terminal_branch_length_df <- data.frame("terminal_branch_length" = c(simtree@phylo$edge.length[which(simtree@phylo$edge[,2] <= length(simtree@phylo$tip.label))])) %>% 
+#         dplyr::mutate(norm_terminal_branch_length = terminal_branch_length / endpoint) 
+#     
+#     norm_terminal_branch_length_variance <- var(terminal_branch_length_df$norm_terminal_branch_length) 
+#     terminal_branch_length_variance <- var(terminal_branch_length_df$terminal_branch_length) 
+#     clock_rate_variance <- var(alive_cells$clock_rate) 
+#     #clock_rate_variance <- var(sampled_cells$clock_rate) 
+# 
+# 
+# 
+#     return(data.frame("terminal_branch_length_variance" = terminal_branch_length_variance,
+#                       "norm_terminal_branch_length_variance" = norm_terminal_branch_length_variance,
+#                       "clock_rate_variance" = clock_rate_variance, 
+#                       "i" = i_extract,
+#                       "model" = ifelse(grepl("pushing", sim_cells_file),
+#                                        "unrestricted",
+#                                        "boundary_driven")))
+#     
+# }
+# 
+# set.seed(3182)
+# tree_terminal_branch_lengths <- purrr::map(sim_cells_dr_0.1_files, function(tf) get_tree_stats(tf)) %>%
+#     bind_rows
+# 
+# #write to csv
+# write_csv(tree_terminal_branch_lengths, file = "../eden/stats/terminal_bl_clock_rate_stats_full.csv")
 
 #to skip computation time 
-tree_terminal_branch_lengths <- read_csv(file = "../eden/stats/terminal_bl_clock_rate_stats_full.csv")
+tree_terminal_branch_lengths <- read_tsv(file = "../eden/stats/terminal_bl_clock_rate_stats_full_large.tsv")
 
 # values for legend
 
@@ -588,24 +595,24 @@ e <- tree_terminal_branch_lengths %>%
 e    
 #e_d_comb <- grid.arrange(d, e, ncol=2)
 #ggsave(filename = "../figures/variance_model_comparison_term_branch_clock_rate.png", e_d_comb, height = 5, width = 7)
-ggsave(filename = "../figures/variance_model_comparison_term_branch.png", d, height = 5, width = 5)
-ggsave(filename = "../figures/variance_model_comparison_clock_rate.png", e, height = 5, width = 5)
+ggsave(filename = "../figures/variance_model_comparison_term_branch_large.png", d, height = 5, width = 5)
+ggsave(filename = "../figures/variance_model_comparison_clock_rate_large.png", e, height = 5, width = 5)
 
  
 ###### INSETS ######
 
 ### terminal branch length
-tree_boundary_driven <- prune_simulated_tree(tree_boundary_driven, alive_cells_boundary_driven$index)
-terminal_branch_length_boundary_driven_df <- data.frame("terminal_branch_length" = c(tree_boundary_driven@phylo$edge.length[which(tree_boundary_driven@phylo$edge[,2] <= length(tree_boundary_driven@phylo$tip.label))])) %>% 
-    dplyr::mutate(norm_terminal_branch_length = terminal_branch_length / max(tree_boundary_driven@data$deathdate))
+tree_boundary_driven_alive <- prune_simulated_tree(tree_boundary_driven, alive_cells_boundary_driven$index)
+terminal_branch_length_boundary_driven_df <- data.frame("terminal_branch_length" = c(tree_boundary_driven_alive@phylo$edge.length[which(tree_boundary_driven_alive@phylo$edge[,2] <= length(tree_boundary_driven_alive@phylo$tip.label))])) %>% 
+    dplyr::mutate(norm_terminal_branch_length = terminal_branch_length / max(tree_boundary_driven_alive@data$deathdate))
 
 variance_termnial_branch_length_boundary_driven <- var(terminal_branch_length_boundary_driven_df$norm_terminal_branch_length)
 
 
 #unrestricted growth model
-tree_unrestricted <- prune_simulated_tree(tree_unrestricted, alive_cells_unrestricted$index)
-terminal_branch_length_unrestricted_df <- data.frame("terminal_branch_length" = c(tree_unrestricted@phylo$edge.length[which(tree_unrestricted@phylo$edge[,2] <= length(tree_unrestricted@phylo$tip.label))])) %>% 
-    dplyr::mutate(norm_terminal_branch_length = terminal_branch_length / max(tree_unrestricted@data$deathdate))
+tree_unrestricted_alive <- prune_simulated_tree(tree_unrestricted, alive_cells_unrestricted$index)
+terminal_branch_length_unrestricted_df <- data.frame("terminal_branch_length" = c(tree_unrestricted_alive@phylo$edge.length[which(tree_unrestricted_alive@phylo$edge[,2] <= length(tree_unrestricted_alive@phylo$tip.label))])) %>% 
+    dplyr::mutate(norm_terminal_branch_length = terminal_branch_length / max(tree_unrestricted_alive@data$deathdate))
 
 variance_termnial_branch_length_unrestricted <- var(terminal_branch_length_unrestricted_df$norm_terminal_branch_length)
 
@@ -637,7 +644,7 @@ b <- ggplot(terminal_branch_length_unrestricted_df, aes(x=norm_terminal_branch_l
     #xlim(c(0, terminal_branch_max ))
 a_b <- plot_grid(a, b, ncol = 1)
 a_b
-ggsave(filename = "../figures/terminal_branch_length_variance_densities.png", a_b, height = 4, width = 5)
+ggsave(filename = "../figures/terminal_branch_length_variance_densities_large.png", a_b, height = 4, width = 5)
 
 
 ###### Clock rate variances for individual examples #######
@@ -653,7 +660,9 @@ alive_cells_unrestricted <- alive_cells_unrestricted %>%
     dplyr::mutate(clock_rate = n_muts/max(alive_cells_unrestricted$deathdate))
 
 variance_clock_rate_boundary_driven <- var(alive_cells_boundary_driven$clock_rate)
+print(variance_clock_rate_boundary_driven)
 variance_clock_rate_unrestricted <- var(alive_cells_unrestricted$clock_rate)
+print(variance_clock_rate_unrestricted)
 clock_rate_max <- max(alive_cells_boundary_driven$clock_rate, alive_cells_unrestricted$clock_rate)
 
 a <- ggplot(alive_cells_boundary_driven, aes(x=clock_rate)) + geom_density(fill = sim_colors["boundary_driven"]) +
@@ -683,7 +692,7 @@ b <- ggplot(alive_cells_unrestricted, aes(x=clock_rate)) + geom_density(fill = s
 b
 a_b <- plot_grid(a, b, ncol = 1)
 a_b
-ggsave(filename = "../figures/clock_rate_variance_densities.png", a_b, height = 4, width = 5)
+ggsave(filename = "../figures/clock_rate_variance_densities_large.png", a_b, height = 4, width = 5)
 
 
 
@@ -695,7 +704,7 @@ alive_cells_boundary_driven <- mark_boundary(cells_to_mark = alive_cells_boundar
 edge_center_colors <- c("edge" = "#89352F", 
                         "center" = "#A2D2E2")
 a_edge_center <- ggplot(alive_cells_boundary_driven, aes(x = norm_locx, y = norm_locy, color = ifelse(est_edge == 1, "edge", "center" ))) +
-    geom_point(size = 3, alpha = 1) +
+    geom_point(size = 1.5, alpha = 1) +
     #geom_point(data = sampled_cells_boundary_driven, size = 3, alpha = 1) +
     
     #geom_point(data = sampled_cells_boundary_driven, size = 3, alpha = 1, colour="black",pch=21, aes(fill = mean_growth_rate)) +
@@ -704,5 +713,5 @@ a_edge_center <- ggplot(alive_cells_boundary_driven, aes(x = norm_locx, y = norm
     scale_color_manual(values = edge_center_colors) +
     theme(legend.position = "none")
 a_edge_center
-ggsave(file = "tumor_sim_edge_center_boundary_driven_unlabeled.png", plot = a_edge_center, path = figures_dir, height = 4, width = 4)
+ggsave(file = "tumor_sim_edge_center_boundary_driven_unlabeled_large.png", plot = a_edge_center, path = figures_dir, height = 4, width = 4)
 
