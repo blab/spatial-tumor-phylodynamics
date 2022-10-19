@@ -1,0 +1,1032 @@
+#!/usr/bin/env Rscript
+# bulk sampling of simulated tumor
+
+#setup
+library(tumortree)
+library(dplyr)
+library(ggplot2)
+library(testit)
+library(scales)
+library(tidyverse)
+library(purrr)
+library(stringr)
+library(R.utils)
+#function to identify cells within radius of cell
+
+get_punched_cells <- function(sampled_cell_index, alive_cells, punch_radius_n_cells) {
+    
+    locx <- alive_cells[alive_cells$index == sampled_cell_index, "locx" ]
+    locy <- alive_cells[alive_cells$index == sampled_cell_index, "locy" ]
+    
+    #get coordinates of boundaries of punch biopsy
+    max_x = locx + punch_radius_n_cells
+    max_y = locy + punch_radius_n_cells
+    min_x = locx - punch_radius_n_cells
+    min_y = locy - punch_radius_n_cells
+    
+    #collect all alive cells within radius
+    
+    punched_cells <- alive_cells[(alive_cells$locx <= max_x) & 
+                    (alive_cells$locx >= min_x) &
+                    (alive_cells$locy <= max_y) &
+                    (alive_cells$locy >= min_y), "index"]
+    
+    return(punched_cells)
+}
+
+
+
+#function to visualize punched tumor
+plot_punch_biopsies <- function(alive_cells, punched_cell_indices_list,
+                                color_by_edge = FALSE,
+                                color_by_punch_id = FALSE,
+                                size = 2) {
+    
+    punched_cell_indices <- unlist(punched_cell_indices_list)
+    alive_cells$punched <- alive_cells$index %in% punched_cell_indices
+
+   if (color_by_edge & color_by_punch_id) {
+       
+       error("Can only color by edge or punch id, not both")
+   }
+    
+   if (color_by_punch_id) {
+       if (! "punch_id" %in% colnames(alive_cells) ) {
+        punch_sizes <- purrr::map(punched_cell_indices_list, length)
+        punch_id_vec <- unlist(purrr::map2(1:length(punched_cell_indices_list), punch_sizes, function(x,y) rep(x,y)))
+        punches_df <- data.frame("index" = punched_cell_indices, "punch_id" = punch_id_vec)
+        alive_cells <- dplyr::full_join(alive_cells, punches_df)
+       }
+       
+       g <- ggplot(alive_cells, aes(x = locx, y = locy, color = as.factor(punch_id))) +
+           geom_point(size = size) +
+           theme_void() +
+           theme(legend.position = "none")
+       
+   } else if (color_by_edge) {
+       
+       if (! "punch_on_edge" %in% colnames(alive_cells)) {
+              warning("Must provide punch_on_edge column to color by edge")
+           
+            g <- ggplot(alive_cells, aes(x = locx, y = locy, color = as.factor(punched))) +
+               geom_point(size = size) +
+               theme_void() +
+               scale_color_manual(values = c("darkgrey", muted('red'))) +
+               theme(legend.position = "none")
+       }
+       
+       g <- ggplot(alive_cells, aes(x = locx, y = locy, color = ifelse(punched & punch_on_edge, "edge_punch",
+                                                                       ifelse(punched, "center_punch", "not_sampled")))) +
+           geom_point(size = size) +
+           theme_void() +
+           scale_color_manual(values = c("not_sampled" = "darkgrey",
+                                         "edge_punch" = scales::muted('red'),
+                                         "center_punch" = "black")) +
+           theme(legend.position = "none")
+       
+ } else {
+
+
+        g <- ggplot(alive_cells, aes(x = locx, y = locy, color = as.factor(punched))) +
+            geom_point(size = size) +
+            theme_void() +
+            scale_color_manual(values = c("darkgrey", muted('red'))) +
+            theme(legend.position = "none")
+    }
+    return(g)
+}
+
+
+#function to shift punch biopsy if not enough cells are samplped
+shift_punch <- function(proposed_sampled_cell_index, alive_cells) {
+
+
+        sampled_locx <- alive_cells[alive_cells$index == proposed_sampled_cell_index,"locx"]
+        sampled_locy <- alive_cells[alive_cells$index == proposed_sampled_cell_index,"locy"]
+        
+        
+        check_x_vec <- c(sampled_locx + 1, sampled_locx, sampled_locx - 1, sampled_locx - 1, sampled_locx + 1, sampled_locx - 1, sampled_locx, sampled_locx + 1)
+        check_y_vec <- c(sampled_locy + 1, sampled_locy + 1, sampled_locy + 1, sampled_locy, sampled_locy, sampled_locy - 1, sampled_locy - 1, sampled_locy - 1)
+        
+        adjacent_cells <- c()
+        for (i in 1:length(check_x_vec)) {
+            
+            check_x <- check_x_vec[i]
+            check_y <- check_y_vec[i]
+            adjacent_cells <- c(adjacent_cells, any(alive_cells$locx == check_x & alive_cells$locy == check_y))
+
+        }
+
+        #choose direction to another free cell
+        if (!any(adjacent_cells)) {
+            return(NA)
+        } else {
+            direction <- which(adjacent_cells)[sample(1:sum(adjacent_cells), size = 1)]
+        
+        
+
+            new_sampled_cell_locx <- check_x_vec[direction]
+            new_sampled_cell_locy <- check_y_vec[direction]
+        
+            proposed_sampled_cell_index <- alive_cells[alive_cells$locx == new_sampled_cell_locx & alive_cells$locy == new_sampled_cell_locy, "index"]
+
+            return(proposed_sampled_cell_index)
+        }
+}
+
+
+
+#function to get bulk sampled "punch biopsy"
+## This function is very similar to the original bulk sampling function except diversified single cell sampling is used as a starting point
+## The default punch size deviation is also reduced
+bulk_sample_tumor_diversified <- function(alive_cells,
+                              n_samples = 25,
+                              punch_radius_n_cells = 2,
+                              acceptable_overlap = 1,
+                              max_sampling_attempts = 100, 
+                              max_shifting_attempts = 10,
+                              max_punch_size_deviation = 2) {
+    message(paste0("Selecting random bulk punch biopsies... \n", "Tumor population size: ", nrow(alive_cells), " cells \n", "Desired number of punches: ",
+                   n_samples, "\n", "Punch size: ", (1+2*punch_radius_n_cells)^2, " cells \n"))
+    
+    message("Diversified sampling")
+
+    testit::assert("Expected number of cells sampled <= tumor population", n_samples * (1+2*punch_radius_n_cells^2) <= nrow(alive_cells))
+    
+   
+    #First use single cell diversified sampling
+    
+    sampled_cells <- sample_alive_cells(alive_cells, n = n_samples, diversified = TRUE) %>%
+	filter(sampled)
+
+     #keep track of all sampled cells so that cells will not be sampled x2
+    curr_sampled_cells <- c(sampled_cells$index)
+        
+    #keep list of cells within punch biopsies
+    curr_punch_list <-list()
+    
+    #to ensure sampling from available cells
+    curr_unsampled_cells <- alive_cells$index[! alive_cells$index %in% sampled_cells$index]
+    
+    #for loop breaking if too many sampling attempts
+    stop = FALSE
+    
+    for (cell_index in sampled_cells$index) {
+        
+        print(paste0("Starting with cell: ", cell_index, sep=""))
+        
+        #keep track of number of attempts to limit loop length
+        #(controlled by max_number_of_sampling_attempts)
+        
+        number_of_sampling_attempts <- 1
+        
+        # initial punch attempt
+        
+
+        #For diversified sampling use single cell as starting point
+        proposed_sampled_cell_index <- cell_index
+
+        #cell that leads to edge cut off
+
+
+        #proposed_sampled_cell_index <- "71367"
+        
+        proposed_punched_cells <- get_punched_cells(proposed_sampled_cell_index,
+                                                    alive_cells = alive_cells,
+                                                    punch_radius_n_cells = punch_radius_n_cells)
+        
+
+        # sometimes if a punch is on the edge, less cells than expected will be sampled
+        # we don't want to bias the edge versus sampling by excluding these, so instead will try to shift over to 
+        # fit within the margins of the tumor
+        
+        number_of_shifting_attempts <- 1
+        
+        while (length(proposed_punched_cells) < ((2*punch_radius_n_cells+1)^2 - max_punch_size_deviation)) { #if punch smaller than expected
+            
+            #if shifting has been unsuccessful
+            
+            if (number_of_shifting_attempts >= max_shifting_attempts) {
+                message("Unable to find good shift, resampling")
+                proposed_sampled_cell_index <- sample(curr_unsampled_cells, size = 1)
+                break
+            }
+            
+            #
+            message("Not enough cells in punch, attempting to shift..,")
+            
+            proposed_sampled_cell_index <- shift_punch(proposed_sampled_cell_index, alive_cells)
+            
+            # give up if no adjacent cells to go to
+            if (is.na(proposed_sampled_cell_index )) {
+                message("Unable to find good shift, resampling")
+                proposed_sampled_cell_index <- sample(curr_unsampled_cells, size = 1)
+                proposed_punched_cells <- get_punched_cells(proposed_sampled_cell_index,
+                                                            alive_cells = alive_cells,
+                                                            punch_radius_n_cells = punch_radius_n_cells)
+                break
+            }
+            
+            proposed_punched_cells <- get_punched_cells(proposed_sampled_cell_index,
+                                                        alive_cells = alive_cells,
+                                                        punch_radius_n_cells = punch_radius_n_cells)
+            
+            
+            number_of_shifting_attempts <- number_of_shifting_attempts + 1
+            
+            
+        }
+        
+        #check if overlapping with existing punch or if punch is too small
+        while(sum(proposed_punched_cells %in% curr_sampled_cells) > acceptable_overlap | length(proposed_punched_cells) < ((2*punch_radius_n_cells+1)^2 - max_punch_size_deviation)) {
+            
+            message("Too much overlap with previous punch, resampling....")
+            
+
+            # propose punch biopsy
+            
+            proposed_sampled_cell_index <- sample(curr_unsampled_cells, size = 1)
+            proposed_punched_cells <- get_punched_cells(proposed_sampled_cell_index,
+                                                        alive_cells = alive_cells,
+                                                        punch_radius_n_cells = punch_radius_n_cells)
+            
+            
+            # if punch is on the edge try to shift over to the center
+            number_of_shifting_attempts <- 1
+
+            while (length(proposed_punched_cells) < ((2*punch_radius_n_cells+1)^2 - max_punch_size_deviation)) { #if punch smaller than expected
+                
+                #if shifting has been unsuccessful
+                
+                if (number_of_shifting_attempts >= max_shifting_attempts) {
+                    message("Unable to find good shift, resampling")
+                    proposed_sampled_cell_index <- sample(curr_unsampled_cells, size = 1)
+                    break
+                }
+                
+                #
+                message("Not enough cells in punch, attempting to shift..,")
+                
+
+                proposed_sampled_cell_index <- shift_punch(proposed_sampled_cell_index, alive_cells)
+                message(paste0("Shifted to ", proposed_sampled_cell_index))
+                
+                # give up if no adjacent cells to go to
+                if (is.na(proposed_sampled_cell_index)) {
+                    message("Unable to find good shift, resampling")
+                    proposed_sampled_cell_index <- sample(curr_unsampled_cells, size = 1)
+                    proposed_punched_cells <- get_punched_cells(proposed_sampled_cell_index,
+                                                                alive_cells = alive_cells,
+                                                                punch_radius_n_cells = punch_radius_n_cells)
+                    break
+                }
+                
+                proposed_punched_cells <- get_punched_cells(proposed_sampled_cell_index,
+                                                            alive_cells = alive_cells,
+                                                            punch_radius_n_cells = punch_radius_n_cells)
+                
+                
+                number_of_shifting_attempts <- number_of_shifting_attempts + 1
+                
+                
+            }
+            
+            
+            #break loop if attempted sampling too many times
+        
+            if (number_of_sampling_attempts > max_sampling_attempts) {
+                warning("Too many sampling attempts: try lower number of desired samples, sample a larger tumor, or increase acceptable punch overlap.")
+                stop = TRUE
+                break
+            } else {
+                number_of_sampling_attempts  <- number_of_sampling_attempts + 1
+            }
+        }
+        
+        if (stop) {
+            message("Stopping...")
+            break
+        }
+        
+        
+
+        # final punched cells minus overlap with previously sampled punches (avoid double sampling)
+
+
+
+        punched_cells <- proposed_punched_cells[which(!(proposed_punched_cells %in% curr_sampled_cells))]
+        
+
+        # keep track of sampled / unsampled cells and final punch list
+        curr_punch_list <- rlist::list.append(curr_punch_list, punched_cells)
+        curr_sampled_cells <- c(curr_sampled_cells, punched_cells)
+        curr_unsampled_cells <- curr_unsampled_cells[-which(curr_unsampled_cells %in% punched_cells)]
+        
+    }
+    
+    
+    message ("Done sampling!")
+    return(curr_punch_list)
+    
+    
+    
+}
+
+
+#extract subset of presence-absence matrix
+
+# note that columns "punch_id" must exist for sampled cells
+extract_punch_allele_freqs <- function(id, mut_presence_absence_df, sampled_cells) {
+    if("punch_id" %in% colnames(sampled_cells)) {
+        punch_muts <- mut_presence_absence_df[which(sampled_cells$punch_id == id),]
+        
+        if (is.null(nrow(punch_muts))) {
+            punch_allele_freqs <- punch_muts
+        } else {
+            punch_allele_freqs <- matrix(colMeans(punch_muts), nrow = 1, byrow = TRUE)
+        }
+        return(punch_allele_freqs)
+    } else {
+        error("Column 'punch_id' must exist")
+    }
+    
+}
+
+#get allele frequencies for sampled cells
+
+calc_punch_allele_freqs <- function(punched_cell_indices_list, alive_cells) {
+    
+    #add punch information
+    punch_sizes <- purrr::map(punched_cell_indices_list, length)
+    punch_id_vec <- unlist(purrr::map2(1:length(punched_cell_indices_list), punch_sizes, function(x,y) rep(x,y)))
+    punches_df <- data.frame("index" = unlist(punched_cell_indices_list), "punch_id" = punch_id_vec)
+    alive_cells <- full_join(alive_cells, punches_df)
+    
+    #add punched column if not already
+    if(! 'punched' %in% colnames(alive_cells)) {
+        alive_cells$punched <- alive_cells$index %in% unlist(punched_cell_indices_list)
+    }
+    sampled_cells <- alive_cells %>% 
+        dplyr::filter(punched == TRUE)
+    
+    #get full presence-absence matrix for all sampled cells (within all punches)
+    mut_presence_absence_df <- define_mut_presence_absence(sampled_cells)
+    
+    punch_allele_freqs_list <- purrr::map(sort(unique(sampled_cells$punch_id)), function(id) extract_punch_allele_freqs(id = id,
+                                                                                                                 mut_presence_absence_df = mut_presence_absence_df,
+                                                                                                                 sampled_cells = sampled_cells))
+    #names(punch_allele_freqs_list) = as.character(1:length(punch_allele_freqs_list))
+    punch_allele_freqs <- do.call(rbind,punch_allele_freqs_list)
+        
+
+    
+    return(punch_allele_freqs)
+}
+
+
+#based off parameters described in https://github.com/kchkhaidze/CHESS.cpp/blob/master/r_package/R/distribution_functions.R
+draw_sequences_from_allele_freq <- function(true_allele_freq, min_alt_reads = 2, min_coverage = 10, depth = 100) {
+    
+    snv.depth <- rpois(1, depth) #coverage on specific SNV is poisson distributed
+    alt_reads <- rbinom(1, snv.depth, true_allele_freq) #draw reads with probably of true SNV allele frequency
+    
+    
+    #check if passes QC thresholds
+    
+    ref_reads <-  snv.depth - alt_reads #get ref reads
+    
+    if (snv.depth < min_coverage) { #if doesn't meet coverage threshold, call SNV as unknown
+        return(NA)
+    } else if (alt_reads < min_alt_reads) { # if only alternative reads are less than threshold then call as reference variant
+        return(0)
+    } else {
+        return(alt_reads/snv.depth) #otherwise returned observed VAF
+    }
+    
+}
+
+
+generate_punch_presense_absense_matrix <- function(sequenced_punch_allele_freqs, vaf_threshold = 0) {
+    
+   
+    presense_absense_matrix <- sequenced_punch_allele_freqs
+    
+    #enforce minimum VAF and call everything below as 0
+    presense_absense_matrix[presense_absense_matrix <= vaf_threshold] = 0
+    
+    #otherwise 
+    presense_absense_matrix[presense_absense_matrix  > vaf_threshold] = 1
+    
+    #filter to variants that have been called
+   # i <- (colSums(presense_absense_matrix, na.rm=TRUE) != 0)
+    
+    #presense_absense_matrix <- presense_absense_matrix[,i]
+    
+    return(presense_absense_matrix)
+}
+
+
+
+
+    
+
+# table of "mutations" with reference and alternative alleles
+
+get_sampled_reference_seq <- function(all_cells, all_sampled_muts) {
+    
+    origin_cell_sequence <- all_cells[all_cells$index == 1,"sequence"]
+    sampled_reference_sequence <- extract_sequences(origin_cell_sequence, sampled_muts = all_sampled_muts)
+    
+    return(sampled_reference_sequence)
+}
+
+extract_sampled_alt_allele <- function(sampled_cells, mut_id, all_sampled_muts = NA) {
+
+    #get list with vector of mutation ids contained in each sequence
+    sampled_muts_list <- purrr::map(sampled_cells$mutations, function(mut_row) extract_mutations(mut_row))
+  
+    rep_seq_contains_mut_id <- which(unlist(purrr::map(sampled_muts_list, function(muts_vec) mut_id %in% muts_vec)))[1]
+    
+    if (all(is.na(all_sampled_muts))) {
+        all_sampled_muts <- sort(as.integer(unique(unlist(purrr::map(sampled_muts_list, function(mut_row) extract_mutations(mut_row))))))
+    }
+    
+    if (! ("sequence_collapsed" %in% colnames(sampled_cells))) {
+        
+
+        sampled_cells$sequence_collapsed <- purrr::map_chr(sampled_cells$sequence, function(seq) extract_sequences(seq, sampled_muts = all_sampled_muts)) 
+    }
+    
+    alt_allele <- substring(sampled_cells[rep_seq_contains_mut_id, "sequence_collapsed"],
+                            which(mut_id == all_sampled_muts), which(mut_id == all_sampled_muts))
+    return(alt_allele)
+
+}
+
+make_mutations_table <- function(sampled_cells, all_cells) {
+    
+    sampled_muts <- sampled_cells$mutations
+    
+    all_sampled_muts <- sort(as.integer(unique(unlist(purrr::map(sampled_muts, function(mut_row) extract_mutations(mut_row))))))
+    ## extract sequence data
+    
+    
+    sampled_cells$sequence_collapsed <- purrr::map_chr(sampled_cells$sequence, function(seq) extract_sequences(seq, sampled_muts = all_sampled_muts)) 
+    
+    sampled_reference_sequence <- strsplit(get_sampled_reference_seq(all_cells, all_sampled_muts = all_sampled_muts), "")
+    
+    mut_alleles_df <- data.frame("mut_id" = all_sampled_muts, "ref" = sampled_reference_sequence[[1]])
+    
+    mut_alleles_df$alt <- purrr::map_chr(mut_alleles_df$mut_id, function(mut_id) extract_sampled_alt_allele(sampled_cells = sampled_cells,
+                                                                                                            mut_id = mut_id, 
+                                                                                                            all_sampled_muts = all_sampled_muts))
+    
+    return(mut_alleles_df)
+
+}
+
+choose_allele <- function(mut_num, punch_num, sequenced_punch_presense_absense_matrix, mut_alleles_df) {
+    
+    mut_call <- sequenced_punch_presense_absense_matrix[punch_num, mut_num]
+    
+    if (is.na(mut_call)) {
+        
+        allele <- NA
+        
+    } else if (mut_call == 1) {
+        
+        allele = mut_alleles_df$alt[mut_num]
+        
+    } else if (mut_call == 0) {
+        allele = mut_alleles_df$ref[mut_num]
+    } else {
+        error("Must input valid presense absense matrix")
+    }
+    
+    return(allele)
+}
+
+#function to get alignment sequence for each punch
+
+extract_punch_sequences <- function(sequenced_punch_presense_absense_matrix, mut_alleles_df) {
+    
+    punch_sequence_vec <- c()
+    
+    for (punch in 1:nrow(sequenced_punch_presense_absense_matrix)) {
+        punch_seq <- purrr::map_chr(1:ncol(sequenced_punch_presense_absense_matrix), function(mut_num) choose_allele(mut_num = mut_num,
+                                                                                                                 punch_num = punch,
+                                                                                                                 sequenced_punch_presense_absense_matrix = sequenced_punch_presense_absense_matrix,
+                                                                                                                 mut_alleles_df = mut_alleles_df) )
+        
+        punch_seq <- paste(punch_seq, sep="", collapse = "")
+        punch_sequence_vec <- c(punch_sequence_vec, punch_seq)
+    }
+    
+    return(punch_sequence_vec)
+    
+}
+
+#get actual simulated sequences
+
+#wrapper function to "sequence" sampled biopsies
+
+sequence_punch_biopsies <- function(punch_indices, alive_cells,  mut_alleles_df, min_alt_reads = 2, min_coverage = 10, depth = 100, vaf_threshold = 0) {
+    
+    true_punch_allele_freqs <- calc_punch_allele_freqs(punched_cell_indices_list = punch_indices, alive_cells = alive_cells)
+    
+    sequenced_punch_allele_freqs <- apply(true_punch_allele_freqs, 1:2, draw_sequences_from_allele_freq, min_alt_reads = min_alt_reads, min_coverage = min_coverage, depth = depth)
+    
+    sequenced_punch_presense_absense_matrix <- generate_punch_presense_absense_matrix(sequenced_punch_allele_freqs, vaf_threshold = vaf_threshold)
+    
+    punch_sequences_vec <- extract_punch_sequences(sequenced_punch_presense_absense_matrix = sequenced_punch_presense_absense_matrix,
+                                                   mut_alleles_df = mut_alleles_df)
+    
+    return(punch_sequences_vec)
+}
+
+#wrapper function to sample and sequence
+
+get_position_bp <- function(pos, punch_cells, ref_seq, ccf = 0.15, mut_count) {
+  bp_reads <- table(map_chr(punch_cells$collapsed_sequence, function(cs) substring(cs, pos, pos)))
+  
+  ref_pos <- which(names(bp_reads) == substring(ref_seq, pos, pos))
+  ref_count <- bp_reads[ref_pos]
+  ref_count <- ifelse(length(ref_count) == 0, 0, ref_count)
+  
+  alt_pos <- which(names(bp_reads) != substring(ref_seq, pos, pos))
+  alt_count <- bp_reads[alt_pos]
+  alt_count <- ifelse(length(alt_count) == 0, 0, alt_count)
+  
+  pos_ccf <- alt_count/ (ref_count + alt_count)
+  pos_bp <- ifelse(pos_ccf >= ccf, names(bp_reads)[alt_pos], names(bp_reads)[ref_pos])
+  #concensus_bp <- names(which.max(table(map_chr(punch_cells$collapsed_sequence, function(cs) substring(cs, pos, pos)))))
+  return(pos_bp)
+}
+get_punch_sequence <- function(punch_id_indices, sampled_cells, ref_seq, ccf = 0.15) {
+  
+  punch_cells <- sampled_cells %>% 
+    dplyr::filter(index %in% unlist(punch_id_indices))
+  
+  punch_sequence <- paste(purrr::map_chr(1:nchar(sampled_cells$collapsed_sequence[1]), function(pos) get_position_bp(pos = pos, punch_cells = punch_cells, ref_seq = ref_seq, ccf = ccf)), collapse = "")
+  return(punch_sequence)
+}
+bulk_sample_and_sequence2 <- function(alive_cells, punch_radius_n_cells = 2, n_samples = 20, min_alt_reads = 2, min_coverage = 10, depth = 100, ccf = 0.15, seed = NA, ref_seq = NULL) {
+    
+    if (! is.na(seed)) {
+        set.seed(seed)
+    }
+    
+    #all_cells <- all_cells %>% 
+    #    dplyr::filter(deathdate == max(deathdate))
+    
+    message("Sampling...")
+    punch_indices <- bulk_sample_tumor_diversified(alive_cells,
+                                       punch_radius_n_cells = punch_radius_n_cells, n_samples = n_samples, max_punch_size_deviation = 2)
+    
+    sampled_cells <- alive_cells %>% 
+        dplyr::filter(index %in% unlist(punch_indices))
+    
+    #mut_alleles_df <- make_mutations_table(sampled_cells = sampled_cells, all_cells = all_cells)
+    
+    ##add faster sequencing (tradeoff is less realistic, take out read variability)
+    sampled_cells$collapsed_sequence <- purrr::map_chr(sampled_cells$sequence, extract_sequences)	
+    message("Sequencing...")
+    #ref_seq <- extract_sequences(all_cells$sequence[which(all_cells$index == 1)])
+    punch_sequences_vec <- map(punch_indices, function(pi) get_punch_sequence(punch_id_indices = pi, 
+                                                                              sampled_cells = sampled_cells,
+                                                                              ref_seq = ref_seq, 
+                                                                              ccf = ccf))
+    #alive_cells$mutations <- sampled_cells
+    # punch_sequences_vec <- sequence_punch_biopsies(punch_indices,
+    #                                                alive_cells = alive_cells,
+    #                                                mut_alleles_df = mut_alleles_df,
+    #                                                min_alt_reads = min_alt_reads,
+    #                                                min_coverage = min_coverage,
+    #                                                depth = depth,
+    #                                                vaf_threshold = vaf_threshold)
+    
+    return(list("indices" = punch_indices, "sequences" = punch_sequences_vec))
+    
+}
+
+
+calc_cell_distance_from_edge <- function(cell_index, alive_cells) {
+    
+    if (! "est_edge" %in% colnames(alive_cells)) {
+        
+        warning("Edge cells were not marked, marking now...")
+        alive_cells <-  mark_boundary(cells_to_mark = alive_cells, alive_cells = alive_cells)
+    }
+    
+    #get coordinates of boundary cells
+    edge_x_locs <- alive_cells[alive_cells$est_edge == 1, "locx"]
+    edge_y_locs <- alive_cells[alive_cells$est_edge == 1, "locy"]
+    
+    cell_x_loc <- alive_cells[alive_cells$index == cell_index, "locx"]
+    cell_y_loc <- alive_cells[alive_cells$index == cell_index, "locy"]
+    
+    dist_vec <- sqrt((edge_x_locs -  cell_x_loc)^2 + (edge_y_locs -  cell_y_loc)^2)
+    
+    #return minimum distance from boundary cell
+    return(min(dist_vec))
+    
+}
+# mark edge vs center
+mark_edge_punches <- function(punched_cell_indices_list, alive_cells, fraction_edge_cutoff = 0) {
+    
+    if (! "punch_id" %in% colnames(alive_cells)) {
+        punch_sizes <- purrr::map(punched_cell_indices_list, length)
+        punch_id_vec <- unlist(purrr::map2(1:length(punched_cell_indices_list), punch_sizes, function(x,y) rep(x,y)))
+        punches_df <- data.frame("index" = unlist(punched_cell_indices_list), "punch_id" = punch_id_vec)
+        alive_cells <- full_join(alive_cells, punches_df)
+    }
+    
+    #first mark boundary single cells 
+    if (! "est_edge" %in% colnames(alive_cells)) {
+        
+       alive_cells <-  mark_boundary(cells_to_mark = alive_cells, alive_cells = alive_cells)
+    }
+    
+    sampled_cells <- alive_cells[alive_cells$index %in% unlist(punched_cell_indices_list),]
+        
+    sampled_cells$distance_from_edge <-  purrr::map_dbl(sampled_cells$index, function(cell_index) calc_cell_distance_from_edge(cell_index = cell_index,
+                                                                                                                               alive_cells = alive_cells))
+    
+    #calculate total span of tumor 
+    #estimate by averages x and y span
+    
+    est_tumor_span <- mean((max(alive_cells$locx) - min(alive_cells$locx)),(max(alive_cells$locy) - min(alive_cells$locy)) )
+    
+    #define distance from boundary to be defined as edge 
+    dist_cutoff <- fraction_edge_cutoff * est_tumor_span
+    
+    
+    punches_edge_assigment_df <- sampled_cells %>% 
+        group_by(punch_id) %>% 
+        summarize("punch_on_edge" = any(distance_from_edge <= dist_cutoff))
+    
+    
+    return(punches_edge_assigment_df)
+    
+}
+
+
+add_missing_punch_info_to_cells <- function(alive_cells, punch_info = NULL, punches_edge_assigment_df = NULL) {
+    
+    
+    
+    if (! (("punch_id" %in% colnames(alive_cells)) & ( "punched" %in% colnames(alive_cells)))) {
+        if (is.null(punch_info)) {
+            
+            warning("Missing punch info: punch info not added")
+            
+        } else {
+            punched_cell_indices_list <- punch_info$indices
+            punch_sizes <- purrr::map(punched_cell_indices_list, length)
+            punch_id_vec <- unlist(purrr::map2(1:length(punched_cell_indices_list), punch_sizes, function(x,y) rep(x,y)))
+            punches_df <- data.frame("index" = unlist(punched_cell_indices_list), "punch_id" = punch_id_vec)
+            alive_cells <- full_join(alive_cells, punches_df)
+            message("Punch info added")
+        }
+    }
+    
+    if (! "punch_on_edge" %in% colnames(alive_cells)) {
+        alive_cells <- full_join(alive_cells, punches_edge_assigment_df)
+        message("Punch edge status added")
+        
+    }
+
+    
+    return(alive_cells)
+}
+
+
+write_state_clocks_xml_from_bulk <- function(punch_info, punches_edge_assigment_df, alive_cells, xml_file, template_file, ref_seq = NULL) {
+  
+  n_punches <- length(punch_info$sequences)
+
+  alignment_string <- ""
+  for (i in 1:n_punches) {
+    alignment_string <- paste0(alignment_string, paste0("\t", 
+                                                        "<sequence id=\"seq_punch_", i, 
+                                                        "\" spec=\"Sequence\" taxon=\"", "punch_", i, 
+                                                        "\" totalcount=\"4\" value=\"", punch_info$sequences[i], 
+                                                        "\"/>", sep = ""), sep = "\n")
+  }
+  
+  taxon_traits <- c()
+  for (i in 1:n_punches) {
+    taxon_traits <- c(taxon_traits, paste0("punch_", i, 
+                                           "=loc", as.integer(punches_edge_assigment_df$punch_on_edge[i]), sep = ""))
+  }
+  taxon_traits_string <- paste(taxon_traits, collapse = ",")
+  
+  # sampled_sim_tree <- tumortree::convert_all_cells_to_tree_fast(all_cells = all_cells, sampled_cells_indices = sampled_cells$index)
+  # sampled_tree_length <- all_cells %>%
+  #   dplyr::mutate(br = deathdate - birthdate) %>%
+  #   dplyr::summarize(tree_length = sum(br))
+  
+  
+  #use this information to calculate clock rate
+  # sampled_muts <- all_cells$mutations
+  # sampled_muts_list <- purrr::map(sampled_muts, 
+  #                                 function(mut_row) as.integer(tumortree::extract_mutations(mut_row)))
+  
+  #clock rate for bulk
+  
+  #ref_seq <- extract_sequences(all_cells$sequence[all_cells$index==1])
+  n_muts_punches <- map_dbl(punch_info$sequences, function(punch_seq) sum(strsplit(punch_seq[[1]],"")[[1]] != strsplit(ref_seq,"")[[1]]))
+  clock_rate_mean <- mean(n_muts_punches / max(alive_cells$deathdate) /nchar(punch_info$sequences[[1]]))
+  
+   #all_sampled_muts <- sort(unique(unlist(sampled_muts_list)))
+  
+  #clock_rate_mean <- length(unique(all_sampled_muts)) / sampled_tree_length /  length(all_sampled_muts)
+  
+  
+  clock_rate_string <- format(clock_rate_mean, scientific = FALSE, digits = 6)
+  #calculate clock rate
+  
+  
+  #clock_rate_mean <- mean(purrr::map_dbl(sampled_muts_list, length) / length(all_sampled_muts)) / max(all_cells$deathdate)
+  #clock_rate_string <- format(clock_rate_mean, scientific = FALSE, digits = 4)
+  
+  #origin string
+  
+  origin_string <- as.character(max(alive_cells$deathdate))
+  
+  
+  #rho string
+  
+  alive_cells$most_extreme <- purrr::map2_dbl(alive_cells$locx,
+                                              alive_cells$locy,
+                                              function(x,y) check_if_cell_most_extreme(x_loc = x,
+                                                                                       y_loc =y,
+                                                                                       alive_cells = alive_cells))
+  
+  alive_cells$boundary_adjacent <- purrr::map2_dbl(alive_cells$locx,
+                                                   alive_cells$locy,
+                                                   function(x,y) check_boundary_adjacent(x_loc = x,
+                                                                                         y_loc =y,
+                                                                                         alive_cells = alive_cells))
+  
+  cell_on_edge <- alive_cells$boundary_adjacent | alive_cells$most_extreme
+  n_edge_cells <- sum(cell_on_edge )
+  n_center_cells <- sum(! cell_on_edge )
+
+  rho_edge <- sum(punches_edge_assigment_df$punch_on_edge) / n_edge_cells
+  rho_center <- sum(1 - punches_edge_assigment_df$punch_on_edge) / n_center_cells
+    
+  rho_string <- paste0(format(rho_center, digit = 3), 
+                         " ",
+                         format(rho_edge, digit = 3),
+                         sep = "")
+  
+  
+  ##write xml from template
+  con = file(template_file, "r")
+  first_line = TRUE
+  
+  while (length(x <- readLines(con, n = 1)) > 0) {
+    
+    if (grepl("insert_sequence", x, fixed = TRUE)) {
+      
+      write(alignment_string, file = xml_file, append = !first_line)
+      
+    } else if (grepl("insert_trait", x, fixed = TRUE)) {
+      
+      write(gsub("insert_trait", taxon_traits_string, x), 
+            file = xml_file, append = !first_line)
+      
+    } else if (grepl("insert_clock_rate", x, fixed = TRUE)) {
+      
+      write(gsub("insert_clock_rate", clock_rate_string, x), 
+            file = xml_file, append = !first_line)
+      
+    } else if (grepl("insert_origin", x, fixed = TRUE)) {
+      
+      write(gsub("insert_origin", origin_string, x), 
+            file = xml_file, append = !first_line)
+      
+    } else if (grepl("insert_rho", x, fixed = TRUE)) {
+      
+      write(gsub("insert_rho", rho_string, x), 
+            file = xml_file, append = !first_line)
+      
+    } else {
+      
+      write(x, file = xml_file, append = !first_line)
+    }
+    first_line = FALSE
+  }
+  close(con)
+}
+
+
+#calculate expected tree length based on pop gen theory
+#this can be used to normalize a prior
+
+calc_expected_total_tree_length <- function(n_tips, root_age) {
+    
+    sum_i <- 0
+    for (i in 1:(n_tips - 1)) {
+        sum_i <- sum_i + 1
+    }
+    
+    E_total_tree_length <- root_age * sum_i / (1- 1/n_tips)
+    return(E_total_tree_length)
+}
+
+
+stateClocks_bulk_sample_and_sequence <- function(sim_cells_file, xml_file, template_file, punch_radius_n_cells = 2, n_samples = 20, min_alt_reads = 2, min_coverage = 10, depth = 100, ccf = 0.15, seed = NA, target_tumor_size = 10000) {
+  
+ old <- Sys.time() # get start time 
+ # sampling, sequence
+  print("Starting bulk sampling and sequencing")
+  
+  alive_cells <- read.csv(sim_cells_file, header = TRUE)
+  
+  ref_seq <- extract_sequences(alive_cells$sequence[which(alive_cells$index==1)])
+  
+  endpoint <- max(alive_cells$deathdate)
+  
+  alive_cells <- alive_cells %>%
+    filter(deathdate == endpoint)
+     
+  #pathname <- system.file(sim_cells_file, package="R.utils")
+  #length_file <- countLines(sim_cells_file)
+  #print(paste0("Length of file: ", length_file, sep = ""))	
+  #To reduce memory, read in alive cells line by line and avoid loading all tumor cells
+  #con = file(sim_cells_file, "r")
+  
+  # Get header
+  #header_vec = unlist(strsplit(readLines(con, n = 1), split = ","))
+  
+  #First get last line to get endpoint
+  ## This line will be the last cell to arise in the population
+  ### It's very likely still alive, but just in case, will use this as the minimum endpoint for the population
+  
+  #print("Finding simulation endpoint from last line")
+ # pathname <- system.file(sim_cells_file, package="R.utils")
+  #length_file <- countLines(pathname)
+  
+  #print("Getting endpoint")
+  #last_line = n.readLines(con, n=1, skip=length_file-1)
+  #last_row <- read.table(text = last_line, sep = ",", strip.white = TRUE, fill = NA)
+  #colnames(last_row) <- header_vec
+  #endpoint <- last_row$deathdate[1]
+  
+  #print(paste0("Endpoint: ", endpoint))
+
+  #Also use first line to get reference seq
+  #print("Finding reference sequencing")
+
+  #first_line = n.readLines(con, n=1)
+  #first_row = read.table(text=first_line, sep=",", strip.white=TRUE, fill = NA)
+  #colnames(first_row) <- header_vec
+  #ref_seq <- extract_sequences(first_row$sequence)
+  
+ # print("Extracting alive cells")
+  #Now read throught all lines to get alive cells
+ # alive_cells = data.frame(colnames=header_vec)
+  #while ( TRUE ) {
+ # 	line = n.readLines(con, n = 1, header = TRUE)
+  #
+ #   	if ( length(line) == 0 ) {
+ #               break
+#        }
+        		
+#	#otherwise read in line as table
+#	curr_line <- read.table(text = line, sep = ",", strip.white = TRUE, fill = NA)
+#        colnames(curr_line) <- header_vec
+		
+	#Only add if currently alive cell
+#	if (all(curr_line$deathdate >= endpoint)) {
+
+#			alive_cells <- bind_rows(list(alive_cells, curr_line))
+#	}
+		
+		
+# }
+
+# close(con)
+
+# alive_cells <- alive_cells %>%
+#   dplyr::filter(deathdate == max(deathdate))
+#  
+
+# some code
+#...
+
+# print elapsed time
+  new <- Sys.time() - old # calculate difference
+  print(new) # print in nice format
+  print("Starting bulk sampling")
+  punch_info <- bulk_sample_and_sequence2(alive_cells,
+                                         punch_radius_n_cells = punch_radius_n_cells,
+                                         n_samples = n_samples,
+                                         min_alt_reads = min_alt_reads,
+                                         min_coverage = min_coverage,
+                                         depth = depth,
+                                         ccf = ccf,
+                                         seed = seed, 
+                                         ref_seq = ref_seq)
+  
+
+  punches_edge_assigment_df <- mark_edge_punches(punch_info$indices, alive_cells = alive_cells)
+  
+  alive_cells <- add_missing_punch_info_to_cells(alive_cells, punch_info, punches_edge_assigment_df )
+  
+  #a <- plot_punch_biopsies(alive_cells, punch_info$indices, color_by_edge = TRUE, size = 2)
+  #a
+  #print(a)
+  
+  #b <- plot_punch_biopsies(alive_cells, punch_info$indices, color_by_punch_id = TRUE, size = 2)
+  #b
+  #print(b)
+  print("Writing XML")
+  write_state_clocks_xml_from_bulk(punch_info = punch_info,
+                                punches_edge_assigment_df = punches_edge_assigment_df,
+                                alive_cells = alive_cells, 
+                                xml_file = xml_file, 
+                                template_file = template_file, 
+				ref_seq = ref_seq)
+  print("Done!")
+}
+
+#read in example cells
+
+# Record local directory info
+#all_cells <- read.csv("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation/cells_death_rate_validation_pop_1000_dr_0.21.csv")
+
+#all_cells <- read.csv("../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.105.csv")
+
+#alive_cells <- all_cells %>%
+#  dplyr::filter(deathdate == max(deathdate))
+
+
+#set.seed(30182)
+#punch_info <- bulk_sample_and_sequence2(all_cells,
+#                                       punch_radius_n_cells = 1,
+#                                       n_samples = 50,
+#                                       ccf = 0.3)
+#punches_edge_assigment_df <- mark_edge_punches(punch_info$indices, alive_cells = alive_cells)
+
+#alive_cells <- add_missing_punch_info_to_cells(alive_cells, punch_info, punches_edge_assigment_df)
+
+#alive_cells <- alive_cells %>% 
+#  mark_boundary(alive_cells = alive_cells)
+
+#write_csv(alive_cells, file = "../eden/simulation_data/example_bulk_sequencing_alive_cells_large.csv")
+
+
+# Now generate bulk sequencing XMLs for all eden simulated tumors
+
+#Local directories
+# all_simulation_files <- list.files(path ="outputs/raw_simulation_results/validation",
+#                                            pattern = "death_rate_validation_pop_1000_dr_0.[0-9][0-9].csv", full.names = TRUE)
+
+#all_simulation_files <- list.files(path ="../eden/simulation_data",
+#                                           pattern = "death_rate_validation_pop_10000_mu_1_dr_0.[0-9][0-9][0-9].csv", full.names = TRUE)
+
+#all_simulation_files  <- all_simulation_files[! str_detect(all_simulation_files, "sampled")]
+#all_simulation_files <- all_simulation_files[! str_detect(all_simulation_files,"_i_")]
+#all_simulation_files <- all_simulation_files[! str_detect(all_simulation_files,"alive")]
+#set.seed(3221)
+# set to TRUE if want to overwrite XML files
+overwrite = TRUE
+#for (sim_file in all_simulation_files) {
+args = commandArgs(trailingOnly=TRUE)
+sim_file <- args[1]
+print(sim_file)  
+message("Initiating")
+
+#all_cells <- read.csv(sim_file)
+
+xml_file <- paste0("../eden/xml/",
+                     gsub("cells_", "bulk_sampling_diversified", gsub(".csv", ".xml", basename(sim_file))), sep = "")
+
+dr_extract <- regmatches(basename(sim_file),
+                                 gregexpr("(?<=dr_)0.[0-9][0-9]", basename(sim_file), perl = TRUE))[[1]]
+
+sd <- as.numeric(dr_extract)*1000 + 50
+
+set.seed(sd)
+if (file.exists(xml_file) & (! overwrite)) {
+    
+   message("File exists, skipping")
+
+    
+    
+} else {
+    
+  stateClocks_bulk_sample_and_sequence(sim_file, 
+                                         xml_file = xml_file,
+                                         template_file = "../eden/xml/state-clocks-template-bulk.xml",
+                                         n_samples = 50,
+                                         ccf = 0.3,
+                                         punch_radius_n_cells = 1)
+    
+    
+}
+  
+#}

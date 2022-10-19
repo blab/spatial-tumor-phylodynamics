@@ -128,7 +128,7 @@ write_csv(alive_cells_boundary_driven, "../eden/simulation_data/alive_cells_deat
 #While reconstructing the full time tree and pruning is fairly fast, calculating the genetic branch lengths takes longer
 ## Therefore, it's faster to just re-calculate the branch lengths for the tree once it's pruned. 
 library(stringr)
-pruned_tree <- tree_boundary_driven_pruned
+#pruned_tree <- tree_boundary_driven_pruned
 time_to_genetic_bl <- function(pruned_tree) {
     
     #sequences for parent nodes
@@ -149,6 +149,9 @@ time_to_genetic_bl <- function(pruned_tree) {
 }
 tree_boundary_driven <- readRDS("../eden/simtrees/cells_death_rate_validation_pop_10000_mu_1_dr_0.050.rds")
 
+tree_molecular_boundary_driven <- time_to_genetic_bl(tree_boundary_driven)
+
+saveRDS(tree_molecular_boundary_driven, file = "../eden/simtrees/boundary_driven_moleculartree_large_full.rds")
 #Repeat prune to add root
 tree_boundary_driven_pruned <- prune_simulated_tree(tree = tree_boundary_driven,
                                           sampled_cells_indices = sampled_cells_boundary_driven$index)
@@ -175,10 +178,15 @@ tree_unrestricted <- readRDS("../eden/simtrees/cells_pushing_pop_10000_mu_1_dr_0
 tree_unrestricted_pruned <- prune_simulated_tree(tree = tree_unrestricted,
                                           sampled_cells_indices = sampled_cells_unrestricted$index)
 
+
+
 # ## Genetic tree
 # tree_molecular_unrestricted <- convert_all_cells_to_tree_fast(all_cells = all_cells_unrestricted,
 #                                                     add_all_states = TRUE,
 #                                                     branch_unit = "genetic")
+tree_molecular_unrestricted <- time_to_genetic_bl(tree_unrestricted)
+
+saveRDS(tree_molecular_unrestricted, file = "../eden/simtrees/unrestricted_moleculartree_large_full.rds")
 
 tree_molecular_unrestricted_pruned <- time_to_genetic_bl(tree_unrestricted_pruned)
 # tree_molecular_unrestricted_pruned <- prune_simulated_tree(tree = tree_molecular_unrestricted,

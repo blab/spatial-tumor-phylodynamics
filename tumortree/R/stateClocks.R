@@ -18,38 +18,80 @@
 #'
 write_state_clocks_xml <-function(sim_cells_file, sampled_cells_file, xml_file, template_file, 
           rewrite_sampled_cells_csv = FALSE, n_samples = 100, diversified = FALSE, 
-          resample = FALSE) {
-    sim_cells <- read.csv(sim_cells_file) %>% normalize_locs
-    endpoint <- max(sim_cells$deathdate)
-    alive_cells <- sim_cells %>% dplyr::filter(deathdate == endpoint)
-    if (file.exists(sampled_cells_file) & (!resample)) {
-        sampled_cells <- read.csv(sampled_cells_file) %>% normalize_locs
+          resample = FALSE, alive_cells_only = FALSE) {
+    print("Starting")
+    
+    #Check if alive cells already saved
+    alive_cells_file <- gsub("cells", "alive_cells", sim_cells_file)
+    
+    if (file.exists(alive_cells_file) & alive_cells_only) {
+
+	    print("Found alive cells")
+	    alive_cells <- read.csv(alive_cells_file)
+
+    } else {
+	
+	print("Filtering alive cells")
+    	sim_cells <- read.csv(sim_cells_file) %>% normalize_locs
+    	endpoint <- max(sim_cells$deathdate)
+    	alive_cells <- sim_cells %>% dplyr::filter(deathdate == endpoint)
+    	assert(all(alive_cells$deathdate == endpoint))
+    	print(paste0("Number of alive cells: ", nrow(alive_cells), sep = ""))
     }
-    else {
-        message("Sampling")
+
+    if (file.exists(sampled_cells_file) & (!resample)) {
+      
+	    sampled_cells <- read.csv(sampled_cells_file) %>% normalize_locs
+    
+    } else {
+    
+	message("Sampling")
         sampled_cells <- sample_alive_cells(alive_cells = alive_cells, 
                                             n = n_samples, diversified_sampling = diversified) %>% 
             normalize_locs %>% filter(sampled == TRUE)
-        write_csv(sampled_cells, file = sampled_cells_file)
+
+    	write_csv(sampled_cells, file = sampled_cells_file)
     }
-    sampled_sim_tree <- tumortree::convert_all_cells_to_tree_fast(all_cells = sim_cells, 
-                                                                  sampled_cells_indices = sampled_cells$index)
-    sampled_tree_length <- sum(sampled_sim_tree@phylo$edge.length)
-    sim_tree <- tumortree::convert_all_cells_to_tree_fast(all_cells = sim_cells)
-    tree_length <- sum(sim_tree@phylo$edge.length)
-    all_sim_tree_length <- sim_cells %>% dplyr::mutate(br = deathdate - 
+    #sampled_sim_tree <- tumortree::convert_all_cells_to_tree_fast(all_cells = sim_cells, 
+#                                                                  sampled_cells_indices = sampled_cells$index)
+#    sampled_tree_length <- sum(sampled_sim_tree@phylo$edge.length)
+#    sim_tree <- tumortree::convert_all_cells_to_tree_fast(all_cells = sim_cells)
+#    tree_length <- sum(sim_tree@phylo$edge.length)
+
+    print("Collapsing sequences")
+    sampled_cells$sequence_collapsed <- purrr::map_chr(sampled_cells$sequence,function(seq) extract_sequences(seq))
+    
+    print("Calculating tree length")
+
+    if (exists("sim_cells")) {
+    	all_sim_tree_length <- sim_cells %>% dplyr::mutate(br = deathdate - 
                                                            birthdate) %>% dplyr::summarize(tree_length = sum(br))
-    all_muts <- as.integer(unique(unlist(purrr::map(sim_cells$mutations, 
+    	all_muts <- as.integer(unique(unlist(purrr::map(sim_cells$mutations, 
                                                     function(mut_row) extract_mutations(mut_row)))))
-    all_alive_muts <- as.integer(unique(unlist(purrr::map(alive_cells$mutations, 
-                                                          function(mut_row) extract_mutations(mut_row)))))
-    all_sampled_muts <- as.integer(unique(unlist(purrr::map(sampled_cells$mutations, 
-                                                            function(mut_row) extract_mutations(mut_row)))))
-    clock_rate_mean <- length(unique(all_muts))/all_sim_tree_length/length(all_muts)
-    clock_rate_string <- format(clock_rate_mean, scientific = FALSE, 
+#    all_alive_muts <- as.integer(unique(unlist(purrr::map(alive_cells$mutations, 
+#                                                          function(mut_row) extract_mutations(mut_row)))))
+#    all_sampled_muts <- as.integer(unique(unlist(purrr::map(sampled_cells$mutations, 
+#                                                            function(mut_row) extract_mutations(mut_row)))))
+    	clock_rate_mean <- length(unique(all_muts))/all_sim_tree_length/length(all_muts)
+
+    } else {
+	
+	muts_per_lineage <- (nchar(alive_cells$mutations) - 1)/2
+        print(muts_per_lineage)
+        seq_length <- nchar(sampled_cells$sequence_collapsed[1])
+	print(seq_length)
+     	clock_rate_per_lineage <- muts_per_lineage / alive_cells$deathdate / seq_length
+	clock_rate_mean <- mean(clock_rate_per_lineage)
+    }
+
+    clock_rate_string <- format(clock_rate_mean, scientific = FALSE,
                                 digits = 5)
-    sampled_cells$sequence_collapsed <- purrr::map_chr(sampled_cells$sequence, 
-                                                       function(seq) extract_sequences(seq, sampled_muts = all_muts))
+    print(paste0("Clock rate: ", clock_rate_string, sep = ""))
+
+    #All sequences should be the same length
+    assert(all(nchar(sampled_cells$sequence_collapse) == nchar(sampled_cells$sequence_collapse[1])))
+     
+    print("Labeling edge states")
     if ((!"edge_adjacent" %in% colnames(sampled_cells)) | (!"most_extreme" %in% 
                                                            colnames(sampled_cells))) {
         sampled_cells$most_extreme <- purrr::map2_dbl(sampled_cells$locx, 
@@ -68,10 +110,13 @@ write_state_clocks_xml <-function(sim_cells_file, sampled_cells_file, xml_file, 
     if (rewrite_sampled_cells_csv) {
         write_csv(sampled_cells, sampled_cells_file)
     }
+
+
     sampled_cell_states <- as.integer(sampled_cells$most_extreme | 
                                           sampled_cells$edge_adjacent)
     sampled_cells$cell_name <- paste0("cell", sampled_cells$index, 
                                       "loc", sampled_cell_states, sep = "")
+    print("Writing alignment string")
     alignment_string <- ""
     for (i in 1:nrow(sampled_cells)) {
         alignment_string <- paste0(alignment_string, paste0("\t", 
@@ -87,10 +132,12 @@ write_state_clocks_xml <-function(sim_cells_file, sampled_cells_file, xml_file, 
     }
     taxon_traits_string <- paste(taxon_traits, collapse = ",")
     rho_edge <- round(sum(sampled_cell_states)/sum(alive_cells$most_extreme | 
-                                                       alive_cells$edge_adjacent), 3)
+                                                       alive_cells$edge_adjacent), 5)
     rho_center <- round(sum(!sampled_cell_states)/sum(!(alive_cells$most_extreme | 
-                                                            alive_cells$edge_adjacent)), 3)
+                                                            alive_cells$edge_adjacent)), 5)
     rho_string <- paste0(rho_center, " ", rho_edge, sep = "")
+
+    print("Writing XML")
     con = file(template_file, "r")
     first_line = TRUE
     while (length(x <- readLines(con, n = 1)) > 0) {

@@ -97,7 +97,7 @@ done
 ## Sampling should be reproducible for each individual run
 ## Will not overwrite existing XML files unless set overwrite=TRUE
 
-file in ../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.[0-9][0-9][0-9].csv
+for file in ../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.[0-9][0-9][0-9].csv
 do
   for sample_size in 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 30 40 50 60 70 80 90 100
   do
@@ -116,10 +116,12 @@ do
   sbatch sub_xmls_indiv_random.sh $file 100
 done
 
+#test
+#sbatch bulk_sample_diversified_submit.sh ../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.235.csv
 for file in ../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.[0-9][0-9][0-9].csv
 do
   echo $file
-  sbatch bulk_sample_submit.sh $file
+  sbatch bulk_sample_diversified_submit.sh $file
 done
 
 for file in ../eden/simulation_data/cells_death_rate_validation_pop_10000_mu_1_dr_0.[0-9][0-9][0-9].csv
@@ -128,6 +130,9 @@ do
   sbatch rates_submit.sh $file
 done
 
+# Rsync to gs cluster to run eden beast runs
+## Run from eden/xml on rhino
+rsync -a *.xml lewinsom@nexus.gs.washington.edu:/net/gs/vol1/home/lewinsom/StateClocks/eden/xml_files
 #Run in eden/stats to combine all simulations into single file
 #Add header
 head -n1 validation_growth_and_death_rates_weighted_large_0.000.tsv > validation_growth_and_death_rates_weighted_large.tsv

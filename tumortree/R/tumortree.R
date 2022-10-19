@@ -1378,7 +1378,7 @@ convert_nwk_to_treedata_bd <- function(nwk_list) {
 #' @importFrom phangorn Ancestors
 #'
 #' @return numeric
-#'
+#' @export
 convert_all_cells_to_tree_fast <- function (all_cells, add_all_states = FALSE, sampled_cells_indices = NULL, 
           branch_unit = "time", cell_locations_df_file = NULL){
   
@@ -1448,8 +1448,9 @@ convert_all_cells_to_tree_fast <- function (all_cells, add_all_states = FALSE, s
                                                                                                                                           ":", branch_length))
   }
   curr_leaves <- c(1)
-  curr_nwk_string <- paste0("(", all_cells$nwk_node[which(all_cells$index == 
-                                                            1)], ");")
+  curr_nwk_string <- paste0("(", all_cells$nwk_node[which(all_cells$index == 1)], ");")
+   
+  print(curr_nwk_string)
   # if (!is.null(sampled_cells_indices)) {
   #   included_cell_indices <- c(unique(unlist(purrr::map(sampled_cells_indices, 
   #                                                       function(child) collect_all_ancestors(index = child, 
@@ -1464,9 +1465,14 @@ convert_all_cells_to_tree_fast <- function (all_cells, add_all_states = FALSE, s
     for (leaf in curr_leaves) {
       children_indices <- all_cells$index[which((all_cells$parent_index == 
                                                    leaf) & (all_cells$index %in% included_cell_indices))]
+      print(children_indices)
       if (length(children_indices) > 0) {
         parent_node_string <- all_cells$nwk_node[which(all_cells$index == 
                                                          leaf)]
+        if (length(parent_node_string) == 0) {
+		warning("Parent node string incorrectly made")
+				
+	}
         children_node_string <- paste0("(", paste(all_cells$nwk_node[which(all_cells$parent_index == 
                                                                              leaf & (all_cells$index %in% included_cell_indices))], 
                                                   collapse = ","), ")", sep = "")
@@ -1525,6 +1531,7 @@ convert_all_cells_to_tree_fast <- function (all_cells, add_all_states = FALSE, s
 #' @return numeric
 
 #' @importFrom ape read.tree drop.tip
+#' @export
 prune_simulated_tree <- function (tree, sampled_cells_indices, add_all_states = FALSE, 
           all_cells = NULL, cell_locations_df_file = NULL, branch_unit = "time"){
   sampled_cells <- paste0("cell_", sampled_cells_indices, sep = "")
