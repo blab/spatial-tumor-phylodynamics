@@ -405,13 +405,13 @@ a_unlabeled <- ggplot(alive_cells_unrestricted, aes(x = norm_locx, y = norm_locy
     theme(legend.position = "none")
     #labs(color = "Mean\ngrowth\nrate") +
     #guides(fill="none") 
-
+a_unlabeled
 
 
 a_unlabeled
 
 ggsave(file = "tumor_sim_growth_rate_unrestricted_large.png", plot = a, path = figures_dir, height = 4, width = 5)
-ggsave(file = "tumor_sim_growth_rate_unrestricted_unlabeled_large.png", plot = a, path = figures_dir, height = 4, width = 4)
+ggsave(file = "tumor_sim_growth_rate_unrestricted_unlabeled_large.png", plot = a_unlabeled, path = figures_dir, height = 4, width = 4)
 
 ### SUBFIGURE 1E ###
 

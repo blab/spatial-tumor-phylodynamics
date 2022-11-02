@@ -1,6 +1,5 @@
 library(tumortree)
 library(tidyverse)
-setwd("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li")
 
 ##Whole genome estimated to be ~3Gb
 ###41% GC content
@@ -32,6 +31,7 @@ colnames(tumor_purities) <- c("sample", "mapping_rate", "depth", "n_snvs", "puri
 #     add_column("mark" = "truncal")
 #tumor 1
 #note: files are named w/ .csv extension but are actually tab-delimited
+setwd("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li")
 
 #Local directories
 t1_wgs_snvs_files <- list.files(path = "data/All_SNV_MBE2022Li", pattern = "t1", full.names = TRUE)
@@ -42,12 +42,12 @@ t2_wgs_snvs_files <- list.files(path = "data/All_SNV_MBE2022Li", pattern = "t2",
 header_info <- read.table(file = "data/All_SNV_MBE2022Li/head.csv")
 
 
-t1_wgs_snvs_files <- list.files(path = "../li-appliation/li_hcc_data/All_SNV_MBE2022Li", pattern = "t1", full.names = TRUE)
+#t1_wgs_snvs_files <- list.files(path = "../li-appliation/li_hcc_data/All_SNV_MBE2022Li", pattern = "t1", full.names = TRUE)
 
 #tumor 2
-t2_wgs_snvs_files <- list.files(path = "../li-appliation/li_hcc_data/All_SNV_MBE2022Li", pattern = "t2", full.names = TRUE)
+#t2_wgs_snvs_files <- list.files(path = "../li-appliation/li_hcc_data/All_SNV_MBE2022Li", pattern = "t2", full.names = TRUE)
 
-header_info <- read.table(file = "../li-appliation/li_hcc_data/data/All_SNV_MBE2022Li/head.csv")
+#header_info <- read.table(file = "../li-appliation/li_hcc_data/data/All_SNV_MBE2022Li/head.csv")
 
 
 # subclone_labels <- read.csv("data/T1_subclone_labels.csv") %>% 
@@ -61,7 +61,7 @@ t1_all_sites_list <- list()
 
 for (f1 in t1_wgs_snvs_files) {
     
-    sample_extract <- gsub(".csv", "", basename(f1))
+    sample_extract <- gsub(".tsv", "", gsub(".csv", "", basename(f1)))
     punch_extract <- gsub("t1", "", sample_extract)
     slice_extract <- gsub("[[:digit:]]","", punch_extract)
     punch_num_extract <- gsub("[a-z]","", punch_extract)
@@ -90,7 +90,7 @@ t2_all_sites_list <- list()
 
 for (f2 in t2_wgs_snvs_files) {
 
-    sample_extract <- gsub(".csv", "", basename(f2))
+    sample_extract <- gsub(".tsv", "", gsub(".csv", "", basename(f2)))
     punch_extract <- gsub("t2", "", sample_extract)
     slice_extract <- gsub("[[:digit:]]","", punch_extract)
     punch_num_extract <- gsub("[a-z]","", punch_extract)
@@ -180,42 +180,82 @@ t1_vaf_df <- t1_vaf_df %>%
 t2_vaf_df <- t2_vaf_df %>% 
     left_join(t2_vaf_df_truncal)
 
-#tumor 1
 
-t1_vaf_df_marked <- t1_vaf_df %>%
+#tumor 1
+## write data to regenerate plot
+t1_vaf_freqs <- t1_vaf_df %>% 
+    dplyr::filter(t_alt_vaf >= 0.05) %>% 
+    dplyr::select(contig, position, edgeP, mark, sample, t_alt_vaf)
+
+t2_vaf_freqs <- t2_vaf_df %>% 
+    dplyr::filter(t_alt_vaf >= 0.05) %>% 
+    dplyr::select(contig, position, edgeP, mark, sample, t_alt_vaf)
+
+write_tsv(t1_vaf_freqs,
+          file = "../li-application/li_hcc_data/t1_vaf_freqs.tsv")
+
+write_tsv(t2_vaf_freqs,
+          file = "../li-application/li_hcc_data/t2_vaf_freqs.tsv")
+
+t1_vaf_df_marked <- t1_vaf_freqs %>%
     dplyr::filter(mark == "truncal")
 
-t2_vaf_df_marked <- t2_vaf_df %>%
+t2_vaf_df_marked <- t2_vaf_freqs %>%
     dplyr::filter(mark == "truncal")
 
 
 edge_center_colors <- get_color_palette(names = c("edge", "center"))
-t1_vaf_histograms <- ggplot(t1_vaf_df, (aes(x=t_alt_vaf, fill = ifelse(edgeP == 1, "edge", "center")))) +
-    geom_histogram(color = "black", bins = 30) + theme_bw() + facet_wrap(~toupper(sample), ncol = 4) +
+t1_vaf_histograms <- ggplot(t1_vaf_freqs, (aes(x=t_alt_vaf, fill = ifelse(edgeP == 1, "edge", "center")))) +
+    geom_histogram(color = "black", bins = 30) + theme_bw() + facet_wrap(~toupper(sample), ncol = 6) +
     geom_histogram(color = "black", bins = 30, fill = "grey", data = t1_vaf_df_marked, alpha = 0.5) + 
     #geom_vline(xintercept = 0.25, linetype = "dashed") +
     scale_fill_manual(values = edge_center_colors) +
     theme(legend.position = "none") +
-    theme(text=element_text(size = 15)) +
+    theme(text=element_text(size = 25)) +
     xlab("Variant Allele Frequency")
     #geom_point(data = t1_vaf_df_marked, color = "black", y=0)
 t1_vaf_histograms
 
-ggsave(t1_vaf_histograms, file = "../figures/t1_vaf_histograms.png", height = 7, width = 10)
+ggsave(t1_vaf_histograms, file = "../figures/t1_vaf_histograms.png", height = 5, width = 12)
 
 t2_vaf_histograms <- ggplot(t2_vaf_df, (aes(x=t_alt_vaf, fill = ifelse(edgeP == 1, "edge", "center")))) +
     geom_histogram(color = "black", bins = 30) + theme_bw() +
     geom_histogram(color = "black", fill = "grey", data = t2_vaf_df_marked, alpha = 0.5, bins = 30) +
-    facet_wrap(~toupper(sample), ncol = 4) +
+    facet_wrap(~toupper(sample), ncol = 6) +
     #geom_vline(xintercept = 0.25, linetype = "dashed") +
     scale_fill_manual(values = edge_center_colors) +
     theme(legend.position = "none")  +
-    theme(text=element_text(size = 15)) +
+    theme(text=element_text(size = 25)) +
     xlab("Variant Allele Frequency")
     #geom_point(data = t2_vaf_df_marked, color = "black", y=0)
 t2_vaf_histograms 
 
-ggsave(t2_vaf_histograms, file = "../figures/t2_vaf_histograms.png", height = 7*0.75, width = 10)
+ggsave(t2_vaf_histograms, file = "../figures/t2_vaf_histograms.png", height = 5*0.666, width = 12)
+
+#TUMOR 3 (Ling et al)
+
+ling_vaf_data <- read_tsv(file = "../ling-application/data/combined_variant_data.tsv")
+
+ling_vaf_data_fixed <- ling_vaf_data %>% 
+    filter(fixed, Punch != "Z1", mut_allele_freq > 0.05)  %>% 
+    mutate(Punch = paste0("T3", Punch, sep =""))
+edge_center_colors = get_color_palette(c("edge", "center"))
+
+t3_vaf_histograms <- ling_vaf_data %>%
+    filter(Punch != "Z1", mut_allele_freq > 0.05) %>% 
+    mutate(Punch = paste0("T3", Punch, sep ="")) %>% 
+    ggplot(., aes(x=mut_allele_freq)) +
+    geom_histogram(aes(fill = ifelse(edge == 1, "edge", "center")), color = "black",bins = 30) +
+    geom_histogram(color = "black", fill = "grey", data = ling_vaf_data_fixed, alpha = 0.5, bins = 30) +
+    facet_wrap(~Punch,  ncol = 6) +
+    theme_bw() +
+    scale_fill_manual(values = edge_center_colors) +
+    theme(legend.position = "none") +
+    #geom_vline(xintercept = 0.25, linetype = "dashed") +
+    theme(text=element_text(size = 25)) +
+    xlab("Variant Allele Frequency")
+t3_vaf_histograms 
+ggsave(t3_vaf_histograms, file = "../figures/t3_vaf_histograms.png", height = 5*1.33, width = 12)
 # t1_vaf_df %>% 
 #     group_by(sample) %>% 
 #     summarize(n_variants = sum(variant, na.rm = TRUE),

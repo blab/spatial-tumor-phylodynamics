@@ -65,8 +65,10 @@ t1_map_plot <- T1_punch_coordinates %>%
                                         color = "black",
                                         linetype = "dashed",
                                         aes(group = Slice)) +
-    geom_point(size = 1, color = "darkgrey") +
-    geom_point(data = T1_wgs_punch_coordinates, size = 4, shape = 21, color = "black",  aes(fill = ifelse(edgeP == 1, "edge", "center"))) +
+    #geom_point(size = 1, color = "darkgrey") +
+    geom_point(data = T1_wgs_punch_coordinates, size = 4,
+               shape = 21, color = "black", 
+               aes(fill = ifelse(edgeP == 1, "edge", "center"))) +
     #scale_fill_manual(values = sim_colors ) +
     # labs(fill = "") +
     #facet_wrap(~factor(Slice, levels = T1_slices), scales = "free") +
@@ -92,7 +94,7 @@ t2_map_plot <- T2_punch_coordinates %>%
                                         color = "black",
                                         linetype = "dashed",
                                         aes(group = Slice)) +
-    geom_point(size = 1, color = "darkgrey") +
+    #geom_point(size = 1, color = "darkgrey") +
     geom_point(data = T2_wgs_punch_coordinates, size = 4, shape = 21, color = "black",  aes(fill = ifelse(edgeP == 1, "edge", "center"))) +
     theme_void() + theme(legend.position = "none") +
     scale_fill_manual(values = edge_center_colors) +
@@ -171,10 +173,28 @@ t1_wgs_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
     xlab("Estimated birth rate") +
     theme(legend.position = "none") +ylab("")
 
+t1_wgs_violin_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>% 
+    filter(migration_model == "unidirectional",
+           clock_model == "state-dependent",
+           states == "oldstates",
+           tumor == "T1") %>% 
+    ggplot(., aes(x = ifelse(state == "loc0", "center", "edge"), y=birthRate), color = "black") +
+    geom_violin(aes(fill = state), alpha=0.8) +
+    #facet_grid(cols = vars(tumor)) +
+    theme_classic() + scale_fill_manual(values=colors_loc) +
+    theme(text=element_text(size=40))+
+    xlab("Estimated birth rate") +
+    theme(legend.position = "none") +ylab("") +
+    stat_summary(fun=median, geom="point", size=1, color="black")
+
+t1_wgs_violin_posteriors_plot_oldstates_state_clock
 t1_wgs_posteriors_plot_oldstates_state_clock 
 
 ggsave(plot=t1_wgs_posteriors_plot_oldstates_state_clock,
        file ="../figures/t1_li_wgs_posteriors_oldstates_stateclock.png", height = 5, width = 5)
+
+ggsave(plot=t1_wgs_violin_posteriors_plot_oldstates_state_clock,
+       file ="../figures/t1_li_wgs_posteriors_oldstates_stateclock_violin.png", height = 5, width = 3)
 
 #Tumor 2
 t2_wgs_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>% 
@@ -190,10 +210,27 @@ t2_wgs_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
     xlab("Estimated birth rate") +
     theme(legend.position = "none") +ylab("") 
 
+t2_wgs_violin_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>% 
+    filter(migration_model == "unidirectional",
+           clock_model == "state-dependent",
+           states == "oldstates",
+           tumor == "T2") %>% 
+    ggplot(., aes(x = ifelse(state == "loc0", "center", "edge"), y=birthRate), color = "black") +
+    geom_violin(aes(fill = state), alpha=0.8) +
+    #facet_grid(cols = vars(tumor)) +
+    theme_classic() + scale_fill_manual(values=colors_loc) +
+    theme(text=element_text(size=40))+
+    xlab("Estimated birth rate") +
+    theme(legend.position = "none") +ylab("") +
+    stat_summary(fun=median, geom="point", size=1, color="black")
+
 t2_wgs_posteriors_plot_oldstates_state_clock  
 
 ggsave(plot=t2_wgs_posteriors_plot_oldstates_state_clock ,
-       file ="../figures/t2_li_wgs_posteriors_oldstates_stateclock.png", height = 5, width = 5)
+       file ="../figures/t2_li_wgs_posteriors_oldstates_stateclock.png", height = 5, width = 3)
+
+ggsave(plot=t2_wgs_violin_posteriors_plot_oldstates_state_clock ,
+       file ="../figures/t2_li_wgs_posteriors_oldstates_stateclock_violin.png", height = 5, width = 3)
 
 #also plot estimated differences
 ## Tumor 1
@@ -211,10 +248,28 @@ t1_wgs_ratio_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
     theme(legend.position = "none") +ylab("") +
     geom_vline(xintercept = 1, linetype="dashed")
 
-t1_wgs_ratio_posteriors_plot_oldstates_state_clock 
+t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_df %>% 
+    filter(migration_model == "unidirectional",
+           clock_model == "state-dependent",
+           states == "oldstates",
+           tumor == "T1") %>% 
+    ggplot(., aes(x="", y=birthRateRatio), color = "black",  fill = "black") +
+    geom_violin(alpha=0.8, fill = "black") +
+    #facet_grid(cols = vars(tumor)) +
+    theme_classic() + 
+    theme(text=element_text(size=40))+
+    xlab("Estimated birth rate ratio (edge / center)") +
+    theme(legend.position = "none") +ylab("") +
+    geom_hline(yintercept = 1, linetype="dashed") +
+    stat_summary(fun=median, geom="point", size=1, color="lightgrey")
 
+t1_wgs_ratio_posteriors_plot_oldstates_state_clock 
+t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin
 ggsave(plot=t1_wgs_ratio_posteriors_plot_oldstates_state_clock ,
        file ="../figures/t1_li_wgs_ratio_posteriors_oldstates_stateclock.png", height = 5, width = 5)
+
+ggsave(plot=t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin ,
+       file ="../figures/t1_li_wgs_ratio_posteriors_oldstates_stateclock_violin.png", height = 5, width = 1.5)
 
 ## Tumor 2
 t2_wgs_ratio_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>% 
@@ -231,11 +286,28 @@ t2_wgs_ratio_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
     theme(legend.position = "none") +ylab("") +
     geom_vline(xintercept = 1, linetype="dashed")
 
+
+t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_df %>% 
+    filter(migration_model == "unidirectional",
+           clock_model == "state-dependent",
+           states == "oldstates",
+           tumor == "T2") %>% 
+    ggplot(., aes(x="", y=birthRateRatio), color = "black",  fill = "black") +
+    geom_violin(alpha=0.8, fill = "black") +
+    #facet_grid(cols = vars(tumor)) +
+    theme_classic() + 
+    theme(text=element_text(size=40))+
+    xlab("Estimated birth rate ratio (edge / center)") +
+    theme(legend.position = "none") +ylab("") +
+    geom_hline(yintercept = 1, linetype="dashed") +
+    stat_summary(fun=median, geom="point", size=1, color="lightgrey")
+
 t2_wgs_ratio_posteriors_plot_oldstates_state_clock 
 
 ggsave(plot=t2_wgs_ratio_posteriors_plot_oldstates_state_clock ,
        file ="../figures/t2_li_wgs_ratio_posteriors_oldstates_stateclock.png", height = 5, width = 5)
-
+ggsave(plot=t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin ,
+       file ="../figures/t2_li_wgs_ratio_posteriors_oldstates_stateclock_violin.png", height = 5, width = 1.5)
 
 #get HDI intervals to put in text
 t1_estimate_summaries <- all_logs_birthRate_df %>% 
@@ -288,7 +360,8 @@ mcc_tree_files <- list.files(path = "../li-application/out",
                              full.names = TRUE)
 
 #only do unidirectional
-
+# For testing
+#mcc_file <- "../li-application/out/T2_wgs_oristates_unidir_state_comb.HCCtumor_mcc.tree"
 for (mcc_file in mcc_tree_files) {
     mcc_tree <- read.beast(file=mcc_file)
     migration_model <- ifelse(grepl("unidir", basename(mcc_file)), "unidirectional", "bidirectional")
@@ -311,10 +384,13 @@ for (mcc_file in mcc_tree_files) {
         #geom_point(size = 2) +
         scale_color_manual(values = colors_loc) +
         theme(legend.position = "none") + 
-        geom_tiplab(offset = 0.05, size = 5) +
+        geom_tiplab(offset = 0.05, size = 20) +
         coord_cartesian(clip="off")
     
-    treeplot_pie <- ggtree::inset(treeplot, pies, width = 0.075, height = 0.075) + theme(legend.position = "none") #+ ggtitle(paste0(tumor_extract, migration_model, rep_extract, sep = " "))
+    treeplot_pie <- ggtree::inset(treeplot, pies, width = 0.06, height = 0.06) + theme(legend.position = "none") #+ ggtitle(paste0(tumor_extract, migration_model, rep_extract, sep = " "))
+    treeplot_pie <- treeplot_pie + geom_nodelab(aes(label = ifelse(as.numeric(posterior) <= 1, round(as.numeric(posterior), 2), "")),
+                                                nudge_x = -0.05, nudge_y = 0.2, size  = 20, hjust='right')
+    #treeplot_pie
     fig_file <- paste0("../figures/", tumor_extract,  "_",
                        migration_model, "_",
                        clock_extract,  "_",
@@ -323,5 +399,7 @@ for (mcc_file in mcc_tree_files) {
                        "mcc_tree.png")
     print(fig_file)
     ggsave(plot=treeplot_pie,
-           file=fig_file, height = 10, width = 7)
+           file=fig_file, height = 10, width = 8)
 }
+
+

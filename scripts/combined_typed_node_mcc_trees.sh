@@ -55,4 +55,36 @@ do
   /Applications/BEAST\ 2.6.2/bin/treeannotator -burnin 0 -heights median $trees_file ${MODEL}_mcc.tree
 done
 
-/Applications/BEAST\ 2.6.2/bin/treeannotator -burnin 0 -heights median T1_wgs_oristates_unidir_state_comb_rt1l13.HCCtumor.typed.node.trees T1_wgs_oristates_unidir_state_comb_rt1l13_mcc.tree
+
+
+# Ling et al dataset
+## Run in ling-application/trees
+/Applications/BEAST\ 2.6.2/bin/LogCombiner -log hcc-wes_unidir_state_rep1.HCCtumor.typed.node.trees \
+-log hcc-wes_unidir_state_rep2.HCCtumor.typed.node.trees \
+-log hcc-wes_unidir_state_rep3.HCCtumor.typed.node.trees \
+-o hcc-wes_unidir_state_comb.HCCtumor.typed.node.trees \
+-b 10
+
+## Run in ling-application/logs
+/Applications/BEAST\ 2.6.2/bin/LogCombiner -log hcc-wes_unidir_state_rep1.log \
+-log hcc-wes_unidir_state_rep2.log \
+-log hcc-wes_unidir_state_rep3.log \
+-o hcc-wes_unidir_state_comb.log \
+-b 10
+
+/Applications/BEAST\ 2.6.2/bin/LogCombiner -log hcc-wes_unidir_state_strict_clock_rep1.HCCtumor.typed.node.trees \
+-log hcc-wes_unidir_state_strict_clock_rep2.HCCtumor.typed.node.trees \
+-log hcc-wes_unidir_state_strict_clock_rep3.HCCtumor.typed.node.trees \
+-o hcc-wes_unidir_state_strict_clock_comb.HCCtumor.typed.node.trees \
+-b 10
+
+/Applications/BEAST\ 2.6.2/bin/LogCombiner -log hcc-wes_unidir_state_strict_clock_rep1.log \
+-log hcc-wes_unidir_state_strict_clock_rep2.log\
+-log hcc-wes_unidir_state_strict_clock_rep3.log \
+-o hcc-wes_unidir_state_strict_clock_comb.log \
+-b 10
+
+
+# Find MCC tree (no burnin, already discarded in combine logs step)
+
+/Applications/BEAST\ 2.6.2/bin/treeannotator -burnin 0 -heights median hcc-wes_unidir_state_comb.HCCtumor.typed.node.trees hcc-wes_unidir_state_comb.HCCtumor.typed.node.mcc.tree

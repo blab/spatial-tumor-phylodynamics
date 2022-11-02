@@ -83,17 +83,38 @@ names(colors_loc) <- c("loc1", "loc0")
 
 anc_state_nodes <- mcc_tree@data %>% 
     mutate(type.prob = as.numeric(type.prob)) %>% 
-    dplyr::mutate(edge = type.prob * as.integer(type == "loc1") + (1 - type.prob)*as.integer(type == "loc0")) %>% 
-    dplyr::mutate(center = type.prob * as.integer(type == "loc0") + (1 - type.prob)*as.integer(type == "loc1")) %>% 
+    dplyr::mutate(edge = type.prob * as.integer(type == "loc1") +
+                      (1 - type.prob)*as.integer(type == "loc0")) %>% 
+    dplyr::mutate(center = type.prob * as.integer(type == "loc0") +
+                      (1 - type.prob)*as.integer(type == "loc1")) %>% 
     dplyr::select(center, edge, type, node)
 
 
-pies <- nodepie(anc_state_nodes, cols=1:2, alpha=0.8, color = colors_edge_center)
+pies <- nodepie(anc_state_nodes,
+                cols=1:2, 
+                alpha=0.8,
+                color = colors_edge_center)
+
+
 g <- ggtree(mcc_tree, color = "darkgrey") +
     #geom_point(size = 2) +
     scale_color_manual(values = colors_loc) +
+    theme(legend.position = "none") + 
+    geom_nodelab(aes(label = ifelse(as.numeric(posterior) <= 0.99,
+                                    round(as.numeric(posterior),
+                                          2), "")),
+                 hjust="right",
+                 vjust="bottom",
+                 nudge_x = -0.9,
+                 nudge_y = 0.4, size = 9)
+    
+g_pie <- ggtree::inset(g, pies, width = 0.03, height = 0.03) +
     theme(legend.position = "none")
-g_pie <- ggtree::inset(g, pies, width = 0.066, height = 0.066) + theme(legend.position = "none")
+
+ggsave(plot=g_pie,
+       file ="../figures/example_ancestral_state_recon_tree.png",
+       height = 5,
+       width = 5)
 
 ## To visualize tip labels
 # ggtree(mcc_tree, aes(color = type)) +
@@ -116,9 +137,6 @@ g2_pie_toy <- viewClade(g2_pie, MRCA(g2,"cell4628loc1", "cell4232loc0"))
 
 ggsave(plot=g2_pie_toy,
        file ="../figures/toy_ancestral_state_recon_tree.png", height = 5, width = 5)
-
-ggsave(plot=g_pie, file ="../figures/example_ancestral_state_recon_tree.png", height = 5, width = 5)
-
 
 #example_all_cells <- read_csv("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation/cells_death_rate_validation_pop_1000_dr_0.29.csv")
 example_all_cells <- read_csv("../simulation_data/cells_death_rate_validation_pop_1000_dr_0.29.csv")
@@ -415,6 +433,25 @@ clock_rate_comparison_posteriors_plot
 
 ggsave(file = "../figures/clock_rate_comparison_birth_rate_posteriors.png",
        clock_rate_comparison_posteriors_plot, height = 5, width = 5)
+
+#strict only for presentations
+clock_rate_comparison_posteriors_plot_strict_only <- clock_comparison_growth_rate_posteriors_df %>% 
+    dplyr::filter(n==50, minBirthRateESS > 100) %>% 
+    ggplot(., aes(x=true_birth_rate_diff_weighted, y=mean_birth_rate_diff, color = clock_model, alpha = clock_model)) +
+    geom_point(aes(color = clock_model, alpha = clock_model)) +
+    theme_classic() +
+    geom_abline(slope=1, intercept = 0, linetype = "dashed", color = "black") +
+    geom_errorbar(aes(ymin = birthRate_hdi95_lower, ymax = birthRate_hdi95_upper, color=clock_model, alpha = clock_model), size = 1) +
+    xlab("True birth rate difference (edge - center)") +
+    ylab("Estimated birth rate difference (edge - center)") +
+    scale_color_manual(values = clock_colors) +
+    theme(legend.position = "none") +
+    theme(text=element_text(size=15)) +
+    scale_alpha_manual(values = c("state_dependent"=0, "strict" =0.6))
+clock_rate_comparison_posteriors_plot_strict_only
+
+ggsave(file = "../figures/clock_rate_comparison_birth_rate_posteriors_strict_only.png",
+       clock_rate_comparison_posteriors_plot_strict_only, height = 5, width = 5)
 
 # MSE plots (Figure 3F)
 clock_comparison_sample_size_results_summary <- clock_comparison_growth_rate_posteriors_df %>% 

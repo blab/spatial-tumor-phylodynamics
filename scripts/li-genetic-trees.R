@@ -65,6 +65,8 @@ t1_treePars_obj@data <- tibble("node" = 1:(length(t1_treePars_obj@phylo$tip.labe
     dplyr::left_join(., t1_li_edge_labels, by = "punch") %>% 
     mutate(punch_label = toupper(gsub("t1", "", punch)))
 
+
+t1_treePars_obj@data$punch_label[t1_treePars_obj@data$punch_label == "BLOOD"] <- "Blood"
 ##Tumor 2
 t2_treePars_obj@data <- tibble("node" = 1:(length(t2_treePars_obj@phylo$tip.label) + length(t2_treePars_obj@phylo$node.label)), 
                                "punch" = c(t2_treePars_obj@phylo$tip.label, rep(NA, length(t2_treePars_obj@phylo$node.label)))) %>% 
@@ -72,7 +74,7 @@ t2_treePars_obj@data <- tibble("node" = 1:(length(t2_treePars_obj@phylo$tip.labe
     mutate(punch_label = toupper(gsub("t2", "", punch)))
 
 
-
+t2_treePars_obj@data$punch_label[t2_treePars_obj@data$punch_label == "BLOOD"] <- "Blood"
 ##trees where blood is a leaf
 colors <- get_color_palette()
 t1_wgs_tree <- ggtree(t1_treePars_obj, aes(color = ifelse(edgeP==1, "edge","center"), label = punch_label)) +
@@ -80,7 +82,7 @@ t1_wgs_tree <- ggtree(t1_treePars_obj, aes(color = ifelse(edgeP==1, "edge","cent
     geom_tippoint(size =2) +geom_text(color = "black", nudge_x=7000, size =3) +
     theme(legend.position = "none")
 t1_wgs_tree 
-ggsave(filename = "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/manuscript/figures/t1_wgs_genetic_state_tree.png",
+ggsave(filename = "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/figures/t1_wgs_genetic_state_tree.png",
        t1_wgs_tree, height = 4, width = 3)
 
 t2_wgs_tree <- ggtree(t2_treePars_obj, aes(color = ifelse(edgeP==1, "edge","center"), label = punch_label)) +
@@ -90,5 +92,5 @@ t2_wgs_tree <- ggtree(t2_treePars_obj, aes(color = ifelse(edgeP==1, "edge","cent
     geom_text(color = "black", nudge_x=7000, size = 3) +
     theme(legend.position = "none")
 t2_wgs_tree 
-ggsave(filename = "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/manuscript/figures/t2_wgs_genetic_state_tree.png",
+ggsave(filename = "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/figures/t2_wgs_genetic_state_tree.png",
        t2_wgs_tree, height = 4, width = 3)
