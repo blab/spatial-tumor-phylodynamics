@@ -100,7 +100,7 @@ scale_bar_vert_pos <- 14
 ##trees where blood is a leaf
 t1_wgs_tree <- ggtree(t1_treePars_obj, aes(color = ifelse(edgeP==1, "edge","center"), label = punch_label)) +
     scale_color_manual(values = colors) +
-    geom_tippoint(size =2) +geom_text(color = "black", nudge_x=4000, size =8, hjust = "left") +
+    geom_tippoint(size =2) +geom_text(color = "black", nudge_x=4000, size =4, hjust = "left") +
     theme(legend.position = "none") +
     
     #Scale bar
@@ -123,7 +123,7 @@ scale_bar_vert_pos <- 8
 
 t2_wgs_tree <- ggtree(t2_treePars_obj, aes(color = ifelse(edgeP==1, "edge","center"), label = punch_label)) +
     scale_color_manual(values = colors) +
-    geom_tippoint(size =2) +geom_text(color = "black", nudge_x=4000, size =8, hjust = "left") +
+    geom_tippoint(size =2) +geom_text(color = "black", nudge_x=4000, size =4, hjust = "left") +
     theme(legend.position = "none") +
     geom_segment(aes(x=scale_bar_start, xend = scale_bar_start + scale_bar_width,
                      y = scale_bar_vert_pos, yend = scale_bar_vert_pos), color = "black") +

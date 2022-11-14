@@ -115,29 +115,32 @@ ggsave(plot=t2_map_plot_alt_states,
 #                         full.names = TRUE)
 
 log_files <- list.files(path = "../li-application/out",
-                        pattern=".log",
+                        pattern="[0-9].log",
                         full.names = TRUE)
 
-
-#temporarily get rid of last corrupted log file
-log_files <- log_files[! grepl("T1_wgs_newstates_bidir_state_rep2.log", log_files)]
+log_files <- log_files[! grepl("chain1", log_files)]
+log_files <- log_files[! grepl("T1red", log_files)]
+log_files <- log_files[! grepl("bidir", log_files)]
 
 #logs <- purrr::map(log_files, readLog)
 
 process_logs <- function(log_file) {
     print(log_file)
-    rep_extract <- regmatches(basename(log_file),
-                              gregexpr("(?<=rep)[0-9]", basename(log_file), perl = TRUE))[[1]]
     migration_model <- ifelse(grepl("unidir", basename(log_file)), "unidirectional", "bidirectional")
     tumor_extract <- regmatches(basename(log_file), gregexpr("T[12]", basename(log_file), perl = TRUE))[[1]]
     states_extract <- ifelse(grepl("newstates", basename(log_file)), "newstates", "oldstates")
     clock_extract <- ifelse(grepl("strict", basename(log_file)), "strict", "state-dependent")
-    log <- readLog(log_file)
+    subset_extract <- regmatches(basename(log_file),
+                                 gregexpr("(?<=unidir_)[0-9]", basename(log_file), perl = TRUE))[[1]]
+    if(length(subset_extract) == 0) {
+        subset_extract <- 1
+    }
+    log <- readLog(log_file, burnin = 0.2)
     log_df <- as.data.frame(log) %>%
         add_column("migration_model" = migration_model,
-                   "rep" = rep_extract,
                    "tumor" = tumor_extract,
                    "states" = states_extract,
+                   "subset" = subset_extract,
                    "clock_model" = clock_extract) %>%
         dplyr::mutate(birthRateDiff = birthRateSVCanonical.loc1 - birthRateSVCanonical.loc0,
                       birthRateRatio = birthRateSVCanonical.loc1 / birthRateSVCanonical.loc0)
@@ -161,13 +164,15 @@ t1_wgs_posteriors_plot_alt_states <- all_logs_birthRate_df %>%
            clock_model == "state-dependent",
            states == "newstates",
            tumor == "T1") %>% 
-    ggplot(., aes(x=birthRate), color = "black") +
-    geom_density(aes(fill = state), alpha=0.8) +
+    mutate("category" = paste0(state, subset)) %>% 
+    ggplot(., aes(x=birthRate, group=category), color = "black") +
+    geom_density(aes(fill = state, group = category), alpha=0.5) +
     #facet_grid(cols = vars(tumor)) +
     theme_classic() + scale_fill_manual(values=colors_loc) +
     theme(text=element_text(size=20))+
     xlab("Estimated birth rate") +
     theme(legend.position = "none") +ylab("") 
+
 t1_wgs_posteriors_plot_alt_states
 ggsave(plot=t1_wgs_posteriors_plot_alt_states ,file ="../figures/t1_li_wgs_posteriors_newstates.png", height = 5, width = 5)
 
@@ -177,8 +182,9 @@ t2_wgs_posteriors_plot_alt_states <- all_logs_birthRate_df %>%
            clock_model == "state-dependent",
            states == "newstates",
            tumor == "T2") %>% 
+    mutate("category" = paste0(state, subset)) %>% 
     ggplot(., aes(x=birthRate), color = "black") +
-    geom_density(aes(fill = state), alpha=0.8) +
+    geom_density(aes(fill = state, group = category), alpha=0.8) +
     #facet_grid(cols = vars(tumor)) +
     theme_classic() + scale_fill_manual(values=colors_loc) +
     theme(text=element_text(size=20))+
@@ -195,7 +201,7 @@ t1_wgs_ratio_posteriors_plot_newstates_state_clock <- all_logs_birthRate_df %>%
            states == "newstates",
            tumor == "T1") %>% 
     ggplot(., aes(x=birthRateRatio), color = "black",  fill = "black") +
-    geom_density(alpha=0.8, fill = "black") +
+    geom_density(alpha=0.6, fill = "black", aes(group = subset)) +
     #facet_grid(cols = vars(tumor)) +
     theme_classic() + 
     theme(text=element_text(size=20))+
@@ -214,7 +220,7 @@ t2_wgs_ratio_posteriors_plot_newstates_state_clock <- all_logs_birthRate_df %>%
            states == "newstates",
            tumor == "T2") %>% 
     ggplot(., aes(x=birthRateRatio), color = "black",  fill = "black") +
-    geom_density(alpha=0.8, fill = "black") +
+    geom_density(alpha=0.6, fill = "black", aes(group = subset)) +
     #facet_grid(cols = vars(tumor)) +
     theme_classic() + 
     theme(text=element_text(size=20))+
@@ -232,10 +238,10 @@ ggsave(plot=t2_wgs_ratio_posteriors_plot_newstates_state_clock,
 
 #To generate MCC run combined_typed_node_mcc_trees.sh in li-application/out directory
 
-mcc_tree_files <- list.files(path = "../li-application/out",
-                             pattern="newstates_unidir_state_comb.HCCtumor_mcc.tree", 
+mcc_tree_files <- list.files(path = "../li-application/combined",
+                             pattern="T[1-2]_wgs_newstates_unidir_1_state.HCCtumor.typed.node.tree", 
                              full.names = TRUE)
-
+mcc_tree_files <- mcc_tree_files[! grepl(".trees", mcc_tree_files)]
 #only do unidirectional
 
 for (mcc_file in mcc_tree_files) {
@@ -261,9 +267,12 @@ for (mcc_file in mcc_tree_files) {
         scale_color_manual(values = colors_loc) +
         theme(legend.position = "none") + 
         geom_tiplab(offset = 0.05, size = 5) +
-        coord_cartesian(clip="off")
+        coord_cartesian(clip="off") 
     
-    treeplot_pie <- ggtree::inset(treeplot, pies, width = 0.075, height = 0.075) + theme(legend.position = "none") #+ ggtitle(paste0(tumor_extract, migration_model, rep_extract, sep = " "))
+    treeplot_pie <- ggtree::inset(treeplot, pies, width = 0.05, height = 0.05) + theme(legend.position = "none") +
+        geom_nodelab(aes(label = ifelse(as.numeric(posterior) <= 1, round(as.numeric(posterior), 2), "")),
+                     nudge_x = -0.06, nudge_y = 0.2, size  = 5, hjust='right')
+    
     fig_file <- paste0("../figures/", tumor_extract,  "_",
                        migration_model, "_",
                        clock_extract,  "_",
@@ -272,6 +281,15 @@ for (mcc_file in mcc_tree_files) {
                        "mcc_tree.png")
     print(fig_file)
     ggsave(plot=treeplot_pie,
-           file=fig_file, height = 10, width = 7)
+           file=fig_file, height = 10, width = 8)
 }
+
+#For legend
+
+all_logs_birthRate_df %>% 
+    filter(migration_model == "unidirectional",
+           clock_model == "state-dependent",
+           states == "newstates") %>% 
+    group_by(tumor) %>% 
+    summarise(mean(birthRateRatio))
 

@@ -1,4 +1,4 @@
-#process_li_wgs_data_with_amplicon.R
+#process_li_wgs_data.R
 
 library(tumortree)
 library(tidyverse)
@@ -217,70 +217,7 @@ generate_subsampled_sequences <- function(all_amp_punches, wgs_snv_list, amp_lon
         }
         
         unsampled_sites <- 0
-        
-    #} else if (! is.na(n_amplicon_sampled_sites)) {
-        
-       #  #first break sites in amplified or wgs-only 
-       #  
-       #  
-       #  ##make mut_id
-       #  
-       #  amp_sites_mut_id_df <- amp_long_df %>% 
-       #      tidyr::unite("mut_id", c(contig, position), remove = FALSE) %>% 
-       #      dplyr::select(mut_id, contig, position, ref_allele) %>% 
-       #      dplyr::distinct()
-       #      
-       #  
-       #  wgs_all_mut_id_sites <- wgs_all_sites %>% 
-       #      tidyr::unite("mut_id", c(contig, position), remove = FALSE)
-       #  
-       #  amp_sites_mut_id_df <- amp_sites_mut_id_df %>% 
-       #      dplyr::filter(mut_id %in% wgs_all_mut_id_sites$mut_id)
-       # 
-       #  
-       #  ## get ids for sites in amplicon panel and not
-       #  amp_mut_ids <- amp_sites_mut_id_df$mut_id
-       #  
-       #  
-       #  wgs_not_amp_sites <-  wgs_all_mut_id_sites %>% 
-       #      dplyr::filter(! mut_id %in% amp_mut_ids)
-       #  
-       #  wgs_not_amp_ids <- wgs_not_amp_sites$mut_id
-       #  
-       #  #then sample proportional to bias
-       #  if (n_amplicon_sampled_sites > length(amp_mut_ids)) {
-       #      
-       #      warning("Number of desired amplicon sites is greater than the total, using all amplicon sites")
-       #      
-       #      n_amplicon_sampled_sites <- length(amp_mut_ids)
-       #      
-       #  } 
-       #  
-       #  #sample desired number of amplicon sites
-       #  amp_sampled_ids  <- sample(amp_mut_ids, size = n_amplicon_sampled_sites, replace = FALSE)
-       #  
-       # # base::print(n_sites)
-       #  n_wgs_sampled <- n_sites - n_amplicon_sampled_sites
-       #  
-       #  #base::print(n_wgs_sampled)
-       #  #sample remaining sites from wgs
-       #  wgs_sampled_ids <- sample(wgs_not_amp_ids, size = n_wgs_sampled, replace = FALSE)
-       #  
-       #  #base::print(length(wgs_sampled_ids))
-       #  all_sampled_mut_ids <- c(amp_sampled_ids, wgs_sampled_ids)
-       #  
-       #  #base::print(length(all_sampled_mut_ids))
-       #  
-       #  wgs_subset_sites <- wgs_all_mut_id_sites %>% 
-       #      dplyr::filter(mut_id %in% all_sampled_mut_ids) %>% 
-       #      dplyr::select(-mut_id)
-       #  
-       #  base::print(nrow(wgs_subset_sites))
-       #  
-       #  unsampled_sites <- nrow(wgs_all_sites) - nrow(wgs_subset_sites)
-        
-      # base::print(unsampled_sites)
-        
+   
     } else {
         wgs_subset_sites <- wgs_all_sites[sort(sample(1:nrow(wgs_all_sites), size = n_sites, replace = FALSE)), ]
         wgs_subset_sites <- wgs_subset_sites %>% 
@@ -326,136 +263,45 @@ generate_subsampled_sequences <- function(all_amp_punches, wgs_snv_list, amp_lon
     
 }
 
-# n_sites = 10000
-# t1_sequences <- generate_subsampled_sequences(all_amp_punches = T1_all_amp_punches,
-#                                              wgs_snv_list = t1_snv_list,
-#                                              amp_long_df =  T1_data_amp_long,
-#                                              wgs_all_sites = t1_all_sites_df,
-#                                              n_sites = n_sites,
-#                                              n_amplicon_sampled_sites = 300)
-# 
-# 
-# t1_sequences_all <- generate_subsampled_sequences(all_amp_punches = T1_all_amp_punches,
-#                                               wgs_snv_list = t1_snv_list,
-#                                               amp_long_df =  T1_data_amp_long,
-#                                               wgs_all_sites = t1_all_sites_df,
-#                                               n_sites = nrow(t1_all_sites_df),
-#                                               sites_file =  "data/t1_all_sites.csv",
-#                                               include_invariable = TRUE)
 
-t1_sequences_amp_sites_only_wgs_punches <- generate_subsampled_sequences(all_amp_punches = names(t1_snv_list),
-                                                  wgs_snv_list = t1_snv_list,
-                                                  amp_long_df =  T1_data_amp_long,
-                                                  wgs_all_sites = t1_all_sites_df,
-                                                  n_sites = nrow(t1_all_sites_df),
-                                                  amplicon_only = TRUE,
-                                                  include_invariable = FALSE,
-                                                  sites_file = "data/t1_amp_sites.csv")
-
-t1_sequences_amp_sites_only <- generate_subsampled_sequences(all_amp_punches = T1_all_amp_punches,
-                                                             wgs_snv_list = t1_snv_list,
-                                                             amp_long_df =  T1_data_amp_long,
-                                                             wgs_all_sites = t1_all_sites_df,
-                                                             n_sites = nrow(t1_all_sites_df),
-                                                             amplicon_only = TRUE,
-                                                             include_invariable = FALSE)
-
-
-# t2_sequences_all <- generate_subsampled_sequences(all_amp_punches = T2_all_amp_punches,
-#                                                   wgs_snv_list = t2_snv_list,
-#                                                   amp_long_df =  T2_data_amp_long,
-#                                                   wgs_all_sites = t2_all_sites_df,
-#                                                   n_sites = nrow(t2_all_sites_df),
-#                                                   sites_file =  "data/t2_all_sites.csv", 
-#                                                   include_invariable = TRUE)
-
-t2_sequences_amp_sites_only_wgs_punches <- generate_subsampled_sequences(all_amp_punches = names(t2_snv_list),
-                                                                         wgs_snv_list = t2_snv_list,
-                                                                         amp_long_df =  T2_data_amp_long,
-                                                                         wgs_all_sites = t2_all_sites_df,
-                                                                         n_sites = nrow(t2_all_sites_df),
-                                                                         amplicon_only = TRUE,
-                                                                         include_invariable = FALSE,
-                                                                         sites_file = "data/t2_amp_sites.csv")
-
-t2_sequences_amp_sites_only <- generate_subsampled_sequences(all_amp_punches = T2_all_amp_punches,
-                                                                         wgs_snv_list = t2_snv_list,
-                                                                         amp_long_df =  T2_data_amp_long,
-                                                                         wgs_all_sites = t2_all_sites_df,
-                                                                         n_sites = nrow(t2_all_sites_df),
-                                                                         amplicon_only = TRUE,
-                                                                         include_invariable = FALSE)
-
-
-
-# #write fasta file
-# fasta_file <- "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/data/li_wgs_amp.fa"
-# #
+# t1_fasta_file_wgs_punches_amp_sites <- "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/data/li_t1_wgs_punches_amp_sites.fa"
 # first_line = TRUE
-# for (i in 1:length(T1_all_amp_punches)) {
-# 
-#     punch <- T1_all_amp_punches[i]
-# 
-#     write(paste0(">", punch, collapse = ""), file=fasta_file, append=!first_line)
-# 
-#     first_line = FALSE
-# 
-#     write(t1_sequences_all$sequences[[i]], file=fasta_file, append=!first_line)
-# 
+# for (i in 1:length(names(t1_snv_list))) {
+#   
+#   punch <- names(t1_snv_list)[i]
+#   
+#   write(paste0(">", punch, collapse = ""), file=t1_fasta_file_wgs_punches_amp_sites, append=!first_line)
+#   
+#   first_line = FALSE
+#   
+#   write(t1_sequences_amp_sites_only_wgs_punches$sequences[[i]], file=t1_fasta_file_wgs_punches_amp_sites, append=!first_line)
 # 
 # }
-
-
-### write fasta file with all punches from wgs tree with only amplicon sites
+# write(">blood", file=t1_fasta_file_wgs_punches_amp_sites, append=!first_line)
+# write(paste0(t1_amp_sites$ref_allele, collapse=""), file=t1_fasta_file_wgs_punches_amp_sites, append=!first_line)
 # 
-# t1_amp_sites <- T1_data_amp_long %>% 
+# 
+# t2_fasta_file_wgs_punches_amp_sites <- "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/data/li_t2_wgs_punches_amp_sites.fa"
+# first_line = TRUE
+# for (i in 1:length(names(t2_snv_list))) {
 #   
-#   dplyr::distinct(contig, position, ref_allele) %>% 
-#   arrange(contig,position)
-
-t1_fasta_file_wgs_punches_amp_sites <- "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/data/li_t1_wgs_punches_amp_sites.fa"
-first_line = TRUE
-for (i in 1:length(names(t1_snv_list))) {
-  
-  punch <- names(t1_snv_list)[i]
-  
-  write(paste0(">", punch, collapse = ""), file=t1_fasta_file_wgs_punches_amp_sites, append=!first_line)
-  
-  first_line = FALSE
-  
-  write(t1_sequences_amp_sites_only_wgs_punches$sequences[[i]], file=t1_fasta_file_wgs_punches_amp_sites, append=!first_line)
-
-}
-write(">blood", file=t1_fasta_file_wgs_punches_amp_sites, append=!first_line)
-write(paste0(t1_amp_sites$ref_allele, collapse=""), file=t1_fasta_file_wgs_punches_amp_sites, append=!first_line)
-
-
-# t2_amp_sites <- T2_data_amp_long %>% 
+#   punch <- names(t2_snv_list)[i]
 #   
-#   dplyr::distinct(contig, position, ref_allele) %>% 
-#   arrange(contig,position)
-
-t2_fasta_file_wgs_punches_amp_sites <- "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/data/li_t2_wgs_punches_amp_sites.fa"
-first_line = TRUE
-for (i in 1:length(names(t2_snv_list))) {
-  
-  punch <- names(t2_snv_list)[i]
-  
-  write(paste0(">", punch, collapse = ""), file=t2_fasta_file_wgs_punches_amp_sites, append=!first_line)
-  
-  first_line = FALSE
-  
-  write(t2_sequences_amp_sites_only_wgs_punches$sequences[[i]], file=t2_fasta_file_wgs_punches_amp_sites, append=!first_line)
-  
-}
-
-# add blood
-write(">blood", file=t2_fasta_file_wgs_punches_amp_sites, append=!first_line)
-write(paste0(t2_amp_sites$ref_allele, collapse=""), file=t2_fasta_file_wgs_punches_amp_sites, append=!first_line)
-
-
-
-
+#   write(paste0(">", punch, collapse = ""), file=t2_fasta_file_wgs_punches_amp_sites, append=!first_line)
+#   
+#   first_line = FALSE
+#   
+#   write(t2_sequences_amp_sites_only_wgs_punches$sequences[[i]], file=t2_fasta_file_wgs_punches_amp_sites, append=!first_line)
+#   
+# }
+# 
+# # add blood
+# write(">blood", file=t2_fasta_file_wgs_punches_amp_sites, append=!first_line)
+# write(paste0(t2_amp_sites$ref_allele, collapse=""), file=t2_fasta_file_wgs_punches_amp_sites, append=!first_line)
+# 
+# 
+# 
+# 
 
 
 #sanity checks
@@ -882,114 +728,7 @@ write_alignment_to_state_xml_from_template <- function(state_clocks_template_xml
     close(con)
 
 }
-#Files for templates and xml files
-# state_clocks_template_xml <- "xml_files/T1_state_clocks_wgs_amplicon_template.xml"
-# 
-# li_T1_state_clocks_xml <- "xml_files/T1_state_clocks_wgs_amplicon.xml"
 
-
-# t1_sequences <- generate_subsampled_sequences(all_amp_punches = T1_all_amp_punches, 
-#                                               wgs_snv_list = t1_snv_list, 
-#                                               amp_long_df =  T1_data_amp_long, 
-#                                               wgs_all_sites = t1_all_sites_df, 
-#                                               n_sites = n_sites)
-
-# set.seed(2812)
-# 
-# edge_cutoff_vec <- c(1,2,3,4, 5)
-# for (c in edge_cutoff_vec) {
-#     
-#     state_clocks_xml_file <- paste0("xml_files/T1_state_clocks_wgs_amplicon_c", c, ".xml", sep = "")
-#     
-#     write_li_xml( wgs_all_sites =t1_all_sites_df,
-#               amp_long_df =T1_data_amp_long, 
-#               wgs_snv_list = t1_snv_list,
-#               all_amp_punches =T1_all_amp_punches,
-#               punch_coordinates = T1_punch_coordinates,
-#               boundary_coordinates = T1_boundary_coordinates,
-#               n_sites = 10000, edge_cutoff = c,
-#               n_sequenced_sites = 3E6,
-#               state_clocks_template_xml = "xml_files/T1_state_clocks_test_temp.xml", 
-#               state_clocks_xml = state_clocks_xml_file)
-# }
-
-# set.seed(33452)
-# write_li_xml( wgs_all_sites =t1_all_sites_df,
-#               amp_long_df =T1_data_amp_long, 
-#               wgs_snv_list = t1_snv_list,
-#               all_amp_punches =T1_all_amp_punches,
-#               punch_coordinates = T1_punch_coordinates,
-#               boundary_coordinates = T1_boundary_coordinates,
-#               n_sites = 10000, edge_cutoff = 2,
-#               n_sequenced_sites = 3E6,
-#               state_clocks_template_xml = "xml_files/T1_state_clocks_test_temp.xml", 
-#               state_clocks_xml = "xml_files/T1_state_clocks_variable_sites.xml",
-#               include_invariable = FALSE)
-
-#To make xmls with all sites + invariable + unsampled
-
-write_li_xml(wgs_all_sites =t1_all_sites_df,
-              amp_long_df =T1_data_amp_long, 
-              wgs_snv_list = t1_snv_list,
-              all_amp_punches =T1_all_amp_punches,
-              punch_coordinates = T1_punch_coordinates,
-              boundary_coordinates = T1_boundary_coordinates,
-              n_sites = nrow(t1_all_sites_df),
-              edge_cutoff = 2,
-              n_sequenced_sites = 3E9,
-              state_clocks_template_xml = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/xml_files/T1_state_clocks_temp.xml", 
-              state_clocks_xml = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/xml_files/T1_state_clocks_all_sites.xml",
-              include_invariable = TRUE,
-              amplicon_only = FALSE,
-              sites_file = "data/t1_all_sites_file.csv",
-              amplicon_weights_file =  "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/t1_amp_site_weights.csv")
-
-
-write_li_xml( wgs_all_sites =t2_all_sites_df,
-              amp_long_df =T2_data_amp_long, 
-              wgs_snv_list = t2_snv_list,
-              all_amp_punches =T2_all_amp_punches,
-              punch_coordinates = T2_punch_coordinates,
-              boundary_coordinates = T2_boundary_coordinates,
-              n_sites = nrow(t2_all_sites_df),
-              n_sequenced_sites = 3E9,
-              edge_cutoff = 1.5,
-              state_clocks_template_xml = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/xml_files/T1_state_clocks_temp.xml", 
-              state_clocks_xml = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/xml_files/T2_state_clocks_all_sites.xml",
-              include_invariable = TRUE,
-              amplicon_only = FALSE,
-              sites_file = "data/t2_all_sites_file.csv",
-              amplicon_weights_file =  "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/t2_amp_site_weights.csv")
-
-set.seed(9182)
-write_li_xml( wgs_all_sites =t1_all_sites_df,
-              amp_long_df =T1_data_amp_long, 
-              wgs_snv_list = t1_snv_list,
-              all_amp_punches =T1_all_amp_punches,
-              punch_coordinates = T1_punch_coordinates,
-              boundary_coordinates = T1_boundary_coordinates,
-              n_sites = NULL, edge_cutoff = 2,
-              n_sequenced_sites = 3E6,
-              state_clocks_template_xml = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/xml_files/T1_state_clocks_amplicon_only_temp.xml", 
-              state_clocks_xml = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/xml_files/T1_state_clocks_amplicon_only.xml",
-              include_invariable = FALSE,
-              amplicon_only = TRUE,
-              sites_file = "data/t1_amp_sites_file.csv")
-
-set.seed(2122)
-write_li_xml( wgs_all_sites =t2_all_sites_df,
-              amp_long_df =T2_data_amp_long, 
-              wgs_snv_list = t2_snv_list,
-              all_amp_punches =T2_all_amp_punches,
-              punch_coordinates = T2_punch_coordinates,
-              boundary_coordinates = T2_boundary_coordinates,
-              n_sites = NULL, edge_cutoff = 1.5,
-              n_sequenced_sites = 3E6,
-              state_clocks_template_xml = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/xml_files/T1_state_clocks_amplicon_only_temp.xml", 
-              state_clocks_xml = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/xml_files/T2_state_clocks_amplicon_only.xml",
-              include_invariable = FALSE,
-              amplicon_only = TRUE,
-              sites_file = "data/t2_amp_sites_file.csv")
 
 ##wgs punches only ####
 
@@ -1026,35 +765,5 @@ write_li_xml( wgs_all_sites =t2_all_sites_df,
               sites_file = "data/t2_all_sites_file_wgs_punches.csv",
               amplicon_weights_file =  "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/t2_amp_site_weights.csv")
 
-
-
-
-
-# set.seed(31331)   
-# state_clocks_xml_file <- paste0("xml_files/T1_state_clocks_wgs_amplicon_300_sites_2.xml", sep = "")
-#     
-# write_li_xml( wgs_all_sites =t1_all_sites_df,
-#                   amp_long_df =T1_data_amp_long, 
-#                   wgs_snv_list = t1_snv_list,
-#                   all_amp_punches =T1_all_amp_punches,
-#                   punch_coordinates = T1_punch_coordinates,
-#                   boundary_coordinates = T1_boundary_coordinates,
-#                   n_sites = 10000, edge_cutoff = 2,
-#                   n_sequenced_sites = 3E6,
-#                   state_clocks_template_xml = "xml_files/T1_state_clocks_test_temp.xml", 
-#                   state_clocks_xml = state_clocks_xml_file,
-#                 n_amplicon_sampled_sites = 300)
-
-# write_alignment_to_state_xml_from_template(state_clocks_template_xml = state_clocks_template_xml,
-#                                            alignment_string = T1_alignment_string,
-#                                            taxon_traits_string = T1_taxon_traits_string,
-#                                            state_clocks_xml = li_T1_state_clocks_xml,
-#                                            weights_string = weights_string)
-
-
-
-# subclone_labels <- read.csv("data/T1_subclone_labels.csv") %>% 
-#     dplyr::mutate(Punch = tolower(Punch)) %>% 
-#     dplyr::mutate("WGS" = Punch %in% wgs_punches)
-# 
-# write_csv(subclone_labels , file = "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/subclone_labels.csv")
+#Double check masking
+masked_muts <- as.integer(unlist(c(read_csv(file="../hp.txt", col_names = FALSE))))

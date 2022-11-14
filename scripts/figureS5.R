@@ -148,7 +148,7 @@ terminal_branch_ratios_df_2d <- terminal_branch_ratios_df_2d %>%
 terminal_branch_ratios_df_comb <- bind_rows(list(terminal_branch_ratios_df_2d,terminal_branch_ratios_df_3d))
 
 # Save branching stats
-write_csv(terminal_branch_ratios_df_comb, "../physicell/stats/terminal_branch_dim_comparison.csv")
+#write_csv(terminal_branch_ratios_df_comb, "../physicell/stats/terminal_branch_dim_comparison.csv")
 
 #To skip computation
 terminal_branch_ratios_df_comb <- read_csv("../physicell/stats/terminal_branch_dim_comparison.csv")
@@ -157,9 +157,9 @@ terminal_branch_ratios_df_comb <- read_csv("../physicell/stats/terminal_branch_d
 sim_colors <- c("#fba500", "#244e70")
 
 
-dim_comparison_plot <- ggplot(terminal_branch_ratios_df_comb, aes(x=1/terminal_branch_length_ratio, fill = sim)) + 
-    geom_histogram(color = "black", bins = 20) + theme_classic() + #scale_fill_brewer(type ="qual", palette = 7) +
-    xlab("Mean center / edge terminal branch length ratio") + scale_fill_manual(values=sim_colors) + theme(legend.position = "none") +
+dim_comparison_plot <- ggplot(terminal_branch_ratios_df_comb, aes(x=1/terminal_branch_length_ratio, fill = as.factor(sim))) + 
+    geom_histogram(color = "black", bins = 20) + theme_classic() +
+    xlab("Mean center / edge terminal branch length ratio") + scale_fill_manual(values = sim_colors) + theme(legend.position = "none") +
     theme(text=element_text(size = 20))
 
 dim_comparison_plot
@@ -189,8 +189,10 @@ treeplot <- ggtree(mcc_tree, color = "darkgrey", size = 1) +
     scale_color_manual(values = colors_loc) +
     theme(legend.position = "none")
 
-treeplot_pie <- ggtree::inset(treeplot, pies, width = 0.05, height = 0.05) + theme(legend.position = "none") #+ ggtitle(paste0(tumor_extract, migration_model, rep_extract, sep = " "))
-treeplot_pie
+treeplot_pie <- ggtree::inset(treeplot, pies, width = 0.025, height = 0.05) + theme(legend.position = "none") +
+    geom_nodelab(aes(label = ifelse(round(as.numeric(posterior),2) < 1,
+                                    round(as.numeric(posterior), 2), "")),
+                 nudge_x = -4, nudge_y = 1, size  = 10, hjust='right')
 ggsave(plot=treeplot_pie,
        file="../figures/2d_physicell_example_mcc_tree.png", height = 7, width = 7)
 
@@ -241,8 +243,11 @@ treeplot_3d <- ggtree(mcc_tree_3d, color = "darkgrey", size = 1) +
     scale_color_manual(values = colors_loc) +
     theme(legend.position = "none")
 
-treeplot_pie_3d <- ggtree::inset(treeplot_3d, pies_3d, width = 0.05, height = 0.05) + theme(legend.position = "none") #+ ggtitle(paste0(tumor_extract, migration_model, rep_extract, sep = " "))
-ggsave(plot=treeplot_pie_3d,
+treeplot_pie_3d <- ggtree::inset(treeplot_3d, pies_3d, width = 0.025, height = 0.025) + theme(legend.position = "none") +
+    geom_nodelab(aes(label = ifelse(round(as.numeric(posterior),2) < 1, round(as.numeric(posterior), 2), "")),
+                 nudge_x = -4, nudge_y = 1, size  = 10, hjust='right')
+
+ggsave(treeplot_pie_3d,
        file="../figures/3d_physicell_example_mcc_tree.png", height = 7, width = 7)
 #plot violin plots
 terminal_branch_length_df_3d <- data.frame("state" = mcc_tree_3d@data$type[match(1:100,mcc_tree_3d@data$node)],
@@ -275,4 +280,4 @@ ggsave(plot=terminal_branch_length_plot_3d,
        file="../figures/3d_physicell_example_terminal_branch_lengths.png", height = 5, width = 5)
 
 
-
+#

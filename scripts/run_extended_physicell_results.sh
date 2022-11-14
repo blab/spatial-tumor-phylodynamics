@@ -84,7 +84,7 @@ cd physicell/simulation_data/2D_sel_bdg/diversified_100/to_beast_format
 
 for file in xml_files/*
 do
-  sbatch scripts/submit_beast_run2.sh $file
+  sbatch submit_beast_run2.sh $file
   #qsub -cwd -l mem_free=2G submit_single_batch.sh $file
 done
 
