@@ -99,18 +99,21 @@ pies <- nodepie(anc_state_nodes,
 g <- ggtree(mcc_tree, color = "darkgrey") +
     #geom_point(size = 2) +
     scale_color_manual(values = colors_loc) +
-    theme(legend.position = "none") + 
-    geom_nodelab(aes(label = ifelse(as.numeric(posterior) <= 0.99,
+    theme(legend.position = "none")
+    
+g_pie <- ggtree::inset(g, pies, width = 0.03, height = 0.03) +
+    theme(legend.position = "none")
+
+g_pie <- g_pie + 
+    geom_nodelab(aes(label = ifelse(round(as.numeric(posterior),2) < 0.99,
                                     round(as.numeric(posterior),
                                           2), "")),
                  hjust="right",
                  vjust="bottom",
                  nudge_x = -0.9,
-                 nudge_y = 0.4, size = 9)
-    
-g_pie <- ggtree::inset(g, pies, width = 0.03, height = 0.03) +
-    theme(legend.position = "none")
+                 nudge_y = 0.4, size = 3)
 
+g_pie
 ggsave(plot=g_pie,
        file ="../figures/example_ancestral_state_recon_tree.png",
        height = 5,
@@ -139,27 +142,22 @@ ggsave(plot=g2_pie_toy,
        file ="../figures/toy_ancestral_state_recon_tree.png", height = 5, width = 5)
 
 #example_all_cells <- read_csv("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation/cells_death_rate_validation_pop_1000_dr_0.29.csv")
-example_all_cells <- read_csv("../simulation_data/cells_death_rate_validation_pop_1000_dr_0.29.csv")
-
+# example_alive_cells <- example_all_cells %>% 
+#     filter_alive_cells()
+# example_alive_cells <- example_alive_cells %>% 
+#     mark_boundary(alive_cells = example_alive_cells)
+# 
+# example_alive_cells$sampled <- example_alive_cells$index %in% as.numeric(gsub("loc[01]", "", gsub("cell","",  mcc_tree@phylo$tip.label)))
+#write_csv(example_alive_cells, "../simulation_data/alive_cells_death_rate_validation_pop_1000_dr_0.29.csv")
 ### Ancestral state reconstruction ######
 
 sim_tree <- readRDS("../eden/simtrees/cells_death_rate_validation_pop_1000_dr_0.29.rds")
 
-example_alive_cells <- example_all_cells %>% 
-    filter_alive_cells()
-
-example_alive_cells <- example_alive_cells %>% 
-    mark_boundary(alive_cells = example_alive_cells)
-
-example_alive_cells$sampled <- example_alive_cells$index %in% as.numeric(gsub("loc[01]", "", gsub("cell","",  mcc_tree@phylo$tip.label)))
-
-write_csv(example_alive_cells, "../simulation_data/alive_cells_death_rate_validation_pop_1000_dr_0.29.csv")
-
 # Can skip to here
-example_alive_cells <- read_csv(file="../simulation_data/alive_cells_death_rate_validation_pop_1000_dr_0.29.csv")
+example_alive_cells <- read_csv(file="../eden/simulation_data/alive_cells_death_rate_validation_pop_1000_dr_0.29.csv")
 
 example_sampled_cells <- example_alive_cells %>% 
-    filter(sampled)
+    dplyr::filter(sampled)
 
 example_tumor_inset <- ggplot(example_alive_cells, aes(locx, locy, color = ifelse(est_edge == 1, "edge", "center"))) +
     geom_point() + theme_void() +
@@ -242,172 +240,10 @@ ggsave(plot=true_versus_post_prob, file ="../figures/example_true_versus_post_pr
 # Figures 3 E + F 
 ## Strict versus state-dependent + true versus estimated plots 
 
-#TODO: Move to separate analysis file
-calculate_growth_rate_posterior <- function(mcmc_log, log_file) {
-    
-    print(log_file)
-    if (is.null(log_file)) {
-        
-        return(NA)
-    }
-    #calculate effective sample size
-    
-    ess <- try(coda::effectiveSize(mcmc_log))
-    if (! is.numeric(ess)) {
-        ess <- 0
-    }
-    
-    
-    #extract simulation info from filename
-    dr_extract <- regmatches(basename(log_file),
-                             gregexpr("(?<=dr_)[[:digit:]]+.[[:digit:]]+", basename(log_file), perl = TRUE))[[1]]
-    
-    length(dr_extract)
-    
-    n_extract <- regmatches(basename(log_file),
-                            gregexpr("(?<=n_)[[:digit:]]+", basename(log_file), perl = TRUE))[[1]]
-    
-
-    
-
-    #estimates from mcmc logs
-    birthRate_loc0_posteriors <- mcmc_log[,"birthRateCanonical.0"]
-    birthRate_loc1_posteriors <- mcmc_log[,"birthRateCanonical.1"]
-    
-    length(birthRate_loc0_posteriors)
-    
-    birthRateDiff_posteriors <- birthRate_loc1_posteriors - birthRate_loc0_posteriors
-    birthRateRatio_posteriors <- (birthRate_loc1_posteriors/birthRate_loc0_posteriors)
-    
-
-    
-    loc0_posteriors <- mcmc_log[,"birthRateCanonical.0"] -  mcmc_log[,"deathRateCanonical.0"]
-    loc1_posteriors <- mcmc_log[,"birthRateCanonical.1"] -  mcmc_log[,"deathRateCanonical.1"]
-
-    
-    growthRateDiff_posteriors <- loc1_posteriors - loc0_posteriors
-    growthRateRatio_posteriors <- (loc1_posteriors/loc0_posteriors)
-    
-    
-    posterior_df <-  data.frame("mean_growth_rate_diff" = mean(growthRateDiff_posteriors),
-                                "median_growth_rate_diff" = median(growthRateDiff_posteriors),
-                                "mean_growth_rate_ratio" = mean(growthRateRatio_posteriors),
-                                "median_growth_rate_ratio" = median(growthRateRatio_posteriors),
-                                "mean_birth_rate_diff" = mean(birthRateDiff_posteriors),
-                                "median_birth_rate_diff" = median(birthRateDiff_posteriors),
-                                "mean_birth_rate_ratio" = mean(birthRateRatio_posteriors),
-                                "median_birth_rate_ratio" = median(birthRateRatio_posteriors),
-                                "growthRate_hdi95_lower" = hdi(growthRateDiff_posteriors,  credMass = 0.95)[1],
-                                "growthRate_hdi95_upper" = hdi(growthRateDiff_posteriors,  credMass = 0.95)[2],
-                                "growthRate_hdi85_lower" = hdi(growthRateDiff_posteriors,  credMass = 0.85)[1],
-                                "growthRate_hdi85_upper" = hdi(growthRateDiff_posteriors,  credMass = 0.85)[2],
-                                "growthRate_hdi75_lower" = hdi(growthRateDiff_posteriors, credMass = 0.75)[1],
-                                "growthRate_hdi75_upper" = hdi(growthRateDiff_posteriors,  credMass = 0.75)[2],
-                                "birthRate_hdi95_lower" = hdi(birthRateDiff_posteriors,  credMass = 0.95)[1],
-                                "birthRate_hdi95_upper" = hdi(birthRateDiff_posteriors,  credMass = 0.95)[2],
-                                "birthRate_hdi85_lower" = hdi(birthRateDiff_posteriors,  credMass = 0.85)[1],
-                                "birthRate_hdi85_upper" = hdi(birthRateDiff_posteriors,  credMass = 0.85)[2],
-                                "birthRate_hdi75_lower" = hdi(birthRateDiff_posteriors, credMass = 0.75)[1],
-                                "birthRate_hdi75_upper" = hdi(birthRateDiff_posteriors,  credMass = 0.75)[2],
-                                "dr" = dr_extract,
-                                "minBirthRateESS" = min(ess["birthRateCanonical.1"], ess["birthRateCanonical.0"]),
-                                "n" = as.numeric(n_extract))
-    
-    
-    
-    return(posterior_df)
-    
-    
-}
-
-
-# MCMC logs files
-# Need log files from running all validation xmls
-# Not included in file
-# State-dependent clock (SDevo)
-
-# Local dirs
-# log_files <- list.files(path = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/logs2",
-#                         pattern ="*estimate_dr.log",
-#                         full.names = TRUE,
-#                         include.dirs = TRUE)
-# 
-# # Strict clock
-# strict_clock_log_files <- list.files(path = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/logs2",
-#                         pattern ="*estimate_dr_strict_clock.log",
-#                         full.names = TRUE,
-#                         include.dirs = TRUE)
-
-
-# State-dependent clock (SDevo)
-log_files <- list.files(path = "../eden/logs",
-                        pattern ="*estimate_dr.log",
-                        full.names = TRUE,
-                        include.dirs = TRUE)
-
-# Strict clock
-strict_clock_log_files <- list.files(path = "../eden/logs",
-                                     pattern ="*estimate_dr_strict_clock.log",
-                                     full.names = TRUE,
-                                     include.dirs = TRUE)
-
-# Read in log files
-logs <- purrr::map(log_files, readLog)
-strict_clock_logs <- purrr::map(strict_clock_log_files, readLog)
-
-# Local records
-#saveRDS(logs, file = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/logs/all_sampled_sizes_mcmc_logs.rds")
-#saveRDS(strict_clock_logs, file = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/logs/strict_clock_all_sampled_sizes_mcmc_logs.rds")
-
-# logs <- readRDS(file="/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/logs/all_sampled_sizes_mcmc_logs.rds")
-# strict_clock_logs <- readRDS(file="/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/logs/strict_clock_all_sampled_sizes_mcmc_logs.rds")
-
-growth_rate_posteriors <- purrr::map2(logs, log_files, 
-                                      function(l, f) calculate_growth_rate_posterior_random_sampling(mcmc_log = l,
-                                                                                                     log_file = f)) %>% 
-    bind_rows
-
-strict_clock_growth_rate_posteriors <- purrr::map2(strict_clock_logs, strict_clock_log_files, 
-                                      function(l, f) calculate_growth_rate_posterior_random_sampling(mcmc_log = l,
-                                                                                                     log_file = f)) %>% 
-    bind_rows
-
-
-#true simulated rates
-sim_rates <- read_csv("../eden/stats/sim_validation_rates.csv")
-
-#From extract_validation_sims_rates.R
-weighted_sim_rates <- read_csv("../eden/stats/validation_growth_and_death_rates_weighted.csv") %>% 
-    dplyr::mutate(true_birth_rate_diff_weighted = mean_edge_birth_rate - mean_center_birth_rate) %>% 
-    dplyr::select(dr, true_birth_rate_diff_weighted)
-
-#add true growth rates 
-growth_rate_posteriors_df <- growth_rate_posteriors %>% 
-    dplyr::mutate(dr = as.numeric(dr)) %>%
-    dplyr::left_join(., sim_rates, by = "dr") %>% 
-    dplyr::mutate("true_birth_rate_diff" = (mean_edge_growth_rate + mean_edge_death_rate) - (mean_center_growth_rate + mean_center_death_rate)) %>% 
-    add_column("clock_model" = "state_dependent")
-
-strict_clock_growth_rate_posteriors_df <- strict_clock_growth_rate_posteriors %>% 
-    dplyr::mutate(dr = as.numeric(dr)) %>%
-    dplyr::left_join(., sim_rates, by = "dr") %>% 
-    dplyr::mutate("true_birth_rate_diff" = (mean_edge_growth_rate + mean_edge_death_rate) - (mean_center_growth_rate + mean_center_death_rate)) %>% 
-    add_column("clock_model" = "strict")
-
-#add weighted sim rates
-growth_rate_posteriors_df <- growth_rate_posteriors_df %>% 
-    left_join(., weighted_sim_rates, by = "dr")
-
-strict_clock_growth_rate_posteriors_df <- strict_clock_growth_rate_posteriors_df %>% 
-    left_join(., weighted_sim_rates, by = "dr")
-
-# Write results to CSV
-write.csv(growth_rate_posteriors_df, "../eden/stats/birth_death_rate_posteriors_estimate_dr.csv")
-write.csv(strict_clock_growth_rate_posteriors_df, "../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock.csv")
-
-# To skip above computation
+##summarize_strict_v_sdevo_posteriors.R
 growth_rate_posteriors_df <- read_csv("../eden/stats/birth_death_rate_posteriors_estimate_dr.csv")
 strict_clock_growth_rate_posteriors_df <- read_csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock.csv")  
+
 
 
 # True versus estimated plots (stat-dependent and strict comparisons,  Figure 3E)
@@ -423,7 +259,8 @@ clock_rate_comparison_posteriors_plot <- clock_comparison_growth_rate_posteriors
     geom_point(aes(color = clock_model)) +
     theme_classic() +
     geom_abline(slope=1, intercept = 0, linetype = "dashed", color = "black") +
-    geom_errorbar(aes(ymin = birthRate_hdi95_lower, ymax = birthRate_hdi95_upper, color=clock_model), alpha = 0.6, size = 1) +
+    geom_errorbar(aes(ymin = birthRate_hdi95_lower, ymax = birthRate_hdi95_upper, color=clock_model),
+                  alpha = 0.6, size = 1) +
     xlab("True birth rate difference (edge - center)") +
     ylab("Estimated birth rate difference (edge - center)") +
     scale_color_manual(values = clock_colors) +
@@ -461,7 +298,7 @@ clock_comparison_sample_size_results_summary <- clock_comparison_growth_rate_pos
               "se_mse" = sd((mean_birth_rate_diff - true_birth_rate_diff_weighted)^2, na.rm = TRUE) / sqrt(n()))
 
 clock_comparison_sample_size_mse  <- clock_comparison_sample_size_results_summary %>% 
-    filter(as.numeric(n) <= 100) %>% 
+    dplyr::filter(as.numeric(n) <= 100) %>% 
     ggplot(., aes(x = n, y = mse)) +
     geom_point(aes(color=clock_model), size = 0.75) +
     theme_classic() + xlab("Sample size") + ylab("MSE of edge - center birth rate difference") +
