@@ -1,0 +1,74 @@
+{
+  "alignment": "data/li_t2_wgs.fasta",
+  "generated_by": {
+    "program": "augur",
+    "version": "18.1.0"
+  },
+  "input_tree": "li_t2_tree_raw.nwk",
+  "nodes": {
+    "NODE_0000000": {
+      "branch_length": 0.001
+    },
+    "NODE_0000001": {
+      "branch_length": 0.029506839,
+      "confidence": 1.0
+    },
+    "NODE_0000002": {
+      "branch_length": 5e-09,
+      "confidence": 1.0
+    },
+    "NODE_0000003": {
+      "branch_length": 5e-09,
+      "confidence": 1.0
+    },
+    "NODE_0000004": {
+      "branch_length": 0.15358089,
+      "confidence": 1.0
+    },
+    "NODE_0000005": {
+      "branch_length": 0.002231271,
+      "confidence": 1.0
+    },
+    "NODE_0000006": {
+      "branch_length": 0.009383892,
+      "confidence": 1.0
+    },
+    "NODE_0000007": {
+      "branch_length": 0.000952508
+    },
+    "NODE_0000008": {
+      "branch_length": 0.012193636,
+      "confidence": 1.0
+    },
+    "blood": {
+      "branch_length": 0.0
+    },
+    "t2f13": {
+      "branch_length": 0.005238102
+    },
+    "t2f2": {
+      "branch_length": 0.004443028
+    },
+    "t2f5": {
+      "branch_length": 0.013379543
+    },
+    "t2f9": {
+      "branch_length": 0.010236611
+    },
+    "t2z1": {
+      "branch_length": 0.72770442
+    },
+    "t2z11": {
+      "branch_length": 0.159301776
+    },
+    "t2z13": {
+      "branch_length": 0.211624868
+    },
+    "t2z6": {
+      "branch_length": 0.045098896
+    },
+    "t2z9": {
+      "branch_length": 0.008958237
+    }
+  }
+}

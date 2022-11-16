@@ -1,0 +1,123 @@
+{
+  "alignment": "data/li_t1_wgs.fasta",
+  "generated_by": {
+    "program": "augur",
+    "version": "18.1.0"
+  },
+  "input_tree": "li_t1_tree_raw.nwk",
+  "nodes": {
+    "NODE_0000000": {
+      "branch_length": 0.001
+    },
+    "NODE_0000001": {
+      "branch_length": 0.028940755,
+      "confidence": 1.0
+    },
+    "NODE_0000002": {
+      "branch_length": 6e-09,
+      "confidence": 1.0
+    },
+    "NODE_0000003": {
+      "branch_length": 0.002972905,
+      "confidence": 1.0
+    },
+    "NODE_0000004": {
+      "branch_length": 5e-09,
+      "confidence": 1.0
+    },
+    "NODE_0000005": {
+      "branch_length": 5e-09,
+      "confidence": 1.0
+    },
+    "NODE_0000006": {
+      "branch_length": 0.111466982,
+      "confidence": 1.0
+    },
+    "NODE_0000007": {
+      "branch_length": 0.070315859,
+      "confidence": 0.677
+    },
+    "NODE_0000008": {
+      "branch_length": 0.002183676,
+      "confidence": 1.0
+    },
+    "NODE_0000009": {
+      "branch_length": 0.006734285,
+      "confidence": 1.0
+    },
+    "NODE_0000010": {
+      "branch_length": 9.0149e-05,
+      "confidence": 1.0
+    },
+    "NODE_0000011": {
+      "branch_length": 0.000453413,
+      "confidence": 1.0
+    },
+    "NODE_0000012": {
+      "branch_length": 0.001772346,
+      "confidence": 1.0
+    },
+    "NODE_0000013": {
+      "branch_length": 0.001265065,
+      "confidence": 1.0
+    },
+    "NODE_0000014": {
+      "branch_length": 0.000196261
+    },
+    "NODE_0000015": {
+      "branch_length": 0.000215003,
+      "confidence": 0.999
+    },
+    "blood": {
+      "branch_length": 0.0
+    },
+    "t1f11": {
+      "branch_length": 0.002437602
+    },
+    "t1f14": {
+      "branch_length": 0.001222187
+    },
+    "t1f2": {
+      "branch_length": 0.00091112
+    },
+    "t1f23": {
+      "branch_length": 0.048653767
+    },
+    "t1f24": {
+      "branch_length": 0.285346702
+    },
+    "t1f4": {
+      "branch_length": 0.000805374
+    },
+    "t1f9": {
+      "branch_length": 0.00124087
+    },
+    "t1l1": {
+      "branch_length": 0.008938207
+    },
+    "t1l10": {
+      "branch_length": 0.003842061
+    },
+    "t1l13": {
+      "branch_length": 0.054747593
+    },
+    "t1l3": {
+      "branch_length": 0.001968492
+    },
+    "t1l6": {
+      "branch_length": 0.003377686
+    },
+    "t1l8": {
+      "branch_length": 0.001601701
+    },
+    "t1z1": {
+      "branch_length": 0.273184149
+    },
+    "t1z3": {
+      "branch_length": 0.072254875
+    },
+    "t1z5": {
+      "branch_length": 0.154791923
+    }
+  }
+}
