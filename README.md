@@ -20,7 +20,7 @@ demonstrating its ability to accurately infer spatially-varying birth rates unde
 sampling strategies. We then show that SDevo outperforms state-of-the-art, non-cancer multi-state
 phylodynamic methods which ignore differential mutational acquisition. Finally, we apply SDevo to
 multi-region sequencing data from clinical hepatocellular carcinomas and find evidence that cells on the tumor
-edge divide 2-4x faster than those in the center. As multi-region and single-cell sequencing increase in
+edge divide 4-6x faster than those in the center. As multi-region and single-cell sequencing increase in
 resolution and availability, we anticipate that SDevo will be useful in interrogating spatial restrictions on tumor
 growth and could be extended to model non-spatial factors that influence tumor progression, including hypoxia
 and immune infiltration.
@@ -40,13 +40,14 @@ Simulation data is generated from https://github.com/federlab/PhysiCellTrees and
 
 ### Run SDEvo on simulated trees
 Script to generate input XML files from simulated Eden simulation can be found here: `scripts/set_up_simulated_tumors_xmls.R`
-Script to generate input XML files from PhysiCell outputs can be found here: `scripts/write_state_clocks_xml_from_physicell.R`
+Script to generate input XML files from PhysiCell outputs can be found here: `scripts/write_state_clocks_xml_from_physicell.R`. Summary statistics to reproduce plots can be found in `eden/stats`. 
 
 ### Run strict clock model on simulated trees
 Make XML files with strict clock by `running create_strict_clock.R`, where input is state clocks XML file generated above.
 
-### HCC Tumor analysis with SDevo
-Scripts to generate input DNA sequences HCC sequence data can be found in `scripts/process_li_data.R` and `li-application/`. Data will be available pending approval of original authors. Temporarily, a template xml is included for reference.
+
+### HCC Tumor analysis
+Scripts to generate input DNA sequences HCC sequence data can be found in `scripts/process_li_data.R` and `li-application/`. Data will be available pending approval of original authors. Temporarily, a template xml is included for reference. Maximum likelihood trees are solved by Fasttree and Augur, see `run_nextstrain_divergence_trees.sh`.
 
 ### Figures
 Local R package _tumortree_ is needed for most figures.
