@@ -1,0 +1,112 @@
+{
+  "alignment": "data/li_t1_wgs.fasta",
+  "generated_by": {
+    "program": "augur",
+    "version": "18.1.0"
+  },
+  "input_tree": "li_t1_tree_raw.nwk",
+  "nodes": {
+    "NODE_0000000": {
+      "branch_length": 0.001
+    },
+    "NODE_0000001": {
+      "branch_length": 9.152e-05,
+      "confidence": 100.0
+    },
+    "NODE_0000002": {
+      "branch_length": 0.00044923,
+      "confidence": 100.0
+    },
+    "NODE_0000003": {
+      "branch_length": 0.00504172,
+      "confidence": 100.0
+    },
+    "NODE_0000004": {
+      "branch_length": 0.00180328,
+      "confidence": 100.0
+    },
+    "NODE_0000005": {
+      "branch_length": 0.00177067,
+      "confidence": 100.0
+    },
+    "NODE_0000006": {
+      "branch_length": 0.00127157,
+      "confidence": 100.0
+    },
+    "NODE_0000007": {
+      "branch_length": 0.000208,
+      "confidence": 100.0
+    },
+    "NODE_0000008": {
+      "branch_length": 0.00021534,
+      "confidence": 100.0
+    },
+    "NODE_0000009": {
+      "branch_length": 0.07208195,
+      "confidence": 100.0
+    },
+    "NODE_0000010": {
+      "branch_length": 0.00028423,
+      "confidence": 100.0
+    },
+    "NODE_0000011": {
+      "branch_length": 0.0029698,
+      "confidence": 100.0
+    },
+    "NODE_0000012": {
+      "branch_length": 0.11801492,
+      "confidence": 100.0
+    },
+    "blood": {
+      "branch_length": 0.0291277
+    },
+    "t1f11": {
+      "branch_length": 0.00244321
+    },
+    "t1f14": {
+      "branch_length": 0.00122376
+    },
+    "t1f2": {
+      "branch_length": 0.00092346
+    },
+    "t1f23": {
+      "branch_length": 0.04982738
+    },
+    "t1f24": {
+      "branch_length": 0.30022505
+    },
+    "t1f4": {
+      "branch_length": 0.0008196
+    },
+    "t1f9": {
+      "branch_length": 0.00124083
+    },
+    "t1l1": {
+      "branch_length": 0.01109595
+    },
+    "t1l10": {
+      "branch_length": 0.00382229
+    },
+    "t1l13": {
+      "branch_length": 0.05543756
+    },
+    "t1l3": {
+      "branch_length": 0.00194453
+    },
+    "t1l6": {
+      "branch_length": 0.00336984
+    },
+    "t1l8": {
+      "branch_length": 0.00160765
+    },
+    "t1z1": {
+      "branch_length": 0.29045638
+    },
+    "t1z3": {
+      "branch_length": 0.07628843
+    },
+    "t1z5": {
+      "branch_length": 0.16033989
+    }
+  }
+}

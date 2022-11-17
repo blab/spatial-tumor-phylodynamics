@@ -1,0 +1,20 @@
+FastTree Version 2.1.11 Double precision (No SSE3), OpenMP (1 threads)
+Alignment: data/li_t1_wgs.fasta
+Nucleotide distances: Jukes-Cantor Joins: balanced Support: none
+Search: Normal +NNI +SPR (2 rounds range 10) +ML-NNI opt-each=1
+TopHits: 1.00*sqrtN close=default refresh=0.80
+ML Model: Jukes-Cantor, CAT approximation with 20 rate categories
+      0.16 seconds: Checking top hits for      1 of     17 seqs
+Initial topology in 0.78 seconds
+Refining topology: 16 rounds ME-NNIs, 2 rounds ME-SPRs, 8 rounds ML-NNIs
+      0.77 seconds: ME NNI round 1 of 16, 1 of 15 splits
+      1.01 seconds: ME NNI round 2 of 16, 1 of 15 splits
+      1.24 seconds: ME NNI round 3 of 16, 1 of 15 splits
+      1.41 seconds: ME NNI round 4 of 16, 1 of 15 splits
+      1.56 seconds: SPR round   1 of   2, 1 of 32 nodes
+      7.12 seconds: ME NNI round 6 of 16, 1 of 15 splits
+      7.35 seconds: SPR round   2 of   2, 1 of 32 nodes
+     12.80 seconds: ME NNI round 11 of 16, 1 of 15 splits
+Total branch-length 1.262 after 13.32 sec
+     13.37 seconds: ML Lengths 1 of 15 splits
+     15.27 seconds: ML NNI round 1 of 8, 1 of 15 splits
