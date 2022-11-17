@@ -1,4 +1,4 @@
-#li-genetic-trees.R
+#setup_nextstrain_metadata.R
 ####### SETUP #######
 library(tidyverse)
 library(phangorn)

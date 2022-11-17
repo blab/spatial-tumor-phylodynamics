@@ -18,139 +18,8 @@ names(colors_loc) <- c("loc1", "loc0")
 #                              full.names = TRUE)
 
 
-# All MCC trees for physicell 3D neutral runs
 
-## To make MCC trees, run `annotate_typed_node_mcc_trees.sh` in directory
-
-##### 3D branching signals #####
-mcc_tree_files <- list.files(path = "../physicell/trees/3D_neut_bdg/diversified_100",
-                             pattern="mcc",
-                             full.names = TRUE)
-
-# Filter to desired runs (d0.1, 100 samples and estimated state-dependent death rates)
-mcc_tree_files <- mcc_tree_files[grepl("d0.1", mcc_tree_files)]
-mcc_tree_files <- mcc_tree_files[! grepl("n_[0-9]", mcc_tree_files)]
-mcc_tree_files <- mcc_tree_files[! grepl("single_death", mcc_tree_files)]
-
-# Dataframe to keep track of branching stats
-terminal_branch_ratios_df_3d <- data.frame()
-
-
-for (mcc_file in mcc_tree_files) {
-    
-    print(mcc_file)
-    mcc_tree <- read.beast(file=mcc_file)
-    
-    # log_file <- paste0("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/physicell/logs/3D_neut_bdg/diversified_100/",
-    #                    gsub("_mcc.tree", "", basename(mcc_file)), ".log")
-    
-    log_file <- paste0("../physicell/logs/3D_neut_bdg/diversified_100/",
-                       gsub("_mcc.tree", "", basename(mcc_file)), ".log")
-    
-    log <- readLog(log_file)
-    ess <- coda::effectiveSize(log)
-    
-    # Only use trees that meet ESS threshold
-    if (min(c(ess["birthRateCanonical.1"], ess["birthRateCanonical.0"])) < 200) {
-        next
-    }
-
-    
-    dr_extract <- qdapRegex::ex_between(basename(mcc_file), "_d", "_")[[1]]
-
-    rep_extract <- regmatches(basename(mcc_file),
-                              gregexpr("(?<=_s)[0-9]+", basename(mcc_file), perl = TRUE))[[1]]
-    
-
-    terminal_branch_length_df <- data.frame("state" = mcc_tree@data$type[match(1:100,mcc_tree@data$node)],
-               "terminal_branch_length" = mcc_tree@phylo$edge.length[match(1:100,mcc_tree@phylo$edge[,2])])
-    
-    summary_terminal_branch <- terminal_branch_length_df %>% 
-        group_by(state) %>% 
-        summarise(mean_terminal_branch_length = mean(terminal_branch_length))
-    
-    ratio_means <- summary_terminal_branch$mean_terminal_branch_length[summary_terminal_branch$state == "loc1"] /summary_terminal_branch$mean_terminal_branch_length[summary_terminal_branch$state == "loc0"]
-    
-    terminal_branch_ratios_df_3d <- bind_rows(list(terminal_branch_ratios_df_3d, data.frame("dr" = dr_extract,
-                                                                                            "terminal_branch_length_ratio" = ratio_means )))
-    
-}
-
-##### 2D branching signals #####
-# Record of local directory
-# mcc_tree_files_2d <- list.files(path = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/physicell/trees/2D_neut_bdg/diversified_100",
-#                              pattern="mcc",
-#                              full.names = TRUE)
-
-mcc_tree_files_2d <- list.files(path = "../physicell/trees/2D_neut_bdg/diversified_100",
-                                pattern="mcc", 
-                                full.names = TRUE)
-
-# Filter tree files to d0.1
-mcc_tree_files_2d <- mcc_tree_files_2d[grepl("d0.1", mcc_tree_files_2d)]
-mcc_tree_files_2d <- mcc_tree_files_2d[! grepl("n_[0-9]", mcc_tree_files_2d)]
-mcc_tree_files_2d <- mcc_tree_files_2d[! grepl("single_death", mcc_tree_files_2d)]
-
-
-#Create data.frame to store terminal branch ratios for each tree
-
-terminal_branch_ratios_df_2d <- data.frame()
-
-for (mcc_file in mcc_tree_files_2d ) {
-    
-    print(mcc_file)
-    mcc_tree <- read.beast(file=mcc_file)
-    
-    # log_file <- paste0("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/physicell/logs/2D_neut_bdg/diversified_100/",
-    #                    gsub("_mcc.tree", "", basename(mcc_file)), ".log")
-    
-    log_file <- paste0("..physicell/logs/2D_neut_bdg/diversified_100/",
-                       gsub("_mcc.tree", "", basename(mcc_file)), ".log")
-    
-    
-    
-    log <- readLog(log_file)
-    ess <- coda::effectiveSize(log)
-    
-    if (min(c(ess["birthRateCanonical.1"], ess["birthRateCanonical.0"])) < 200) {
-        next
-    }
-    
-
-    
-    dr_extract <- qdapRegex::ex_between(basename(mcc_file), "_d", "_")[[1]]
-    
-    rep_extract <- regmatches(basename(mcc_file),
-                              gregexpr("(?<=_s)[0-9]+", basename(mcc_file), perl = TRUE))[[1]]
-    
-    
-    terminal_branch_length_df <- data.frame("state" = mcc_tree@data$type[match(1:100,mcc_tree@data$node)],
-                                            "terminal_branch_length" = mcc_tree@phylo$edge.length[match(1:100,mcc_tree@phylo$edge[,2])])
-    
-    summary_terminal_branch <- terminal_branch_length_df %>% 
-        group_by(state) %>% 
-        summarise(mean_terminal_branch_length = mean(terminal_branch_length))
-    
-    ratio_means <- summary_terminal_branch$mean_terminal_branch_length[summary_terminal_branch$state == "loc1"] /summary_terminal_branch$mean_terminal_branch_length[summary_terminal_branch$state == "loc0"]
-    
-    terminal_branch_ratios_df_2d <- bind_rows(list(terminal_branch_ratios_df_2d, data.frame("dr" = dr_extract, "terminal_branch_length_ratio" = ratio_means )))
-    
-}
-
-### summary plot of terminal branch length ratios #####
-
-terminal_branch_ratios_df_3d <- terminal_branch_ratios_df_3d %>% 
-    add_column("sim" = "3D")
-
-terminal_branch_ratios_df_2d <- terminal_branch_ratios_df_2d %>% 
-    add_column("sim" = "2D")
-
-terminal_branch_ratios_df_comb <- bind_rows(list(terminal_branch_ratios_df_2d,terminal_branch_ratios_df_3d))
-
-# Save branching stats
-#write_csv(terminal_branch_ratios_df_comb, "../physicell/stats/terminal_branch_dim_comparison.csv")
-
-#To skip computation
+#Read in stats generated in dimension_comparison_stats.R
 terminal_branch_ratios_df_comb <- read_csv("../physicell/stats/terminal_branch_dim_comparison.csv")
 
 ##### Plotting branching ratio histogram #####
@@ -168,9 +37,11 @@ dim_comparison_plot
 ggsave(file = "../figures/dim_comparison_plot.png", plot=dim_comparison_plot, height = 5, width = 5)
 
 ## Get representative plots for each dimension
-mcc_tree_files_2d_rep <- mcc_tree_files_2d[grepl("s63293", mcc_tree_files_2d)]
-mcc_tree_files_3d_rep <- mcc_tree_files[grepl("s73314", mcc_tree_files)]
+#mcc_tree_files_2d_rep <- mcc_tree_files_2d[grepl("s63293", mcc_tree_files_2d)]
+#mcc_tree_files_3d_rep <- mcc_tree_files[grepl("s73314", mcc_tree_files)]
 
+mcc_tree_files_2d_rep <- "../physicell/trees/2D_neut_bdg/diversified_100/sampconfig_m0_w1_d0.1_t1_mg1_mm1_l2e+08_i7_s63293_mcc.tree"
+mcc_tree_files_3d_rep <- "../physicell/trees/3D_neut_bdg/diversified_100/sampconfig_m0_w1_d0.1_t1_mg1_mm1_l2e+08_i8_s73314_mcc.tree"
 
 #### 2D Example TREE ####
 mcc_tree <- read.beast(mcc_tree_files_2d_rep)
@@ -190,9 +61,9 @@ treeplot <- ggtree(mcc_tree, color = "darkgrey", size = 1) +
     theme(legend.position = "none")
 
 treeplot_pie <- ggtree::inset(treeplot, pies, width = 0.025, height = 0.05) + theme(legend.position = "none") +
-    geom_nodelab(aes(label = ifelse(round(as.numeric(posterior),2) < 1,
+    geom_nodelab(aes(label = ifelse(round(as.numeric(posterior),2) < 0.99,
                                     round(as.numeric(posterior), 2), "")),
-                 nudge_x = -4, nudge_y = 1, size  = 10, hjust='right')
+                 nudge_x = -40, nudge_y = 1, size  = 3, hjust='right')
 ggsave(plot=treeplot_pie,
        file="../figures/2d_physicell_example_mcc_tree.png", height = 7, width = 7)
 
@@ -244,8 +115,8 @@ treeplot_3d <- ggtree(mcc_tree_3d, color = "darkgrey", size = 1) +
     theme(legend.position = "none")
 
 treeplot_pie_3d <- ggtree::inset(treeplot_3d, pies_3d, width = 0.025, height = 0.025) + theme(legend.position = "none") +
-    geom_nodelab(aes(label = ifelse(round(as.numeric(posterior),2) < 1, round(as.numeric(posterior), 2), "")),
-                 nudge_x = -4, nudge_y = 1, size  = 10, hjust='right')
+    geom_nodelab(aes(label = ifelse(round(as.numeric(posterior),2) < 0.99, round(as.numeric(posterior), 2), "")),
+                 nudge_x = -40, nudge_y = 1, size  = 3, hjust='right')
 
 ggsave(treeplot_pie_3d,
        file="../figures/3d_physicell_example_mcc_tree.png", height = 7, width = 7)

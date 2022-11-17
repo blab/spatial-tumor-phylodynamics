@@ -4,70 +4,7 @@ library(tumortree)
 library(tidyverse)
 ##### PLOT POSTERIORS ####
 
-#Record of local directory
-# log_files <- list.files(path = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/curr_runs/out",
-#                         pattern=".log", 
-#                         full.names = TRUE)
-
-li_log_files <- list.files(path = "../li-application/combined",
-                           pattern=".log",
-                           full.names = TRUE)
-
-#get reid of inidivudal chains
-li_log_files <- li_log_files[! grepl("chain1", li_log_files)]
-li_log_files <- li_log_files[! grepl("T1red", li_log_files)]
-li_log_files <- li_log_files[! grepl("bidir", li_log_files)]
-
-
-
-colors_loc <- tumortree::get_color_palette(names = c("edge", "center"))
-names(colors_loc) <- c("loc1", "loc0")
-
-process_logs <- function(log_file) {
-    print(log_file)
-    migration_model <- ifelse(grepl("unidir", basename(log_file)), "unidirectional", "bidirectional")
-    tumor_extract <- regmatches(basename(log_file), gregexpr("T[1-3]", basename(log_file), perl = TRUE))[[1]]
-    if(length(tumor_extract) == 0) {
-        tumor_extract = "T3"
-    }
-    subset_extract <- regmatches(basename(log_file),
-                                 gregexpr("(?<=unidir_)[0-9]", basename(log_file), perl = TRUE))[[1]]
-    if (length(subset_extract) == 0) {
-        subset_extract <- "1"
-    }
-    states_extract <- ifelse(grepl("newstates", basename(log_file)), "newstates",
-                             ifelse(grepl("oristates", basename(log_file)), "oldstates", NA))
-    clock_extract <- ifelse(grepl("strict", basename(log_file)), "strict", "state-dependent")
-    log <- readLog(log_file)
-
-    log_df <- as.data.frame(log) %>%
-        add_column("migration_model" = migration_model,
-                   "tumor" = tumor_extract,
-                   "states" = states_extract,
-                   "subset" = subset_extract,
-                   "clock_model" = clock_extract)
-    
-    if ("birthRateSVCanonical.loc2" %in% colnames(log_df)) {
-        
-        log_df <- log_df %>% 
-            rename("birthRateSVCanonical.loc0" = birthRateSVCanonical.loc1) %>% 
-            rename("birthRateSVCanonical.loc1" = birthRateSVCanonical.loc2)
-    }
-    log_df <- log_df %>% 
-        dplyr::mutate(birthRateDiff = birthRateSVCanonical.loc1 - birthRateSVCanonical.loc0,
-                      birthRateRatio = birthRateSVCanonical.loc1 / birthRateSVCanonical.loc0)
-    
-    return(log_df)
-}
-
-all_logs_df <- purrr::map(log_files, process_logs) %>% 
-    bind_rows
-
-all_logs_birthRate_df <- all_logs_df %>% 
-    pivot_longer(., cols = c("birthRateSVCanonical.loc0", "birthRateSVCanonical.loc1"),
-                 names_to = "state", 
-                 names_prefix = "birthRateSVCanonical.", 
-                 values_to = "birthRate")
+all_logs_birthRate_df <- read_tsv("../li-application/stats/sdevo_estimates_summary.tsv")
 #for supplement compare clock models (both unidirectional + oldstates)
 
 ## Tumor 1

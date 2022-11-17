@@ -1,140 +1,191 @@
 #figureS8.R
+## This script only summarizes extended biological physicell simulations
+
+library(tidyverse)
+
+#Get means and 95% HPD intervals
+## These are calculated from MCMC logs by write_physicell_posteriors_summary.Rscript for each file and combined into posterior_summary.tsv
+
+posterior_summary <- read_tsv("../physicell/stats/posteriors/posterior_summary.tsv") %>% 
+    dplyr::mutate("base" = gsub("_diversified_m1_n100", "", run))
+
+#Get true birth rates
+## True birth rates (labeled as growth rates in original files) are calculated from weighted means of edge and center birth rates over time
+### get_true_rates_physicell.Rscript inputs each XML file and maps to the simulation growth rates recorded in "updated_growth_rate_differences" in the simulation data
+
+true_birth_rates_df <- read_tsv("../physicell/stats/true_birth_rates/true_birth_rates_extended_physicell.tsv") %>% 
+    dplyr::rename("run" = simulation)
+
+#Convert logical to string categories
+true_birth_rates_df$edgeAssociated <- ifelse(true_birth_rates_df$edgeAssociated, "edge", "center")
+
+#Pivot
+true_birth_rates_df <- true_birth_rates_df %>% 
+    pivot_wider(id_cols = run, names_from = edgeAssociated, values_from = mean_growth_rate) %>% 
+    dplyr::mutate("true_birth_diff" = edge-center)
 
 
-library(treeio)
-########## COMPARE ANCESTRAL NODE TIMINGS ###########
+posterior_summary <- posterior_summary %>% 
+    left_join(.,true_birth_rates_df, by = "run")
+
+#check overall convergence
+# posterior_summary %>% 
+#     filter(minBirthRateESS > 200) %>% 
+# 
+#     ggplot(., aes(x=true_birth_diff, y = mean_birth_rate_diff,  color = simulation)) +
+#     geom_point() +
+#     geom_errorbar(aes(ymin = birthRate_hdi95_lower, ymax = birthRate_hdi95_upper), width = 0) +
+#     geom_abline(slope=1, intercept = 0, linetype = "dashed") +
+#     theme_classic() + facet_wrap(~simulation)
+
+#save the replacement
+posteriors_2D_sel_bdg <- posterior_summary %>% 
+    dplyr::filter(minBirthRateESS > 200, simulation == "2D_sel_bdg")
+
+write_csv(posteriors_2D_sel_bdg, file = "../physicell/stats/growth_rate_posteriors_2D_sel_bdg_n100_updated.csv")
+
+
+#Also write everything
+write_csv(posterior_summary, 
+          file = "../physicell/stats/growth_rate_posteriors_extended_physicell.csv")
+
+######################## 
+
+##For reviews
+# 2D_neut_bdg_usecarryingcapacity + greyed out 2D_neut_bdg
+# 2D_sele_bdg_deleterious + greyed out 2D_sel_bdg
+
+#2D neutral boundary-driven
+growth_rate_posteriors_2D_net_bdg_n100 <- read_csv("../physicell/stats/growth_rate_posteriors_2D_neut_bdg_n100.csv") %>% 
+    dplyr::rename("true_birth_diff" = true_birth_rate_diff)
+
+
+growth_rate_posteriors_2D_neut_bdg_carrying <- posterior_summary %>% 
+    dplyr::filter(simulation == "2D_neut_bdg_usecarryingcapacity", run != "sampconfig_m0_w1_d0.2_t1_mg1_mm1_l2e+08_i7_s95791_diversified_m1_n100")
+
+baseplot_2d_neut_bdg <- growth_rate_posteriors_2D_net_bdg_n100 %>% 
+    dplyr::filter(minBirthRateESS > 200) %>% 
+    ggplot(., aes(x = true_birth_diff,
+                  y = mean_birth_rate_diff), color = "darkgrey") +
+    theme_classic() + geom_errorbar(aes(ymin = birthRate_hdi95_lower,
+                                        ymax = birthRate_hdi95_upper),
+                                    width = 0,
+                                    alpha = 0.5,
+                                    size = 1,  color = "darkgrey") +
+    geom_point(aes(y = mean_birth_rate_diff), alpha = 0.8, size = 2, color = "darkgrey") +
+    scale_color_viridis(option = "mako", discrete = TRUE, direction = -1) +
+    geom_abline(intercept = 0, slope = 1, linetype = "dashed") + xlab("True birth rate difference (edge - center)") +
+    ylab("Estimated birth rate difference (edge - center)") + theme(text=element_text(size=40))
 
 
 
-get_corresponding_node <- function(node, tree, comparison_tree) {
-    #get daughter tips of node from original tree
-    tips <- unlist(phangorn::Descendants(tree@phylo, node = node, type = "tips"))
-    
-    #get labels of tips
-    labels <- tree@phylo$tip.label[tips]
-    
-    #get leaves of target comparison tree
-    
-    target_tree_tips <- which(comparison_tree@phylo$tip.label %in% labels)
-    
-    #get MRCA of target tree tips to get target node
-    
-    target_tree_node <- ape::getMRCA(comparison_tree@phylo, target_tree_tips )
-    
-    return(target_tree_node)
-    
+baseplot_2d_sel_bdg <- posteriors_2D_sel_bdg %>% 
+    dplyr::filter(minBirthRateESS > 200) %>% 
+    ggplot(., aes(x = true_birth_diff,
+                  y = mean_birth_rate_diff), color = "darkgrey") +
+    theme_classic() + geom_errorbar(aes(ymin = birthRate_hdi95_lower,
+                                        ymax = birthRate_hdi95_upper),
+                                    width = 0,
+                                    alpha = 0.5,
+                                    size = 1,  color = "darkgrey") +
+    geom_point(aes(y = mean_birth_rate_diff), alpha = 0.8, size = 2, color = "darkgrey") +
+    scale_color_viridis(option = "mako", discrete = TRUE, direction = -1) +
+    geom_abline(intercept = 0, slope = 1, linetype = "dashed") + xlab("True birth rate difference (edge - center)") +
+    ylab("Estimated birth rate difference (edge - center)") + theme(text=element_text(size=40))
+
+
+# For supplement:
+#     2D_neut_bdg_motility + greyed out 2D_neut_bdg
+
+#Add per motolity 
+library(stringr)
+growth_rate_posteriors_2D_neut_bdg_motility <- posterior_summary %>% 
+    dplyr::filter(simulation == "2D_neut_bdg_motility",
+           minBirthRateESS > 200) %>% 
+    mutate("motility" = as.numeric(str_extract(base, "(?<=_m).+(?=_w1)")))
+
+plot_2D_neut_bdg_motility <-  baseplot_2d_neut_bdg +
+    geom_errorbar(data = growth_rate_posteriors_2D_neut_bdg_motility,
+                  aes(ymin = birthRate_hdi95_lower,
+                      ymax = birthRate_hdi95_upper, 
+                      color = motility),
+                  width = 0,
+                  alpha = 0.5,
+                  size = 1) +
+    geom_point(data = growth_rate_posteriors_2D_neut_bdg_motility,
+               aes(y = mean_birth_rate_diff, color = motility), alpha = 0.8, size = 2) +
+    #scale_color_gradient(low = "darkgrey", high = "darkred")
+    scale_color_viridis(option="inferno", begin=0.2, end = 0.8) 
+
+
+plot_2D_neut_bdg_motility 
+plot_2D_neut_bdg_motility <- plot_2D_neut_bdg_motility + theme(legend.position = "none")
+ggsave(plot_2D_neut_bdg_motility, file = "../figures/physicell_2D_neut_bdg_motility.png")
+# 3D_sel_bgd + greyed out 2D_sel_bdg
+
+
+growth_rate_posteriors_3D_sel_bdg <- posterior_summary %>% 
+    dplyr::filter(simulation == "3D_sel",
+                  minBirthRateESS > 200)
+
+plot_3D_sel_bdg <-  baseplot_2d_sel_bdg +
+    geom_errorbar(data = growth_rate_posteriors_3D_sel_bdg,
+                  aes(ymin = birthRate_hdi95_lower,
+                      ymax = birthRate_hdi95_upper),
+                  width = 0,
+                  alpha = 0.5,
+                  size = 1,  color = "darkred") +
+    geom_point(data = growth_rate_posteriors_3D_sel_bdg,
+               aes(y = mean_birth_rate_diff), alpha = 0.8, size = 2, color = "darkred")
+plot_3D_sel_bdg
+ggsave(plot_3D_sel_bdg , file = "../figures/physicell_3D_sel.png")
+
+
+#sigmoid growth 
+# exclude d=0.8
+growth_rate_posteriors_2D_neut_bdg_sigmoid<- posterior_summary %>% 
+    dplyr::filter(simulation == "2D_neut_bdg_sigmoid",
+                  minBirthRateESS > 200)
+
+plot_2D_neut_bdg_sigmoid <-  baseplot_2d_neut_bdg +
+    geom_errorbar(data = growth_rate_posteriors_2D_neut_bdg_sigmoid,
+                  aes(ymin = birthRate_hdi95_lower,
+                      ymax = birthRate_hdi95_upper),
+                  width = 0,
+                  alpha = 0.5,
+                  size = 1,  color = "darkred") +
+    geom_point(data = growth_rate_posteriors_2D_neut_bdg_sigmoid,
+               aes(y = mean_birth_rate_diff), alpha = 0.8, size = 2, color = "darkred")
+plot_2D_neut_bdg_sigmoid 
+
+ggsave(plot_2D_neut_bdg_sigmoid,
+       file = "../figures/physicell_2D_neut_bdg_sigmoid.png")
+
+
+#make toy division prob curves
+dat <- data.frame("x" = 1:6, "y" = c(1,1,2, 2, 2, 2))
+p = ggplot(dat, aes(x = x, y = y)) + 
+    geom_step(size = 2, color = "darkgrey")  +
+    # theme_classic() +
+    # theme(axis.text.x=element_blank(), #remove x axis labels
+    #       axis.ticks.x=element_blank(), #remove x axis ticks
+    #       axis.text.y=element_blank(),  #remove y axis labels
+    #       axis.ticks.y=element_blank()  #remove y axis ticks
+    #) +xlab("") + ylab("Division probability") +
+    theme(text = element_text(size = 50)) + theme_void()   
+
+ggsave(p,
+       file = "../figures/toy_binary_pressure_division.png", height =3, width = 5)
+
+logist <- function(x){
+    #y = exp(x) / (1 + exp(x))
+    y = 1/(1 + exp(-5 * (x - 1)))
 }
 
-# log_files <- list.files(path = "../li-application/out",
-#                         pattern="mcc.tree",
-#                         full.names = TRUE)
-li_mcc_tree_files <- list.files(path = "../li-application/combined",
-                                pattern="T[1-2]_wgs_oristates_unidir_1_state.HCCtumor.typed.node.tree", 
-                                full.names = TRUE)
-li_mcc_tree_files <- li_mcc_tree_files[! grepl(".trees", li_mcc_tree_files )]
-ling_mcc_tree_files <- list.files(path = "../ling-application/out",
-                                  pattern="hcc-wes_unidir_state_comb.HCCtumor.typed.node.mcc.tree", 
-                                  full.names = TRUE)
-mcc_tree_files <- c(li_mcc_tree_files, ling_mcc_tree_files)
+p1 <- ggplot(data = data.frame(x = c(-2, 4)), aes(x))+ 
+    stat_function(fun = logist, size = 2, color = "darkgrey") + theme_void()
 
-T1_mcc_tree <- read.beast("../li-application/combined/T1_wgs_oristates_unidir_1_state.HCCtumor.typed.node.tree")
-T2_mcc_tree <- read.beast("../li-application/combined/T2_wgs_oristates_unidir_1_state.HCCtumor.typed.node.tree")
-T3_mcc_tree <- read.beast("../ling-application/out/hcc-wes_unidir_state_comb.HCCtumor.typed.node.mcc.tree")
+p1
 
-T1_strict_clock_mcc_tree <- read.beast("../li-application/combined/T1_wgs_oristates_unidir_1_strict.HCCtumor.typed.node.tree")
-T2_strict_clock_mcc_tree <- read.beast("../li-application/combined/T2_wgs_oristates_unidir_1_strict.HCCtumor.typed.node.tree")
-T3_strict_clock_mcc_tree <- read.beast("../ling-application/out/hcc-wes_unidir_strict_clock_comb.HCCtumor.typed.node.mcc.tree")
-
-#get all internal nodes to compare for each tumor
-t1_nodes <- seq((length(T1_mcc_tree@phylo$tip.label) + 1), length(T1_mcc_tree@phylo$tip.label) +T1_mcc_tree@phylo$Nnode)
-t2_nodes <- seq((length(T2_mcc_tree@phylo$tip.label) + 1), length(T2_mcc_tree@phylo$tip.label) +T2_mcc_tree@phylo$Nnode)
-t3_nodes <- seq((length(T3_mcc_tree@phylo$tip.label) + 1), length(T3_mcc_tree@phylo$tip.label) +T3_mcc_tree@phylo$Nnode)
-
-#get target nodes for both tumors 
-
-t1_strict_clock_nodes <- map_dbl(t1_nodes, function(n) get_corresponding_node(node = n, tree = T1_mcc_tree, comparison_tree = T1_strict_clock_mcc_tree))
-t2_strict_clock_nodes <- map_dbl(t2_nodes, function(n) get_corresponding_node(node = n, tree = T2_mcc_tree, comparison_tree = T2_strict_clock_mcc_tree))
-t3_strict_clock_nodes <- map_dbl(t3_nodes, function(n) get_corresponding_node(node = n, tree = T3_mcc_tree, comparison_tree = T3_strict_clock_mcc_tree))
-
-#make comparison dataset
-
-#Tumor 1
-t1_node_height_comparison_df <- T1_mcc_tree@data %>% 
-    dplyr::filter(node %in% t1_nodes) 
-
-t1_node_height_comparison_df$strict_clock_node <- t1_strict_clock_nodes[match(as.integer(t1_node_height_comparison_df$node), t1_nodes)]
-t1_node_height_comparison_df$strict_clock_node_height <- as.numeric(T1_strict_clock_mcc_tree@data$height[match(t1_node_height_comparison_df$strict_clock_node, T1_strict_clock_mcc_tree@data$node)])
-
-
-#Tumor 2
-t2_node_height_comparison_df <- T2_mcc_tree@data %>% 
-    dplyr::filter(node %in% t2_nodes) 
-
-t2_node_height_comparison_df$strict_clock_node <- t2_strict_clock_nodes[match(as.integer(t2_node_height_comparison_df$node), t2_nodes)]
-t2_node_height_comparison_df$strict_clock_node_height <- as.numeric(T2_strict_clock_mcc_tree@data$height[match(t2_node_height_comparison_df$strict_clock_node, T2_strict_clock_mcc_tree@data$node)])
-
-
-#Tumor 3
-t3_node_height_comparison_df <- T3_mcc_tree@data %>% 
-    dplyr::filter(node %in% t3_nodes) 
-
-t3_node_height_comparison_df$strict_clock_node <- t3_strict_clock_nodes[match(as.integer(t3_node_height_comparison_df$node), t3_nodes)]
-t3_node_height_comparison_df$strict_clock_node_height <- as.numeric(T3_strict_clock_mcc_tree@data$height[match(t3_node_height_comparison_df$strict_clock_node, T3_strict_clock_mcc_tree@data$node)])
-
-##### HEIGHT COMPARISON PLOTS ######
-
-joint_posterior_min <- min(t1_node_height_comparison_df$posterior, t2_node_height_comparison_df$posterior)
-#close to 0, so just use 0-1 as the range
-t1_node_height_comparison_plot <- ggplot(t1_node_height_comparison_df, aes(x=as.numeric(height), y=strict_clock_node_height, fill = type)) +
-    geom_point(size = 4, alpha =0.8, shape = 21) + theme_classic() +
-    scale_fill_manual(values = colors_loc) +
-    geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
-    scale_y_continuous(trans='log10') +
-    scale_x_continuous(trans='log10')+
-    theme(text = element_text(size = 20)) +
-    xlab("log(Node height with state-dependent clock)") +
-    ylab("log(Node height with strict clock)") +
-    theme(legend.position = c(0.25, 0.85)) +
-    labs(size = "Node posterior") +
-    guides(fill = "none") #+
-
-t1_node_height_comparison_plot
-
-ggsave(plot=t1_node_height_comparison_plot,file ="../figures/t1_clocks_height_comparison_plot.png", height = 5, width = 5)
-
-t2_node_height_comparison_plot <- ggplot(t2_node_height_comparison_df, aes(x=as.numeric(height), y=strict_clock_node_height,
-                                                                           fill= type)) +
-    geom_point(size = 4, alpha =0.8, shape = 21) + theme_classic() +
-    scale_fill_manual(values = colors_loc) +
-    geom_abline(slope = 1, intercept = 0, linetype = "dashed")+
-    scale_y_continuous(trans='log10') +
-    scale_x_continuous(trans='log10') +
-    theme(text = element_text(size = 20)) +
-    xlab("log(Node height with state-dependent clock)") +
-    ylab("log(Node height with strict clock)") +
-    scale_size(limits = c(0,1)) +
-    theme(legend.position = c(0.25, 0.85)) +
-    labs(size = "Node posterior") +
-    guides(fill = "none") 
-
-t2_node_height_comparison_plot    
-ggsave(plot=t2_node_height_comparison_plot,file ="../figures/t2_clocks_height_comparison_plot.png", height = 5, width = 5)
-
-t3_node_height_comparison_plot <- ggplot(t3_node_height_comparison_df, aes(x=as.numeric(height), y=strict_clock_node_height,
-                                                                           fill= type)) +
-    geom_point(size = 4, alpha =0.8, shape = 21) + theme_classic() +
-    scale_fill_manual(values = colors_loc) +
-    geom_abline(slope = 1, intercept = 0, linetype = "dashed")+
-    scale_y_continuous(trans='log10') +
-    scale_x_continuous(trans='log10') +
-    theme(text = element_text(size = 20)) +
-    xlab("log(Node height with state-dependent clock)") +
-    ylab("log(Node height with strict clock)") +
-    scale_size(limits = c(0,1)) +
-    theme(legend.position = c(0.25, 0.85)) +
-    labs(size = "Node posterior") +
-    guides(fill = "none") 
-
-t3_node_height_comparison_plot    
-ggsave(plot=t3_node_height_comparison_plot,
-       file ="../figures/t3_clocks_height_comparison_plot.png", height = 5, width = 5)
+ggsave(p1,
+       file = "../figures/toy_sigmoid_pressure_division.png", height =3, width = 5)

@@ -112,61 +112,142 @@ t2_coord_ratio <- (max(T2_punch_coordinates$X) - min(T2_punch_coordinates$X)) / 
 ggsave(plot=t2_map_plot,file ="../figures/t2_li_wgs_punch_map_published_states.png", height = 5, width = 5*t2_coord_ratio)
 
 ###### PLOT MAXIMUM LIKELIHOOD TREES ######
+#Fasta alignment files compiled in process_li_wgs_data.R and write_ling_state_clocks.R
+## Generate MLE trees with run_nextstrain_divergence_tree.sh
+## Here these will only be used to convert divergence into number of genetic mutations
+## VAF cutoff is 0.05 for variants
+fasta_file_t1 <- "../li-application/nextstrain_analysis/data/li_t1_wgs.fa"
+fasta_file_t2 <- "../li-application/nextstrain_analysis/data/li_t2_wgs.fa"
+
+##read in data into phyDat format (phangorn/ape)
+t1_data <- phangorn::read.phyDat(file = fasta_file_t1, format = "fasta", type = "DNA")
+t2_data <- phangorn::read.phyDat(file = fasta_file_t2, format = "fasta", type = "DNA")
+#t3_data <- phangorn::read.phyDat(file = fasta_file_t3, format = "fasta", type = "DNA")
+
+t1_seq_length <- sum(attr(t1_data, "weight"))
+t2_seq_length <- sum(attr(t2_data, "weight"))
+#t3_seq_length <- sum(attr(t3_data, "weight"))
+
+######## MAXIMUM LIKELIHOOD TREE FROM FASTTREE + AUGUR PIPELINE #################
+
+#Read in trees
+max_likelihood_t1_wgs_tree <- ape::read.tree(file = "../li-application/nextstrain_analysis/li_t1_tree.nwk")
+max_likelihood_t2_wgs_tree <- ape::read.tree(file = "../li-application/nextstrain_analysis/li_t2_tree.nwk")
+
+#read in branch info
+t1_branch_info <- fromJSON(file = "../li-application/nextstrain_analysis/t1_branch_lengths.json")
+t2_branch_info <- fromJSON(file = "../li-application/nextstrain_analysis/t2_branch_lengths.json")
+
+t1_treePars_obj <- treeio::as.treedata(max_likelihood_t1_wgs_tree)
+t2_treePars_obj <- treeio::as.treedata(max_likelihood_t2_wgs_tree)
 
 
-## This are reconstructed by Augur in run_nextstrain_divergence_trees.sh
-manual_t1_wgs_tree <- ape::read.tree(file = "../li-application/nextstrain_analysis/li_t1_tree.nwk")
-manual_t2_wgs_tree <- ape::read.tree(file = "../li-application/nextstrain_analysis/li_t2_tree.nwk")
-
-
-t1_treePars_obj <- treeio::as.treedata(manual_t1_wgs_tree)
-t2_treePars_obj <- treeio::as.treedata(manual_t2_wgs_tree)
-
-ggtree(t1_treePars_obj)
-
+##Tumor 1
 t1_treePars_obj@data <- tibble("node" = 1:(length(t1_treePars_obj@phylo$tip.label) + length(t1_treePars_obj@phylo$node.label)), 
-                               "punch" = c(t1_treePars_obj@phylo$tip.label,
-                                           rep(NA, length(t1_treePars_obj@phylo$node.label)))) %>% 
+                               "punch" = c(t1_treePars_obj@phylo$tip.label, rep(NA, length(t1_treePars_obj@phylo$node.label)))) %>% 
+    
     dplyr::left_join(., t1_li_edge_labels, by = "punch") %>% 
     mutate(punch_label = toupper(gsub("t1", "", punch)))
 
+
+t1_treePars_obj@data$punch_label[t1_treePars_obj@data$punch_label == "BLOOD"] <- "Normal"
+
+#Convert divergence to number of mutations for branch lengths by multiplying by sequence length
+t1_treePars_obj@phylo$edge.length <- t1_treePars_obj@phylo$edge.length * t1_seq_length
+
+
+##Tumor 2
 t2_treePars_obj@data <- tibble("node" = 1:(length(t2_treePars_obj@phylo$tip.label) + length(t2_treePars_obj@phylo$node.label)), 
                                "punch" = c(t2_treePars_obj@phylo$tip.label, rep(NA, length(t2_treePars_obj@phylo$node.label)))) %>% 
     dplyr::left_join(., t2_li_edge_labels, by = "punch") %>% 
-    mutate(punch_label = toupper(gsub("t1", "", punch)))
+    mutate(punch_label = toupper(gsub("t2", "", punch)))
 
-t1_treePars_obj@data$punch_label[t1_treePars_obj@data$punch_label == "BLOOD"] <- "Normal"
+
 t2_treePars_obj@data$punch_label[t2_treePars_obj@data$punch_label == "BLOOD"] <- "Normal"
 
+#Convert branch lengths in to mutations instead of divergence
+t2_treePars_obj@phylo$edge.length <- t2_treePars_obj@phylo$edge.length * t2_seq_length
+
+t1_treePars_obj@data$node_label <- c(t1_treePars_obj@phylo$tip.label, t1_treePars_obj@phylo$node.label)
+t2_treePars_obj@data$node_label <- c(t2_treePars_obj@phylo$tip.label, t2_treePars_obj@phylo$node.label)
+
+t1_node_confidence <- unlist(t1_branch_info$nodes)[grepl(".confidence", names(unlist(t1_branch_info$nodes)))]
+names(t1_node_confidence) <- gsub(".confidence", "", names(t1_node_confidence))
+
+t2_node_confidence <- unlist(t2_branch_info$nodes)[grepl(".confidence", names(unlist(t2_branch_info$nodes)))]
+names(t2_node_confidence) <- gsub(".confidence", "", names(t2_node_confidence))
+
+t1_treePars_obj@data$confidence <- NA
+t2_treePars_obj@data$confidence <- NA
+
+t1_treePars_obj@data$confidence[match(names(t1_node_confidence), t1_treePars_obj@data$node_label)] <- round(t1_node_confidence,2)
+t2_treePars_obj@data$confidence[match(names(t2_node_confidence), t2_treePars_obj@data$node_label)] <- round(t2_node_confidence,2)
+
+## TREE PLOTTING 
+
+#### LI ET AT TUMOR 1
+scale_bar_width <- 10000
+scale_bar_start <- 70000
+scale_bar_vert_pos <- 14
+
+##trees where blood is a leaf
 t1_wgs_tree <- ggtree(t1_treePars_obj, aes(color = ifelse(edgeP==1, "edge","center"), label = punch_label)) +
     scale_color_manual(values = colors) +
-    geom_tippoint(size =2) +geom_text(color = "black", nudge_x=5000, size =5, hjust = "left") +
-    theme(legend.position = "none") #+
-    geom_segment(aes(x = 50000, y = 15, xend = 50000 + 10000, yend = 15), color = "black")
-t1_wgs_tree 
-#y_max_limit <- layer_scales(t1_wgs_tree)$y$get_limits()
+    geom_tippoint(size =2) +geom_text(color = "black", nudge_x=4000, size =4, hjust = "left") +
+    theme(legend.position = "none") +
+    
+    #Scale bar
+    geom_segment(aes(x=scale_bar_start, xend = scale_bar_start + scale_bar_width,
+                     y = scale_bar_vert_pos, yend = scale_bar_vert_pos), color = "black") +
+    geom_text(aes(x=scale_bar_start + scale_bar_width/2, y=scale_bar_vert_pos + 1,
+                  label = paste(scale_bar_width, "mutations", sep = " ")),
+              vjust = "bottom", hjust = "midde", color = "black") +
+    geom_nodelab(aes(label = ifelse(confidence < 1, confidence, "")),
+                 hjust = "right",
+                 vjust = "bottom", 
+                 size = 3.5,
+                 nudge_x = -1000, nudge_y = 0.2,
+                 color = "black")
+
 x_max_limit <- layer_scales(t1_wgs_tree)$x$get_limits()
 new_x_limit <- 1.1*x_max_limit[2]
 t1_wgs_tree  <- t1_wgs_tree + xlim(0, new_x_limit)
 t1_wgs_tree
-ggsave(plot=t1_wgs_tree,
-       file ="../figures/t1_li_wgs_ml_tree.png", height = 5, width = 3)
 
+ggsave(filename = "../figures/t1_wgs_genetic_state_tree.png", t1_wgs_tree, height = 4, width = 3)
+
+#t1_x_range <- layer_scales(t1_wgs_tree)$x$range$range
+# ggsave(filename = "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/figures/t1_wgs_genetic_state_tree.png",
+#        t1_wgs_tree, height = 4, width = 3)
+#for scale bar
+scale_bar_width <- 10000
+scale_bar_start <- 70000
+scale_bar_vert_pos <- 8
 
 t2_wgs_tree <- ggtree(t2_treePars_obj, aes(color = ifelse(edgeP==1, "edge","center"), label = punch_label)) +
     scale_color_manual(values = colors) +
-    geom_tippoint(size =2) +geom_text(color = "black", nudge_x=5000, size =5, hjust = "left") +
+    geom_tippoint(size =2) +geom_text(color = "black", nudge_x=4000, size =4, hjust = "left") +
     theme(legend.position = "none") +
-    geom_segment(aes(x = 50000, y = 8, xend = 50000 + 10000, yend =8), color = "black")
-
+    geom_segment(aes(x=scale_bar_start, xend = scale_bar_start + scale_bar_width,
+                     y = scale_bar_vert_pos, yend = scale_bar_vert_pos), color = "black") +
+    geom_text(aes(x=scale_bar_start + scale_bar_width/2, y=scale_bar_vert_pos + 1,
+                  label = paste(scale_bar_width, "mutations", sep = " ")),
+              vjust = "bottom", hjust = "midde", color = "black") +
+    geom_nodelab(aes(label = ifelse(confidence < 1, confidence, "")),
+                 hjust = "right",
+                 vjust = "bottom", 
+                 color = "black",
+                 size = 3.5,
+                 nudge_x = -1000, nudge_y = 0.2)
 x_max_limit <- layer_scales(t2_wgs_tree)$x$get_limits()
 new_x_limit <- 1.1*x_max_limit[2]
 t2_wgs_tree  <- t2_wgs_tree + xlim(0, new_x_limit)
-t2_wgs_tree
 
-ggsave(plot=t2_wgs_tree,
-       file ="../figures/t2_li_wgs_ml_tree.png", height = 5, width = 3)
-
+t2_wgs_tree 
+ggsave(filename = "../figures/t2_wgs_genetic_state_tree.png", t2_wgs_tree , height = 4, width = 3)
+#Get sscale
+#layer_scales(t2_wgs_tree)$x$range$range
+#layer_scales(t2_wgs_tree)$y$range$range
 
 ##### PLOT POSTERIORS ####
 
@@ -183,14 +264,6 @@ li_log_files <- list.files(path = "../li-application/out",
 li_log_files <- li_log_files[! grepl("chain1", li_log_files)]
 li_log_files <- li_log_files[! grepl("T1red", li_log_files)]
 li_log_files <- li_log_files[! grepl("bidir", li_log_files)]
-
-
-# ling_log_files <- list.files(path = "../ling-application/out",
-#                            pattern=".log",
-#                            full.names = TRUE)
-
-# ling_log_files <- ling_log_files[! grepl("chain1", ling_log_files)]
-# ling_log_files <- ling_log_files[! grepl("bidir", ling_log_files)]
 
 log_files <- c(li_log_files)
 
@@ -234,7 +307,7 @@ all_logs_df <- purrr::map(log_files, process_logs) %>%
     bind_rows
 
 all_logs_birthRate_df <- all_logs_df %>% 
-    #dplyr::filter(minESS > 50) %>% 
+#    dplyr::filter(minESS > 50) %>% 
     pivot_longer(., cols = c("birthRateSVCanonical.loc0", "birthRateSVCanonical.loc1"),
                  names_to = "state", 
                  names_prefix = "birthRateSVCanonical.", 
@@ -243,21 +316,9 @@ all_logs_birthRate_df <- all_logs_df %>%
 #for main figure plot only state-dependent clock + unidirectional migration
 
 #Tumor 1
-# t1_wgs_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>% 
-#     filter(migration_model == "unidirectional",
-#            clock_model == "state-dependent",
-#            states == "oldstates",
-#            tumor == "T1") %>% 
-#     ggplot(., aes(x=birthRate), color = "black") +
-#     geom_density(aes(fill = state), alpha=0.8) +
-#     #facet_grid(cols = vars(tumor)) +
-#     theme_classic() + scale_fill_manual(values=colors_loc) +
-#     theme(text=element_text(size=25))+
-#     xlab("Estimated birth rate") +
-#     theme(legend.position = "none") +ylab("")
 
 t1_wgs_violin_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>% 
-    filter(migration_model == "unidirectional",
+    dplyr::filter(migration_model == "unidirectional",
            clock_model == "state-dependent",
            states == "oldstates",
            tumor == "T1") %>% 
@@ -287,22 +348,9 @@ ggsave(plot=t1_wgs_violin_posteriors_plot_oldstates_state_clock,
        file ="../figures/t1_li_wgs_posteriors_oldstates_stateclock_violin.png", height = 5, width = 3)
 
 #Tumor 2
-t2_wgs_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
-    filter(migration_model == "unidirectional",
-           clock_model == "state-dependent",
-           states == "oldstates",
-           tumor == "T2") %>%
-    ggplot(., aes(x=birthRate), color = "black") +
-    geom_density(aes(fill = state), alpha=0.8) +
-    #facet_grid(cols = vars(tumor)) +
-    theme_classic() + scale_fill_manual(values=colors_loc) +
-    theme(text=element_text(size=25))+
-    xlab("Estimated birth rate") +
-    theme(legend.position = "none") +ylab("")
-t2_wgs_posteriors_plot_oldstates_state_clock 
 
 t2_wgs_violin_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>% 
-    filter(migration_model == "unidirectional",
+    dplyr::filter(migration_model == "unidirectional",
            clock_model == "state-dependent",
            states == "oldstates",
            tumor == "T2") %>% 
@@ -321,71 +369,17 @@ t2_wgs_violin_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
            strip.text = element_blank())
 #t2_wgs_posteriors_plot_oldstates_state_clock  
 t2_wgs_violin_posteriors_plot_oldstates_state_clock
-# ggsave(plot=t2_wgs_posteriors_plot_oldstates_state_clock ,
-#        file ="../figures/t2_li_wgs_posteriors_oldstates_stateclock.png", height = 5, width = 3)
+
 
 ggsave(plot=t2_wgs_violin_posteriors_plot_oldstates_state_clock ,
        file ="../figures/t2_li_wgs_posteriors_oldstates_stateclock_violin.png", height = 5, width = 3)
 
 
-# #Tumor 3
-# t3_wgs_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
-#     filter(migration_model == "unidirectional",
-#            clock_model == "state-dependent",
-#            states == "oldstates",
-#            tumor == "T3") %>%
-#     ggplot(., aes(x=birthRate), color = "black") +
-#     geom_density(aes(fill = state), alpha=0.8) +
-#     #facet_grid(cols = vars(tumor)) +
-#     theme_classic() + scale_fill_manual(values=colors_loc) +
-#     theme(text=element_text(size=25))+
-#     xlab("Estimated birth rate") +
-#     theme(legend.position = "none") +ylab("")
-# t3_wgs_posteriors_plot_oldstates_state_clock 
-# 
-# t3_wgs_violin_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>% 
-#     filter(migration_model == "unidirectional",
-#            clock_model == "state-dependent",
-#            states == "oldstates",
-#            tumor == "T3") %>% 
-#     #ggplot(., aes(x = ifelse(state == "loc0", "center", "edge"), y=birthRate), color = "black") +
-#     ggplot(., aes(x = subset, y=birthRate, fill=state), color = "black") +
-#     geom_violin(aes(fill = state), alpha=0.8, trim = FALSE) +
-#     #facet_grid(cols = vars(tumor)) +
-#     theme_classic() + scale_fill_manual(values=colors_loc) +
-#     theme(text=element_text(size=15))+
-#     ylab("Estimated birth rate") +
-#     theme(legend.position = "none") +xlab("") +
-#     theme(axis.text.x=element_blank(), 
-#           axis.ticks.x = element_blank()) +
-#     facet_wrap(~state) +
-#     theme( strip.background = element_blank(),
-#            strip.text = element_blank())
-# t3_wgs_violin_posteriors_plot_oldstates_state_clock
-# 
-# 
-# ggsave(plot=t3_wgs_violin_posteriors_plot_oldstates_state_clock ,
-#        file ="../figures/t3_ling_wgs_posteriors_stateclock_violin.png", height = 5, width = 3)
-
-#also plot estimated differences
+########## Plot edge/center birth ratios ###############
 ## Tumor 1
-t1_wgs_ratio_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
-    filter(migration_model == "unidirectional",
-           clock_model == "state-dependent",
-           states == "oldstates",
-           tumor == "T1") %>%
-    ggplot(., aes(x=birthRateRatio), color = "black",  fill = "black") +
-    geom_density(alpha=0.8, fill = "black") +
-    #facet_grid(cols = vars(tumor)) +
-    theme_classic() +
-    theme(text=element_text(size=30))+
-    xlab("Estimated birth rate ratio (edge / center)") +
-    theme(legend.position = "none") +ylab("") +
-    geom_vline(xintercept = 1, linetype="dashed")
-t1_wgs_ratio_posteriors_plot_oldstates_state_clock
 
 t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_df %>% 
-    filter(migration_model == "unidirectional",
+    dplyr::filter(migration_model == "unidirectional",
            clock_model == "state-dependent",
            states == "oldstates",
            tumor == "T1") %>% 
@@ -400,32 +394,16 @@ t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_
     theme(axis.text.x=element_blank(), 
           axis.ticks.x = element_blank())
 
-#t1_wgs_ratio_posteriors_plot_oldstates_state_clock 
+
 t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin
-# ggsave(plot=t1_wgs_ratio_posteriors_plot_oldstates_state_clock ,
-#        file ="../figures/t1_li_wgs_ratio_posteriors_oldstates_stateclock.png", height = 5, width = 5)
 
 ggsave(plot=t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin ,
        file ="../figures/t1_li_wgs_ratio_posteriors_oldstates_stateclock_violin.png", height = 5, width = 1.5)
 
 ## Tumor 2
-t2_wgs_ratio_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
-    filter(migration_model == "unidirectional",
-           clock_model == "state-dependent",
-           states == "oldstates",
-           tumor == "T2") %>%
-    ggplot(., aes(x=birthRateRatio), color = "black",  fill = "black") +
-    geom_density(aes(), alpha=0.8, fill = "black") +
-    #facet_grid(cols = vars(tumor)) +
-    theme_classic() +
-    theme(text=element_text(size=30))+
-    xlab("Estimated birth rate ratio (edge / center)") +
-    theme(legend.position = "none") +ylab("") +
-    geom_vline(xintercept = 1, linetype="dashed")
 
-t2_wgs_ratio_posteriors_plot_oldstates_state_clock
 t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_df %>% 
-    filter(migration_model == "unidirectional",
+    dplyr::filter(migration_model == "unidirectional",
            clock_model == "state-dependent",
            states == "oldstates",
            tumor == "T2") %>% 
@@ -443,46 +421,7 @@ t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_
 t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin
 ggsave(plot=t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin ,
        file ="../figures/t2_li_wgs_ratio_posteriors_stateclock_violin.png", height = 5, width = 1.5)
-## Tumor 3
-t3_wgs_ratio_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
-    filter(migration_model == "unidirectional",
-           clock_model == "state-dependent",
-           states == "oldstates",
-           tumor == "T3") %>%
-    ggplot(., aes(x=birthRateRatio), color = "black",  fill = "black") +
-    geom_density(aes(), alpha=0.8, fill = "black") +
-    #facet_grid(cols = vars(tumor)) +
-    theme_classic() +
-    theme(text=element_text(size=15))+
-    ylab("Estimated birth rate ratio \n(edge / center)") +
-    theme(legend.position = "none") +xlab("") +
-    geom_vline(xintercept = 1, linetype="dashed") +
-    theme(axis.text.x=element_blank(), 
-          axis.ticks.x = element_blank())
 
-# t3_wgs_ratio_posteriors_plot_oldstates_state_clock
-# t3_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_df %>% 
-#     filter(migration_model == "unidirectional",
-#            clock_model == "state-dependent",
-#            states == "oldstates",
-#            tumor == "T3") %>% 
-#     ggplot(., aes(x=subset, y=birthRateRatio), color = "black",  fill = "black") +
-#     geom_violin(alpha=0.8, fill = "black", trim =FALSE) +
-#     #facet_grid(cols = vars(tumor)) +
-#     theme_classic() + 
-#     theme(text=element_text(size=15))+
-#     ylab("Estimated birth rate ratio \n(edge / center)") +
-#     theme(legend.position = "none") +xlab("") +
-#     geom_hline(yintercept = 1, linetype="dashed") +
-#     theme(axis.text.x=element_blank(), 
-#           axis.ticks.x = element_blank())
-# 
-# 
-# t3_wgs_ratio_posteriors_plot_oldstates_state_clock_violin
-
-
-ggsave(plot=t3_wgs_ratio_posteriors_plot_oldstates_state_clock_violin ,
-       file ="../figures/t3_ling_wgs_ratio_posteriors_stateclock_violin.png", height = 5, width = 1.5)
 
 #get HDI intervals to put in text
 t1_estimate_summaries <- all_logs_birthRate_df %>% 
@@ -532,29 +471,6 @@ t2_estimate_summaries %>%
     distinct()
 write_csv(t2_estimate_summaries, file = "../li-application/stats/t2_wgs_birth_rate_estimate_summary.csv")
 
-#Tumor 3
-# t3_estimate_summaries <- all_logs_birthRate_df %>% 
-#     dplyr::filter(tumor == "T3", 
-#                   migration_model == "unidirectional",
-#                   clock_model == "state-dependent",
-#                   states == "oldstates") %>% 
-#     group_by(state) %>% 
-#     summarise(birthRate_HDI95_lower = hdi(birthRate, credMass = 0.95)[1], 
-#               birthRate_HDI95_upper = hdi(birthRate, credMass = 0.95)[2],
-#               birthRate_HDI50_lower = hdi(birthRate, credMass = 0.5)[1], 
-#               birthRate_HDI50_upper = hdi(birthRate, credMass = 0.5)[2],
-#               birthRateRatio_HDI95_lower = hdi(birthRateRatio, credMass = 0.95)[1], 
-#               birthRateRatio_HDI95_upper = hdi(birthRateRatio, credMass = 0.95)[2],
-#               birthRateRatio_HDI50_lower = hdi(birthRateRatio, credMass = 0.5)[1], 
-#               birthRateRatio_HDI50_upper = hdi(birthRateRatio, credMass = 0.5)[2],
-#               birthRateRatio_mean = mean(birthRateRatio))
-
-# t3_estimate_summaries %>% 
-#     ungroup() %>% 
-#     #group_by(subset) %>% 
-#     dplyr::select(contains("birthRateRatio")) %>% 
-#     distinct()
-# write_csv(t3_estimate_summaries, file = "../li-application/stats/t3_wgs_birth_rate_estimate_summary.csv")
 
 ####### MCC TREES ###############
 
@@ -564,13 +480,6 @@ li_mcc_tree_files <- list.files(path = "../li-application/combined",
                              pattern="T[1-2]_wgs_oristates_unidir_1_state.HCCtumor.typed.node.tree", 
                              full.names = TRUE)
 li_mcc_tree_files <- li_mcc_tree_files[! grepl(".trees", li_mcc_tree_files )]
-# ling_mcc_tree_files <- list.files(path = "../ling-application/out",
-#                              pattern="hcc-wes_unidir_state_comb.HCCtumor.typed.node.mcc.tree", 
-#                              full.names = TRUE)
-#mcc_tree_files <- c(li_mcc_tree_files)
-#only do unidirectional
-# For testing
-#mcc_file <- "../li-application/out/T2_wgs_oristates_unidir_state_comb.HCCtumor_mcc.tree"
 
 for (mcc_file in li_mcc_tree_files) {
     mcc_tree <- read.beast(file=mcc_file)
@@ -606,7 +515,7 @@ for (mcc_file in li_mcc_tree_files) {
     
     treeplot <- treeplot + xlim(c(0,new_x_limit))
     treeplot_pie <- ggtree::inset(treeplot, pies, width = 0.06, height = 0.06) + theme(legend.position = "none") #+ ggtitle(paste0(tumor_extract, migration_model, rep_extract, sep = " "))
-    treeplot_pie <- treeplot_pie + geom_nodelab(aes(label = ifelse(as.numeric(posterior) <= 1, round(as.numeric(posterior), 2), "")),
+    treeplot_pie <- treeplot_pie + geom_nodelab(aes(label = ifelse(round(as.numeric(posterior),2) < 1, round(as.numeric(posterior), 2), "")),
                                                 nudge_x = -0.03*hmax, nudge_y = 0.05*hmax, size  = 8, hjust='right', vjust="bottom")
     #treeplot_pie
     fig_file <- paste0("../figures/", tumor_extract,  "_",
@@ -622,12 +531,8 @@ for (mcc_file in li_mcc_tree_files) {
 
 t1_estimate_summaries %>% 
     ungroup() %>% 
-    select(contains("birthRateRatio"))
+    dplyr::select(contains("birthRateRatio"))
 
 t2_estimate_summaries %>% 
-    select(contains("birthRateRatio"))
-
-# t3_estimate_summaries %>% 
-#     select(contains("birthRateRatio"))
-
+    dplyr::select(contains("birthRateRatio"))
 

@@ -51,18 +51,23 @@ fasta_file_t3 <- "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-p
 ##read in data into phyDat format (phangorn/ape)
 t1_data <- phangorn::read.phyDat(file = fasta_file_t1, format = "fasta", type = "DNA")
 t2_data <- phangorn::read.phyDat(file = fasta_file_t2, format = "fasta", type = "DNA")
-t3_data <- phangorn::read.phyDat(file = fasta_file_t3, format = "fasta", type = "DNA")
+#t3_data <- phangorn::read.phyDat(file = fasta_file_t3, format = "fasta", type = "DNA")
 
 t1_seq_length <- sum(attr(t1_data, "weight"))
 t2_seq_length <- sum(attr(t2_data, "weight"))
-t3_seq_length <- sum(attr(t3_data, "weight"))
+#t3_seq_length <- sum(attr(t3_data, "weight"))
 
 ######## MAXIMUM LIKELIHOOD TREE FROM AUGUR PIPELINE #################
 max_likelihood_t1_wgs_tree <- ape::read.tree(file = "../li-application/nextstrain_analysis/li_t1_tree.nwk")
 max_likelihood_t2_wgs_tree <- ape::read.tree(file = "../li-application/nextstrain_analysis/li_t2_tree.nwk")
 
+#read in branch info
+t1_branch_info <- fromJSON(file = "../li-application/nextstrain_analysis/t1_branch_lengths.json")
+t2_branch_info <- fromJSON(file = "../li-application/nextstrain_analysis/t2_branch_lengths.json")
+
 t1_treePars_obj <- treeio::as.treedata(max_likelihood_t1_wgs_tree)
 t2_treePars_obj <- treeio::as.treedata(max_likelihood_t2_wgs_tree)
+
 
 ##Tumor 1
 t1_treePars_obj@data <- tibble("node" = 1:(length(t1_treePars_obj@phylo$tip.label) + length(t1_treePars_obj@phylo$node.label)), 
@@ -90,6 +95,21 @@ t2_treePars_obj@data$punch_label[t2_treePars_obj@data$punch_label == "BLOOD"] <-
 #Convert branch lengths in to mutations instead of divergence
 t2_treePars_obj@phylo$edge.length <- t2_treePars_obj@phylo$edge.length * t2_seq_length
 
+t1_treePars_obj@data$node_label <- c(t1_treePars_obj@phylo$tip.label, t1_treePars_obj@phylo$node.label)
+t2_treePars_obj@data$node_label <- c(t2_treePars_obj@phylo$tip.label, t2_treePars_obj@phylo$node.label)
+
+t1_node_confidence <- unlist(t1_branch_info$nodes)[grepl(".confidence", names(unlist(t1_branch_info$nodes)))]
+names(t1_node_confidence) <- gsub(".confidence", "", names(t1_node_confidence))
+
+t2_node_confidence <- unlist(t2_branch_info$nodes)[grepl(".confidence", names(unlist(t2_branch_info$nodes)))]
+names(t2_node_confidence) <- gsub(".confidence", "", names(t2_node_confidence))
+
+t1_treePars_obj@data$confidence <- NA
+t2_treePars_obj@data$confidence <- NA
+
+t1_treePars_obj@data$confidence[match(names(t1_node_confidence), t1_treePars_obj@data$node_label)] <- round(t1_node_confidence,2)
+t2_treePars_obj@data$confidence[match(names(t2_node_confidence), t2_treePars_obj@data$node_label)] <- round(t2_node_confidence,2)
+
 ## TREE PLOTTING 
 
 #### LI ET AT TUMOR 1
@@ -108,8 +128,18 @@ t1_wgs_tree <- ggtree(t1_treePars_obj, aes(color = ifelse(edgeP==1, "edge","cent
                      y = scale_bar_vert_pos, yend = scale_bar_vert_pos), color = "black") +
     geom_text(aes(x=scale_bar_start + scale_bar_width/2, y=scale_bar_vert_pos + 1,
                   label = paste(scale_bar_width, "mutations", sep = " ")),
-              vjust = "bottom", hjust = "midde", color = "black")
-t1_wgs_tree 
+              vjust = "bottom", hjust = "midde", color = "black") +
+    geom_nodelab(aes(label = ifelse(confidence < 1, confidence, "")),
+                 hjust = "right",
+                 vjust = "bottom", 
+                 size = 3.5,
+                 nudge_x = -1000, nudge_y = 0.2,
+                 color = "black")
+
+x_max_limit <- layer_scales(t1_wgs_tree)$x$get_limits()
+new_x_limit <- 1.1*x_max_limit[2]
+t1_wgs_tree  <- t1_wgs_tree + xlim(0, new_x_limit)
+t1_wgs_tree
 
 ggsave(filename = "../figures/t1_wgs_genetic_state_tree.png", t1_wgs_tree, height = 4, width = 3)
 
@@ -129,7 +159,17 @@ t2_wgs_tree <- ggtree(t2_treePars_obj, aes(color = ifelse(edgeP==1, "edge","cent
                      y = scale_bar_vert_pos, yend = scale_bar_vert_pos), color = "black") +
     geom_text(aes(x=scale_bar_start + scale_bar_width/2, y=scale_bar_vert_pos + 1,
                   label = paste(scale_bar_width, "mutations", sep = " ")),
-              vjust = "bottom", hjust = "midde", color = "black")
+              vjust = "bottom", hjust = "midde", color = "black") +
+    geom_nodelab(aes(label = ifelse(confidence < 1, confidence, "")),
+                 hjust = "right",
+                 vjust = "bottom", 
+                 color = "black",
+                 size = 3.5,
+                 nudge_x = -1000, nudge_y = 0.2)
+x_max_limit <- layer_scales(t2_wgs_tree)$x$get_limits()
+new_x_limit <- 1.1*x_max_limit[2]
+t2_wgs_tree  <- t2_wgs_tree + xlim(0, new_x_limit)
+
 t2_wgs_tree 
 ggsave(filename = "../figures/t2_wgs_genetic_state_tree.png", t2_wgs_tree , height = 4, width = 3)
 #Get sscale
