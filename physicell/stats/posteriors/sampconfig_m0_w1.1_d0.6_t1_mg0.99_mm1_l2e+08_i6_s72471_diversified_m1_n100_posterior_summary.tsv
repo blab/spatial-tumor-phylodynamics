@@ -1,0 +1,2 @@
+mean_birth_rate_diff	median_birth_rate_diff	birthRate_hdi95_lower	birthRate_hdi95_upper	run	n	simulation	minBirthRateESS
+7.709239471736352e-4	7.554780006844908e-4	4.609110642044324e-4	0.0011066324503204495	sampconfig_m0_w1.1_d0.6_t1_mg0.99_mm1_l2e+08_i6_s72471_diversified_m1_n100	100	3D_sel	1036.710188825578
