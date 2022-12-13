@@ -5,6 +5,7 @@
 
 
 ##### SETUP #####
+library(tidyverse)
 library(tumortree)
 library(tidyverse)
 library(viridis)
@@ -221,11 +222,11 @@ all_cells_files_dr_0.10 <- list.files(path="../eden/simulation_data",
                                       full.names = TRUE)
 
 all_cells_files_unrestricted_dr_0.10 <- list.files(path="../eden/simulation_data",
-                                      pattern="cells_pushing_pop2_1000_dr_0.10_i_[0-9]+.csv",
+                                      pattern="cells_pushing_pop_1000_dr_0.10_i_[0-9]+.csv",
                                       full.names = TRUE)
 
 all_cells_files_unrestricted_dr_0.10_locs <- list.files(path="../eden/simulation_data",
-                                                   pattern="cells_pushing_pop2_1000_dr_0.10_i_[0-9]+_locs.csv",
+                                                   pattern="cells_pushing_pop_1000_dr_0.10_i_[0-9]+_locs.csv",
                                                    full.names = TRUE)
 
 #get distance to edge versus birth rate calculations for dr 0.10 + boundary-driven growth
@@ -258,62 +259,99 @@ all_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df <- purrr::map2(all_c
 
 #Calculate mean and se of birth rate across binned disistances from the tumor edge
 time_step <- 2/24
-all_dr_0.10_sims_boundary_driven_summary <- all_sims_edge_dist_versus_divisions_dr_0.10_df %>% 
+
+all_dr_0.10_sims_boundary_driven_summary1 <- all_sims_edge_dist_versus_divisions_dr_0.10_df %>% 
     
     #first normalize distances accross simulations
     dplyr::group_by(i,time) %>% 
     dplyr::mutate(norm_dist_from_edge = dist_from_edge/max(dist_from_edge)) %>% 
-
+    
     ungroup %>% 
     
     #then bin distances to get binned birth rate
     dplyr::mutate(norm_dist_from_edge_bin = cut(norm_dist_from_edge, breaks=13)) %>% 
     dplyr::group_by(norm_dist_from_edge_bin, i) %>% 
-    dplyr::summarise("birth_rate" = sum(divided)/n()/time_step) %>% 
+    dplyr::summarise("birth_rate" = sum(divided)/n()/time_step)
+
+all_dr_0.10_sims_boundary_driven_summary2 <- all_dr_0.10_sims_boundary_driven_summary1 %>% 
     dplyr::ungroup() %>% 
     dplyr::group_by(norm_dist_from_edge_bin) %>% 
     
     #get mean and se accross simulations
-    dplyr::summarise("birth_rate_mean" = mean(birth_rate), "birth_rate_se" = sqrt(var(birth_rate) / n())) 
+    dplyr::summarise("birth_rate_mean" = mean(birth_rate), "birth_rate_se" = sd(birth_rate) / sqrt(10))
 
 
 
 #to make histogram extract bin ranges and get midpoint for plotting
-all_dr_0.10_sims_boundary_driven_summary$binRange <- str_extract(all_dr_0.10_sims_boundary_driven_summary$norm_dist_from_edge_bin, "[0-9].*[0-9]+")
-all_dr_0.10_sims_boundary_driven_summary <- all_dr_0.10_sims_boundary_driven_summary %>% 
+all_dr_0.10_sims_boundary_driven_summary2$binRange <- str_extract(all_dr_0.10_sims_boundary_driven_summary2$norm_dist_from_edge_bin, "[0-9].*[0-9]+")
+all_dr_0.10_sims_boundary_driven_summary2 <- all_dr_0.10_sims_boundary_driven_summary2 %>% 
     tidyr::separate(binRange, into=c("binStart", "binEnd"), sep = ",") %>% 
     dplyr::mutate(binStart = as.numeric(binStart), binEnd = as.numeric(binEnd)) %>% 
     dplyr::mutate(binMid = (binEnd + binStart)/2)
 
-#get bin width to fit bars together
-binWidth <- mean(all_dr_0.10_sims_boundary_driven_summary$binEnd - all_dr_0.10_sims_boundary_driven_summary$binStart, na.rm = TRUE)
+all_dr_0.10_sims_boundary_driven_summary1$binRange <- str_extract(all_dr_0.10_sims_boundary_driven_summary1$norm_dist_from_edge_bin, "[0-9].*[0-9]+")
+all_dr_0.10_sims_boundary_driven_summary1 <- all_dr_0.10_sims_boundary_driven_summary1 %>% 
+    tidyr::separate(binRange, into=c("binStart", "binEnd"), sep = ",") %>% 
+    dplyr::mutate(binStart = as.numeric(binStart), binEnd = as.numeric(binEnd)) %>% 
+    dplyr::mutate(binMid = (binEnd + binStart)/2)
+
+
 
 
 #Write summary stats for quick plotting
-write.csv(all_dr_0.10_sims_boundary_driven_summary,
-          file="../eden/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10_summary.csv")
+write.csv(all_dr_0.10_sims_boundary_driven_summary1,
+          file="../eden/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10_summary1.csv")
 
-all_dr_0.10_sims_boundary_driven_summary <- read.csv("../eden/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10_summary.csv")
+#Write summary stats for quick plotting
+write.csv(all_dr_0.10_sims_boundary_driven_summary2,
+          file="../eden/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10_summary2.csv")
+
+
+#all_dr_0.10_sims_boundary_driven_summary <- read.csv("../eden/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10_summary.csv")
+
+#get bin width to fit bars together
+binWidth <- mean(all_dr_0.10_sims_boundary_driven_summary2$binEnd - all_dr_0.10_sims_boundary_driven_summary2$binStart, na.rm = TRUE)
+
 #plotting
-all_dr_0.10_sims_boundary_driven_hist <- ggplot(all_dr_0.10_sims_boundary_driven_summary,
+# all_dr_0.10_sims_boundary_driven_hist <- ggplot(all_dr_0.10_sims_boundary_driven_summary2,
+#                                                 alpha = 0.5,
+#                                                 aes(x = binMid, y = birth_rate_mean
+#                                ),
+#            color = "black") +
+#     
+#     geom_bar(stat="identity", fill = sim_colors["boundary_driven"], color = "black",
+#              width=binWidth*0.99, alpha = 0.9) +
+#     geom_point() +
+#     geom_errorbar(aes(ymin=birth_rate_mean - birth_rate_se, ymax=birth_rate_mean + birth_rate_se), width = binWidth*0.2) +
+#     xlab("Fraction distance from tumor edge") +
+#     ylab("Birth rate") +
+#     theme_classic() +
+#     theme(text = element_text(size = 15))
+# all_dr_0.10_sims_boundary_driven_hist 
+
+all_dr_0.10_sims_boundary_driven_hist  <- ggplot(all_dr_0.10_sims_boundary_driven_summary2,
                                                 alpha = 0.5,
                                                 aes(x = binMid, y = birth_rate_mean
-                               ),
-           color = "black") +
+                                                ),
+                                                color = "black") +
     
-    geom_bar(stat="identity", fill = sim_colors["boundary_driven"], color = "black", width=binWidth*0.99, alpha = 0.9) +
-    geom_point() +
-    geom_errorbar(aes(ymin=birth_rate_mean - birth_rate_se, ymax=birth_rate_mean + birth_rate_se), width = binWidth*0.2) +
+    geom_bar(stat="identity", fill = sim_colors["boundary_driven"], color = "black",
+             width=binWidth*0.99, alpha = 0.9) +
+    #geom_point() +
+    #geom_errorbar(aes(ymin=birth_rate_mean - birth_rate_se, ymax=birth_rate_mean + birth_rate_se), width = binWidth*0.2) +
     xlab("Fraction distance from tumor edge") +
     ylab("Birth rate") +
     theme_classic() +
-    theme(text = element_text(size = 15))
+    theme(text = element_text(size = 15)) +
+    geom_jitter(data=all_dr_0.10_sims_boundary_driven_summary1, aes(x = binMid, y = birth_rate), alpha = 0.8, width = 0.007, height = 0, size = 1, color = "grey36") +
+    geom_point() +
+    geom_errorbar(aes(ymin=birth_rate_mean - birth_rate_se, ymax=birth_rate_mean + birth_rate_se), width = binWidth*0.2)
 
 all_dr_0.10_sims_boundary_driven_hist   
 
 ##histogram for unrestricted growth
 
-all_dr_0.10_sims_unrestricted_summary <- all_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df %>% 
+all_dr_0.10_sims_unrestricted_summary1 <- all_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df %>% 
     
     #first normalize distances across simulations
     dplyr::group_by(i,time) %>% 
@@ -323,44 +361,78 @@ all_dr_0.10_sims_unrestricted_summary <- all_sims_edge_dist_versus_divisions_unr
     #then bin distances to get binned birth rate
     dplyr::mutate(norm_dist_from_edge_bin = cut(norm_dist_from_edge, breaks=13)) %>% 
     dplyr::group_by(norm_dist_from_edge_bin, i) %>% 
-    dplyr::summarise("birth_rate" = sum(divided)/n()/time_step) %>% 
+    dplyr::summarise("birth_rate" = sum(divided)/n()/time_step)
+
+all_dr_0.10_sims_unrestricted_summary2 <- all_dr_0.10_sims_unrestricted_summary1 %>% 
     dplyr::ungroup() %>% 
     dplyr::group_by(norm_dist_from_edge_bin) %>% 
     
     #get mean and se accross simulations
-    dplyr::summarise("birth_rate_mean" = mean(birth_rate), "birth_rate_se" = sqrt(var(birth_rate) / n())) 
+    dplyr::summarise("birth_rate_mean" = mean(birth_rate), "birth_rate_se" = sd(birth_rate) / sqrt(10)) 
 
 #to make histogram extract bin ranges and get midpoint for plotting
-all_dr_0.10_sims_unrestricted_summary$binRange <- str_extract(all_dr_0.10_sims_unrestricted_summary$norm_dist_from_edge_bin, "[0-9].*[0-9]+")
-all_dr_0.10_sims_unrestricted_summary <- all_dr_0.10_sims_unrestricted_summary %>% 
+all_dr_0.10_sims_unrestricted_summary1$binRange <- str_extract(all_dr_0.10_sims_unrestricted_summary1$norm_dist_from_edge_bin, "[0-9].*[0-9]+")
+all_dr_0.10_sims_unrestricted_summary1 <- all_dr_0.10_sims_unrestricted_summary1 %>% 
+    tidyr::separate(binRange, into=c("binStart", "binEnd"), sep = ",") %>% 
+    dplyr::mutate(binStart = as.numeric(binStart), binEnd = as.numeric(binEnd)) %>% 
+    dplyr::mutate(binMid = (binEnd + binStart)/2)
+
+all_dr_0.10_sims_unrestricted_summary2$binRange <- str_extract(all_dr_0.10_sims_unrestricted_summary2$norm_dist_from_edge_bin, "[0-9].*[0-9]+")
+all_dr_0.10_sims_unrestricted_summary2 <- all_dr_0.10_sims_unrestricted_summary2 %>% 
     tidyr::separate(binRange, into=c("binStart", "binEnd"), sep = ",") %>% 
     dplyr::mutate(binStart = as.numeric(binStart), binEnd = as.numeric(binEnd)) %>% 
     dplyr::mutate(binMid = (binEnd + binStart)/2)
 
 #get bin width to fit bars together
-binWidth <- mean(all_dr_0.10_sims_unrestricted_summary$binEnd - all_dr_0.10_sims_unrestricted_summary$binStart, na.rm = TRUE)
+binWidth <- mean(all_dr_0.10_sims_unrestricted_summary1$binEnd - all_dr_0.10_sims_unrestricted_summary1$binStart, na.rm = TRUE)
 
-write.csv(all_dr_0.10_sims_unrestricted_summary,
-          file="../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10_summary.csv")
+write.csv(all_dr_0.10_sims_unrestricted_summary1,
+          file="../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10_summary1.csv")
+write.csv(all_dr_0.10_sims_unrestricted_summary2,
+          file="../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10_summary2.csv")
 
-all_dr_0.10_sims_unrestricted_summary <- read.csv("../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10_summary.csv")
+#all_dr_0.10_sims_unrestricted_summary1 <- read.csv("../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10_summary1.csv")
+#all_dr_0.10_sims_unrestricted_summary2 <- read.csv("../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10_summary2.csv")
 #plotting
-all_dr_0.10_sims_unrestricted_hist <- ggplot(all_dr_0.10_sims_unrestricted_summary, alpha = 0.5,
-                                             aes(x = binMid, y = birth_rate_mean),color = "black") +
+# all_dr_0.10_sims_unrestricted_hist <- ggplot(all_dr_0.10_sims_unrestricted_summary, alpha = 0.5,
+#                                              aes(x = binMid, y = birth_rate_mean),color = "black") +
+#     
+#     geom_bar(stat="identity", fill = sim_colors["unrestricted"], color = "black", width=binWidth*0.99, alpha = 0.9) +
+#     geom_errorbar(aes(ymin=birth_rate_mean - birth_rate_se,
+#                       ymax=birth_rate_mean + birth_rate_se), width = binWidth*0.2) +
+#     xlab("Fraction distance from tumor edge") +
+#     ylab("Birth rate") +
+#     theme_classic() +
+#     theme(text = element_text(size = 15))
+# 
+
+
+all_dr_0.10_sims_unrestricted_hist  <- ggplot(all_dr_0.10_sims_unrestricted_summary2,
+                                                 alpha = 0.5,
+                                                 aes(x = binMid, y = birth_rate_mean
+                                                 ),
+                                                 color = "black") +
     
-    geom_bar(stat="identity", fill = sim_colors["unrestricted"], color = "black", width=binWidth*0.99, alpha = 0.9) +
-    geom_errorbar(aes(ymin=birth_rate_mean - birth_rate_se,
-                      ymax=birth_rate_mean + birth_rate_se), width = binWidth*0.2) +
+    geom_bar(stat="identity", fill = sim_colors["unrestricted"], color = "black",
+             width=binWidth*0.99, alpha = 0.9) +
+    #geom_point() +
+    #geom_errorbar(aes(ymin=birth_rate_mean - birth_rate_se, ymax=birth_rate_mean + birth_rate_se), width = binWidth*0.2) +
     xlab("Fraction distance from tumor edge") +
     ylab("Birth rate") +
     theme_classic() +
-    theme(text = element_text(size = 15))
+    theme(text = element_text(size = 15)) +
+    #geom_line(data=all_dr_0.10_sims_unrestricted_summary1, aes(x = binMid, y = birth_rate), alpha = 0.8)
+    geom_jitter(data=all_dr_0.10_sims_unrestricted_summary1, aes(x = binMid, y = birth_rate),
+                alpha = 0.8, width = 0.005, height = 0, size = 1, color="darkgrey") +
+    geom_point() +
+    geom_errorbar(aes(ymin=birth_rate_mean - birth_rate_se, ymax=birth_rate_mean + birth_rate_se), width = binWidth*0.2)
 
 all_dr_0.10_sims_unrestricted_hist
 
+
 #Normalize Y-axes
-max_y <- max(c(all_dr_0.10_sims_unrestricted_summary$birth_rate_mean + all_dr_0.10_sims_unrestricted_summary$birth_rate_se,
-                all_dr_0.10_sims_boundary_driven_summary$birth_rate_mean + all_dr_0.10_sims_boundary_driven_summary$birth_rate_se))
+max_y <- max(c(all_dr_0.10_sims_unrestricted_summary1$birth_rate,
+                all_dr_0.10_sims_boundary_driven_summary1$birth_rate))
 
 all_dr_0.10_sims_unrestricted_hist <- all_dr_0.10_sims_unrestricted_hist + coord_cartesian(ylim = c(0, max_y))
 all_dr_0.10_sims_boundary_driven_hist <- all_dr_0.10_sims_boundary_driven_hist + coord_cartesian(ylim = c(0, max_y))
