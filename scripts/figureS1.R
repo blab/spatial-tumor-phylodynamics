@@ -85,7 +85,7 @@ unrestricted_ramp_palatte <- colorRampPalette(c(model_colors["unrestricted"], "w
 boundary_driven_fitness_plot <- prob_replicate_df %>% 
     filter(cells_free != 8, model == "boundary_driven") %>% 
     ggplot(., aes(x = cells_free, y = mean_p_progeny,
-                  color = as.factor(dr/2)) )+
+                  color = as.factor(round(dr/24,3)) ))+
     geom_point(size = 3) +
     geom_line() +
     theme_classic() +
@@ -102,7 +102,7 @@ ggsave(file = "../figures/death_rate_versus_fitness_boundary_driven.png", plot =
 unrestricted_fitness_plot <- prob_replicate_df %>% 
     filter(cells_free != 8, model == "unrestricted") %>% 
     ggplot(., aes(x = cells_free, y = mean_p_progeny,
-                  color = as.factor(dr/2))) +
+                  color = as.factor(round(dr/24,3)))) +
     geom_point(size = 3) +
     geom_line() +
     theme_classic() +

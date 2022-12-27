@@ -7,6 +7,8 @@
 library(tidyverse)
 library(coda)
 library(qdapRegex)
+library(ggtree)
+library(treeio)
 
 colors_edge_center<- tumortree::get_color_palette(names = c("edge", "center"))
 colors_loc <- tumortree::get_color_palette(names = c("edge", "center"))
@@ -64,6 +66,8 @@ treeplot_pie <- ggtree::inset(treeplot, pies, width = 0.025, height = 0.05) + th
     geom_nodelab(aes(label = ifelse(round(as.numeric(posterior),2) < 0.99,
                                     round(as.numeric(posterior), 2), "")),
                  nudge_x = -40, nudge_y = 1, size  = 3, hjust='right')
+
+treeplot_pie 
 ggsave(plot=treeplot_pie,
        file="../figures/2d_physicell_example_mcc_tree.png", height = 7, width = 7)
 
@@ -73,7 +77,8 @@ terminal_branch_length_df <- data.frame("state" = mcc_tree@data$type[match(1:100
 
 summary_terminal_branch <- terminal_branch_length_df %>% 
     group_by(state) %>% 
-    summarise(mean_terminal_branch_length = mean(terminal_branch_length))
+    summarise(mean_terminal_branch_length = mean(terminal_branch_length), 
+              "N" = n())
 
 ratio_means <- summary_terminal_branch$mean_terminal_branch_length[summary_terminal_branch$state == "loc0"] /summary_terminal_branch$mean_terminal_branch_length[summary_terminal_branch$state == "loc1"]
 
@@ -126,7 +131,8 @@ terminal_branch_length_df_3d <- data.frame("state" = mcc_tree_3d@data$type[match
 
 summary_terminal_branch_3d <- terminal_branch_length_df_3d %>% 
     group_by(state) %>% 
-    summarise(mean_terminal_branch_length = mean(terminal_branch_length))
+    summarise(mean_terminal_branch_length = mean(terminal_branch_length),
+              "N" = n())
 
 ratio_means_3d <- summary_terminal_branch_3d$mean_terminal_branch_length[summary_terminal_branch_3d$state == "loc0"] /summary_terminal_branch_3d$mean_terminal_branch_length[summary_terminal_branch_3d$state == "loc1"]
 

@@ -295,8 +295,16 @@ clock_comparison_sample_size_results_summary <- clock_comparison_growth_rate_pos
     dplyr::filter(minBirthRateESS > 200) %>% 
     group_by(n, clock_model) %>% 
     summarise("mse" = mean((mean_birth_rate_diff - true_birth_rate_diff_weighted)^2, na.rm = TRUE),
-              "se_mse" = sd((mean_birth_rate_diff - true_birth_rate_diff_weighted)^2, na.rm = TRUE) / sqrt(n()))
+              "se_mse" = sd((mean_birth_rate_diff - true_birth_rate_diff_weighted)^2, na.rm = TRUE) / sqrt(n()),
+              "N" = n())
 
+#For caption stats
+sum(clock_comparison_sample_size_results_summary$N)
+max(clock_comparison_sample_size_results_summary$N)
+min(clock_comparison_sample_size_results_summary$N)
+mean(clock_comparison_sample_size_results_summary$N)
+
+ggplot(clock_comparison_sample_size_results_summary, aes(x=n, y=N)) + geom_point()
 clock_comparison_sample_size_mse  <- clock_comparison_sample_size_results_summary %>% 
     dplyr::filter(as.numeric(n) <= 100) %>% 
     ggplot(., aes(x = n, y = mse)) +

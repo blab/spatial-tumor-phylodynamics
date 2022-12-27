@@ -701,13 +701,13 @@ summary_stats <- purrr::map(sim_trees_files, function(file) get_corr_edge_time_c
 write.csv(summary_stats, file="../eden/stats/model_summary_stats.csv")
 
 # To get these stats without having trees generated
-# summary_stats <- read_csv(file="../eden/stats/model_summary_stats.csv")
+#summary_stats <- read_csv(file="../eden/stats/model_summary_stats.csv")
 # Extract values to highlight from example tumors
 highlighted_sims <- summary_stats  %>% 
     dplyr::filter(dr == "0.10") 
 
 
-k <- ggplot(summary_stats, aes(x = as.numeric(dr)/2, y = terminal_branch_ratio, color = model)) +
+k <- ggplot(summary_stats, aes(x = as.numeric(dr)/24, y = terminal_branch_ratio, color = model)) +
     geom_point( size = 2) + theme_classic() + scale_color_manual(values = sim_colors,
                                                                              labels = c("Boundary-driven", "Unrestricted")) +
     labs(x = "Cell turnover - P(cell death)", y = "Mean center / edge terminal branch lengths") +
@@ -724,7 +724,7 @@ ggsave(file = "center_over_edge_terminal_branch_length.png", plot = k, path = fi
 
 #edge_time_vs_clock_rate_r_squared_df <- read_csv(file = "../analysis/stats/edge_time_vs_clock_rate_r_squared2.csv", col_names = FALSE)
 #colnames(edge_time_vs_clock_rate_r_squared_df) <- c("r_squared", "dr", "model")
-l <- ggplot(summary_stats, aes(x=as.numeric(dr)/2, y=r_squared, color = model)) +
+l <- ggplot(summary_stats, aes(x=as.numeric(dr)/24, y=r_squared, color = model)) +
     geom_point(size = 2) +
     geom_point(data = highlighted_sims, color = "darkgrey", size = 5, alpha = 0.5) +
     theme_classic() +
