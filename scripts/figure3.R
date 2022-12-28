@@ -241,9 +241,11 @@ ggsave(plot=true_versus_post_prob, file ="../figures/example_true_versus_post_pr
 ## Strict versus state-dependent + true versus estimated plots 
 
 ##summarize_strict_v_sdevo_posteriors.R
-growth_rate_posteriors_df <- read_csv("../eden/stats/birth_death_rate_posteriors_estimate_dr.csv")
-strict_clock_growth_rate_posteriors_df <- read_csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock.csv")  
+#growth_rate_posteriors_df <- read_csv("../eden/stats/birth_death_rate_posteriors_estimate_dr.csv")
+#strict_clock_growth_rate_posteriors_df <- read_csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock.csv")  
+growth_rate_posteriors_df <- read.csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_updated.csv")
 
+strict_clock_growth_rate_posteriors_df <- read.csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock_updated.csv")
 
 
 # True versus estimated plots (stat-dependent and strict comparisons,  Figure 3E)
@@ -291,7 +293,92 @@ ggsave(file = "../figures/clock_rate_comparison_birth_rate_posteriors_strict_onl
        clock_rate_comparison_posteriors_plot_strict_only, height = 5, width = 5)
 
 # MSE plots (Figure 3F)
-clock_comparison_sample_size_results_summary <- clock_comparison_growth_rate_posteriors_df %>% 
+## Get only runs for MSE plot with same sample sizes
+#growth_rate_posteriors_df <- read.csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_updated.csv")
+
+#strict_clock_growth_rate_posteriors_df <- read.csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock_updated.csv")
+
+
+#function to subsampled each sample size category to the same number of simulations
+
+subsample_results <- function(sample_size,
+                              priority_drs,
+                              simulation_number = 17, 
+                              clock_comparison_growth_rate_posteriors_df) {
+    
+    posteriors_N_state_clock <- clock_comparison_growth_rate_posteriors_df %>% 
+        dplyr::filter(minBirthRateESS > 200) %>% 
+        dplyr::filter(n == sample_size,
+                      clock_model == "state_dependent", 
+                      dr %in% priority_drs)
+    
+    if (nrow(posteriors_N_state_clock) < simulation_number) {
+        
+        posteriors_N_state_clock_extra <- clock_comparison_growth_rate_posteriors_df %>% 
+            dplyr::filter(minBirthRateESS > 200) %>% 
+            dplyr::filter(n == sample_size,
+                          clock_model == "state_dependent", 
+                          ! dr %in% priority_drs)
+        
+        posteriors_N_state_clock_extra <- posteriors_N_state_clock_extra[sample(1:nrow(posteriors_N_state_clock_extra), 
+                                              (simulation_number-nrow(posteriors_N_state_clock)), 
+                                              replace = FALSE),]
+        
+        posteriors_N_state_clock <- bind_rows(posteriors_N_state_clock, posteriors_N_state_clock_extra)
+        
+        
+    } else {
+        
+        posteriors_N_state_clock <- posteriors_N_state_clock[sample(1:nrow(posteriors_N_state_clock), 
+                                                                          simulation_number, 
+                                                                          replace = FALSE),]
+    }
+    
+    posteriors_N_strict <- clock_comparison_growth_rate_posteriors_df %>% 
+        dplyr::filter(minBirthRateESS > 200) %>% 
+        dplyr::filter(n == sample_size,
+                      clock_model == "strict", 
+                      dr %in% priority_drs)
+    
+    if (nrow(posteriors_N_strict) < simulation_number) {
+        
+        posteriors_N_strict_extra <- clock_comparison_growth_rate_posteriors_df %>% 
+            dplyr::filter(minBirthRateESS > 200) %>% 
+            dplyr::filter(n == sample_size,
+                          clock_model == "strict", 
+                          ! dr %in% priority_drs)
+        
+        posteriors_N_strict_extra <- posteriors_N_strict_extra[sample(1:nrow(posteriors_N_strict_extra), 
+                                                                                (simulation_number-nrow(posteriors_N_strict)), 
+                                                                                replace = FALSE),]
+        
+        posteriors_N_strict <- bind_rows(posteriors_N_strict, posteriors_N_strict_extra)
+        
+        
+    } else {
+        
+        posteriors_N_strict <- posteriors_N_strict[sample(1:nrow(posteriors_N_strict), 
+                                                                    simulation_number, 
+                                                                    replace = FALSE),]
+    }
+    
+    posteriors_N <- bind_rows(posteriors_N_state_clock, posteriors_N_strict)
+    
+    return(posteriors_N)
+    
+    
+}
+set.seed(9811)
+priority_drs = unique(clock_comparison_growth_rate_posteriors_df$dr[clock_comparison_growth_rate_posteriors_df$n == 5])
+standardized_sim_number_df <- purrr::map(unique(clock_comparison_growth_rate_posteriors_df$n),
+                                         function(ss) subsample_results(sample_size = ss,
+                                                                        simulation_number = 17,
+                                                                        priority_drs = priority_drs,
+                                                                        clock_comparison_growth_rate_posteriors_df = clock_comparison_growth_rate_posteriors_df)) %>% 
+    
+    bind_rows()
+clock_comparison_sample_size_results_summary <- standardized_sim_number_df  %>% 
+    
     dplyr::filter(minBirthRateESS > 200) %>% 
     group_by(n, clock_model) %>% 
     summarise("mse" = mean((mean_birth_rate_diff - true_birth_rate_diff_weighted)^2, na.rm = TRUE),

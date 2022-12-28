@@ -136,13 +136,43 @@ strict_clock_growth_rate_posteriors_df <- strict_clock_growth_rate_posteriors %>
     dplyr::mutate("true_birth_rate_diff" = (mean_edge_growth_rate + mean_edge_death_rate) - (mean_center_growth_rate + mean_center_death_rate)) %>% 
     add_column("clock_model" = "strict")
 
-#add weighted sim rates
-growth_rate_posteriors_df <- growth_rate_posteriors_df %>% 
-    left_join(., weighted_sim_rates, by = "dr")
-
-strict_clock_growth_rate_posteriors_df <- strict_clock_growth_rate_posteriors_df %>% 
-    left_join(., weighted_sim_rates, by = "dr")
-
-# Write results to CSV
 write.csv(growth_rate_posteriors_df, "../eden/stats/birth_death_rate_posteriors_estimate_dr.csv")
 write.csv(strict_clock_growth_rate_posteriors_df, "../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock.csv")
+
+
+#Replace runs that had been run extra to reach the ESS threshold (usung run_to_ess.sh)
+
+# Read in all filles
+growth_rate_posteriors_df <- read.csv("../eden/stats/birth_death_rate_posteriors_estimate_dr.csv")
+strict_clock_growth_rate_posteriors_df <- read.csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock.csv")
+strict_clock_growth_rate_posteriors_extended_df <- read_tsv("../eden/stats/posteriors/state_clock_estimate_dr_strict_clock_posterior_summary_all.tsv") %>% 
+    dplyr::select(-sampling)
+
+state_clock_growth_rate_posteriors_extended_df <- read_tsv("../eden/stats/posteriors/state_clock_estimate_dr_posterior_summary_all.tsv") %>% 
+    dplyr::select(-sampling)
+
+
+growth_rate_posteriors_df <- growth_rate_posteriors_df %>% 
+    dplyr::select(colnames(state_clock_growth_rate_posteriors_extended_df)) %>% 
+    bind_rows(.,state_clock_growth_rate_posteriors_extended_df)
+
+strict_clock_growth_rate_posteriors_df <- strict_clock_growth_rate_posteriors_df %>% 
+    dplyr::select(colnames(strict_clock_growth_rate_posteriors_extended_df)) %>% 
+    bind_rows(.,strict_clock_growth_rate_posteriors_extended_df)
+
+#add weighted sim rates
+growth_rate_posteriors_df <- growth_rate_posteriors_df %>% 
+    left_join(., weighted_sim_rates, by = "dr") %>% 
+    arrange(-minBirthRateESS) %>% 
+    distinct(dr,n,clock_model, 
+             .keep_all = TRUE)
+
+strict_clock_growth_rate_posteriors_df <- strict_clock_growth_rate_posteriors_df %>% 
+    left_join(., weighted_sim_rates, by = "dr")  %>% 
+    arrange(-minBirthRateESS) %>% 
+    distinct(dr,n,clock_model, 
+             .keep_all = TRUE)
+
+# Write results to CSV
+write.csv(growth_rate_posteriors_df, "../eden/stats/birth_death_rate_posteriors_estimate_dr_updated.csv")
+write.csv(strict_clock_growth_rate_posteriors_df, "../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock_updated.csv")

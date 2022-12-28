@@ -1,0 +1,115 @@
+#!/usr/bin/env Rscript
+
+library(beastio)
+library(tidyverse)
+library(HDInterval)
+
+
+#This script inputs an XML file, will check if the corresponding log file exists and has reached sufficient ESS for the birth rate estimates
+
+args = commandArgs(trailingOnly=TRUE)
+xml_file = args[1]
+
+#ESS threshold
+ess_threshold <- 200
+#Set overwrite to TRUE if want to re-check log file if posterior summary already exists
+overwrite = FALSE
+
+#Directories
+log_file_dir = "eden/logs/"
+output_stats_dir = "eden/stats/posteriors/"
+
+#output_stats_dir = "stats/posteriors/"
+#log_file_dir = ""
+
+#Output file
+#output_file = paste0(output_stats_dir, "/", gsub(".xml", "_posterior_summary.tsv", basename(xml_file)), sep = "")
+output_file = paste0(output_stats_dir, gsub(".xml", "_posterior_summary.tsv", basename(xml_file)), sep = "")
+
+if(file.exists(output_file) & (! overwrite)) {
+
+	message("File exists, skipping, set overwrite = TRUE if want to re-check file")
+	#print("skip")
+	write( "skip", stdout())
+
+} else {
+
+	#Get log file from xml file
+
+	log_file <- paste0(log_file_dir, gsub(".xml", ".log", basename(xml_file)), sep = "")
+
+	#Check if log file exists
+
+	if(file.exists(log_file)) {
+	
+        	message("Found log file, reading...")
+	
+		##If found mcmc log read in to dataframe
+		mcmc_log <- readLog(log_file)
+        
+         
+        	#Get minimum ESS of birth rates
+        	ess <- coda::effectiveSize(mcmc_log)
+       		min_ess_birth_rate <- min(ess["birthRateCanonical.0"], ess["birthRateCanonical.1"])
+        
+       	 	if (min_ess_birth_rate < ess_threshold) {
+	  		message(paste0("ESS is ", min_ess_birth_rate, " which is less than the ESS threshold of ", ess_threshold))
+          
+          		#Return signal to resume beast run
+	  		#print("resume")
+	  		write("resume", stdout())
+ 
+        	} else if (! file.exists(log_file) | overwrite){
+
+			message("MCMC log meets ESS threshold, summarizing...")
+			
+			#Estimates from mcmc logs
+			## Get birth rate posteriors and calculate difference
+    			birthRate_loc0_posteriors <- mcmc_log[,"birthRateCanonical.0"]
+    			birthRate_loc1_posteriors <- mcmc_log[,"birthRateCanonical.1"]
+                        birthRateDiff_posteriors <- birthRate_loc1_posteriors - birthRate_loc0_posteriors
+
+                        #Get summary stats
+                        mean_birth_rate_diff = mean(birthRateDiff_posteriors)
+                        median_birth_rate_diff = median(birthRateDiff_posteriors)
+                        birthRate_hdi95_lower = hdi(birthRateDiff_posteriors,  credMass = 0.95)[1]
+                        birthRate_hdi95_upper = hdi(birthRateDiff_posteriors,  credMass = 0.95)[2]
+                        
+			#Get parameters from file name
+			dr_extract <- regmatches(basename(log_file),
+                             gregexpr("(?<=dr_)[[:digit:]]+.[[:digit:]]+", basename(log_file), perl = TRUE))[[1]]
+    
+		        n_extract <- regmatches(basename(log_file),
+                            gregexpr("(?<=n_)[[:digit:]]+", basename(log_file), perl = TRUE))[[1]]
+                        
+			clock_model_extract  = ifelse(grepl("strict_clock", xml_file), "strict", "state_dependent")
+			
+			sampling_extract = ifelse(grepl("random", xml_file), "random", "diversified")
+			summary_stats = data.frame("mean_birth_rate_diff" = mean_birth_rate_diff, 
+						   "median_birth_rate_diff" = median_birth_rate_diff, 
+						   "birthRate_hdi95_lower" = birthRate_hdi95_lower, 
+						   "birthRate_hdi95_upper" = birthRate_hdi95_upper, 
+						   "dr" = dr_extract,
+						   "n" = n_extract, 
+						   "clock_model" = clock_model_extract, 
+						   "sampling" = sampling_extract, 
+						   "minBirthRateESS" = min_ess_birth_rate)
+			
+			write_tsv(summary_stats, output_file)
+			#print("done")
+			write("done", stdout())
+		}
+	} else {
+
+		message(paste0("Log file ", log_file, "does not exist.", sep = ""))
+
+        	#Return signal to start new beast run
+        	#print("new")
+		write("new", stdout())
+
+	}
+}	
+
+
+
+
