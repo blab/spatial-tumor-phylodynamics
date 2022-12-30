@@ -12,6 +12,7 @@ library(smoothr)
 library(coda)
 library(HDInterval)
 library(ggrepel)
+library(rjson)
 
 
 edge_center_colors <- tumortree::get_color_palette(names = c("edge", "center"))
@@ -316,6 +317,15 @@ all_logs_birthRate_df <- all_logs_df %>%
 #for main figure plot only state-dependent clock + unidirectional migration
 
 #Tumor 1
+t1_wgs_violin_posteriors_plot_oldstates_state_clock_summary <- all_logs_birthRate_df %>% 
+    dplyr::filter(migration_model == "unidirectional",
+                  clock_model == "state-dependent",
+                  states == "oldstates",
+                  tumor == "T1") %>% 
+    group_by(subset, state) %>% 
+    summarize(birthRate_hdi95_lower = hdi(birthRate, credMass = 0.95)[1],
+              birthRate_hdi95_upper = hdi(birthRate, credMass = 0.95)[2],
+              birthRate_mean = mean(birthRate))
 
 t1_wgs_violin_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>% 
     dplyr::filter(migration_model == "unidirectional",
@@ -325,6 +335,10 @@ t1_wgs_violin_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
     #ggplot(., aes(x = ifelse(state == "loc0", "center", "edge"), y=birthRate), color = "black") +
     ggplot(., aes(x = subset, y=birthRate, fill=state), color = "black") +
     geom_violin(aes(fill = state), alpha=0.8) +
+    geom_boxplot(width=.1, outlier.alpha = 0) +
+    #geom_point(data=t1_wgs_violin_posteriors_plot_oldstates_state_clock_summary, aes(x= subset, y=birthRate_mean), color = "black") +
+    #geom_errorbar(data=t1_wgs_violin_posteriors_plot_oldstates_state_clock_summary,
+    #              aes(x= subset, ymin=birthRate_hdi95_lower, y=birthRate_mean, ymax=birthRate_hdi95_upper), color = "black", width =0) +
     #facet_grid(cols = vars(tumor)) +
     theme_classic() + scale_fill_manual(values=colors_loc) +
     theme(text=element_text(size=15))+
@@ -349,6 +363,16 @@ ggsave(plot=t1_wgs_violin_posteriors_plot_oldstates_state_clock,
 
 #Tumor 2
 
+t2_wgs_violin_posteriors_plot_oldstates_state_clock_summary <- all_logs_birthRate_df %>% 
+    dplyr::filter(migration_model == "unidirectional",
+                  clock_model == "state-dependent",
+                  states == "oldstates",
+                  tumor == "T2") %>% 
+    group_by(subset, state) %>% 
+    summarize(birthRate_hdi95_lower = hdi(birthRate)[1],
+              birthRate_hdi95_upper = hdi(birthRate)[2],
+              birthRate_mean = mean(birthRate))
+
 t2_wgs_violin_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>% 
     dplyr::filter(migration_model == "unidirectional",
            clock_model == "state-dependent",
@@ -357,6 +381,11 @@ t2_wgs_violin_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>%
     #ggplot(., aes(x = ifelse(state == "loc0", "center", "edge"), y=birthRate), color = "black") +
     ggplot(., aes(x = subset, y=birthRate, fill=state), color = "black") +
     geom_violin(aes(fill = state), alpha=0.8) +
+    geom_boxplot(width=.1, outlier.alpha = 0) +
+    # geom_point(data=t2_wgs_violin_posteriors_plot_oldstates_state_clock_summary, aes(x= subset, y=birthRate_mean), color = "black") +
+    # geom_errorbar(data=t2_wgs_violin_posteriors_plot_oldstates_state_clock_summary,
+    #               aes(x= subset, ymin=birthRate_hdi95_lower, y=birthRate_mean, ymax=birthRate_hdi95_upper), color = "black", width =0) +
+    # 
     #facet_grid(cols = vars(tumor)) +
     theme_classic() + scale_fill_manual(values=colors_loc) +
     theme(text=element_text(size=15))+
@@ -378,6 +407,16 @@ ggsave(plot=t2_wgs_violin_posteriors_plot_oldstates_state_clock ,
 ########## Plot edge/center birth ratios ###############
 ## Tumor 1
 
+t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin_summary <- all_logs_birthRate_df %>% 
+    dplyr::filter(migration_model == "unidirectional",
+                  clock_model == "state-dependent",
+                  states == "oldstates",
+                  tumor == "T1") %>% 
+    group_by(subset, state) %>% 
+    summarize(birthRateRatio_hdi95_lower = hdi(birthRateRatio)[1],
+              birthRateRatio_hdi95_upper = hdi(birthRateRatio)[2],
+              birthRateRatio_mean = mean(birthRateRatio))
+
 t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_df %>% 
     dplyr::filter(migration_model == "unidirectional",
            clock_model == "state-dependent",
@@ -385,6 +424,10 @@ t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_
            tumor == "T1") %>% 
     ggplot(., aes(x=subset, y=birthRateRatio), color = "black",  fill = "black") +
     geom_violin(alpha=0.8, fill = "black") +
+    geom_boxplot(width=.1, outlier.alpha = 0, color = "grey") +
+    # geom_point(data=t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin_summary, aes(x= subset, y=birthRateRatio_mean), color = "grey") +
+    # geom_errorbar(data=t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin_summary,
+    #               aes(x= subset, ymin=birthRateRatio_hdi95_lower, y=birthRateRatio_mean, ymax=birthRateRatio_hdi95_upper), color = "grey", width =0) +
     #facet_grid(cols = vars(tumor)) +
     theme_classic() + 
     theme(text=element_text(size=15))+
@@ -402,6 +445,16 @@ ggsave(plot=t1_wgs_ratio_posteriors_plot_oldstates_state_clock_violin ,
 
 ## Tumor 2
 
+t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin_summary <- all_logs_birthRate_df %>% 
+    dplyr::filter(migration_model == "unidirectional",
+                  clock_model == "state-dependent",
+                  states == "oldstates",
+                  tumor == "T2") %>% 
+    group_by(subset, state) %>% 
+    summarize(birthRateRatio_hdi95_lower = hdi(birthRateRatio)[1],
+              birthRateRatio_hdi95_upper = hdi(birthRateRatio)[2],
+              birthRateRatio_mean = mean(birthRateRatio))
+
 t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_df %>% 
     dplyr::filter(migration_model == "unidirectional",
            clock_model == "state-dependent",
@@ -409,6 +462,11 @@ t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_
            tumor == "T2") %>% 
     ggplot(., aes(x=subset, y=birthRateRatio), color = "black",  fill = "black") +
     geom_violin(alpha=0.8, fill = "black") +
+    geom_boxplot(width=.1, outlier.alpha = 0, color = "grey") +
+    # geom_point(data=t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin_summary, aes(x= subset, y=birthRateRatio_mean), color = "grey") +
+    # geom_errorbar(data=t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin_summary,
+    #               aes(x= subset, ymin=birthRateRatio_hdi95_lower, y=birthRateRatio_mean, ymax=birthRateRatio_hdi95_upper), color = "grey", width =0) +
+    # 
     #facet_grid(cols = vars(tumor)) +
     theme_classic() + 
     theme(text=element_text(size=15))+

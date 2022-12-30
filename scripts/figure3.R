@@ -14,13 +14,12 @@ colors_edge_center <- get_color_palette(names = c("edge", "center"))
 
 ################ EXAMPLE POSTERIORS ##################
 
-#example_mcmc_log_file <- "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/logs2/death_rate_validation_pop_1000_dr_0.29_n_100_state_clock_estimate_dr.log"
 example_mcmc_log_file <- "../eden/logs/death_rate_validation_pop_1000_dr_0.29_n_100_state_clock_estimate_dr.log"
 
 example_mcmc_log <- as.data.frame(readLog(example_mcmc_log_file))
 
 # Get true simulated rates
-#From extract_validation_sims_rates.R
+## Calculated empirically by `extract_validation_sims_rates.R`
 true_example_diff_df <- read_csv("../eden/stats/validation_growth_and_death_rates_weighted.csv") %>% 
     dplyr::mutate(true_birth_rate_diff_weighted = mean_edge_birth_rate - mean_center_birth_rate) %>% 
     dplyr::select(dr, true_birth_rate_diff_weighted) %>% 
@@ -29,7 +28,7 @@ true_example_diff_df <- read_csv("../eden/stats/validation_growth_and_death_rate
 #Get HPD intervals
 
 example_birth_rates_diff_posteriors_summary <- example_mcmc_log %>% 
-    dplyr::mutate(birthRateDiff = birthRateCanonical.1 -  birthRateCanonical.0) %>% 
+    dplyr::mutate(birthRateDiff = birthRateCanonical.2 -  birthRateCanonical.1) %>% 
     dplyr::summarise(mean = mean(birthRateDiff),
                   hpd_90_lower = hdi(birthRateDiff,
                                      credMass =0.9)[1],
@@ -37,7 +36,7 @@ example_birth_rates_diff_posteriors_summary <- example_mcmc_log %>%
                                      credMass =0.9)[2])
 # Example edge - center difference posterior distibution
 example_birth_rates_diff_posteriors <- example_mcmc_log %>% 
-    dplyr::mutate(birthRateDiff = birthRateCanonical.1 -  birthRateCanonical.0) %>% 
+    dplyr::mutate(birthRateDiff = birthRateCanonical.2 -  birthRateCanonical.1) %>% 
     ggplot(aes(x = birthRateDiff)) + geom_density(fill = "darkgrey", alpha = 0.8) +
     theme_classic() + xlab("Estimated birth rate difference") + ylab("") +
     theme(axis.title.y=element_blank(),
@@ -49,12 +48,13 @@ example_birth_rates_diff_posteriors <- example_mcmc_log %>%
 
 # Example edge - center posterior distibutions
 example_birth_rates_posteriors <- example_mcmc_log %>% 
-    tidyr::pivot_longer(cols = c("birthRateCanonical.1", "birthRateCanonical.0"), 
+    tidyr::pivot_longer(cols = c("birthRateCanonical.2", "birthRateCanonical.1"), 
                         names_prefix = "birthRateCanonical.",
                         values_to = "birthRate", 
                         names_to = "state") %>% 
     
-    ggplot(aes(x = birthRate, fill = ifelse(state == 1, "edge", "center"))) + geom_density(alpha = 0.8, aes(fill = ifelse(state == 1, "edge", "center"))) +
+    ggplot(aes(x = birthRate, fill = ifelse(state == 2, "edge", "center"))) +
+    geom_density(alpha = 0.8, aes(fill = ifelse(state == 2, "edge", "center"))) +
     theme_classic() + xlab("Estimated birth rate") + ylab("") +
     theme(axis.title.y=element_blank(),
           axis.text.y=element_blank(),
@@ -74,8 +74,8 @@ ggsave(plot=example_birth_rates_posteriors, file ="../figures/example_birth_rate
 
 ############## EXAMPLE ANCESTRAL STATE RECONSTRUCTION TREE #####
 
-#mcc_tree <- read.beast("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/validation/logs2/death_rate_validation_pop_1000_dr_0.29_n_100_state_clock_estimate_dr.typed.node.trees.mcc")
-mcc_tree <- read.beast("../eden/trees/death_rate_validation_pop_1000_dr_0.29_n_100_state_clock_estimate_dr.typed.node.trees.mcc")
+# MCC tree is reconstructed from  .typed.node.trees file by BEAST2 TreeAnnotator
+mcc_tree <- read.beast("../eden/trees/death_rate_validation_pop_1000_dr_0.29_n_100_state_clock_estimate_dr.typed.node.tree.mcc")
 
 
 colors_loc <- colors_edge_center
@@ -87,7 +87,7 @@ anc_state_nodes <- mcc_tree@data %>%
                       (1 - type.prob)*as.integer(type == "loc0")) %>% 
     dplyr::mutate(center = type.prob * as.integer(type == "loc0") +
                       (1 - type.prob)*as.integer(type == "loc1")) %>% 
-    dplyr::select(center, edge, type, node)
+    dplyr::select(edge, center, type, node)
 
 
 pies <- nodepie(anc_state_nodes,
@@ -136,7 +136,7 @@ g2_pie <- ggtree::inset(g2, pies2, width = 0.08, height = 0.08) + theme(legend.p
 
 g2_pie_toy <- viewClade(g2_pie, MRCA(g2,"cell4628loc1", "cell4232loc0"))
 
-
+g2_pie_toy
 
 ggsave(plot=g2_pie_toy,
        file ="../figures/toy_ancestral_state_recon_tree.png", height = 5, width = 5)
@@ -149,8 +149,10 @@ ggsave(plot=g2_pie_toy,
 # 
 # example_alive_cells$sampled <- example_alive_cells$index %in% as.numeric(gsub("loc[01]", "", gsub("cell","",  mcc_tree@phylo$tip.label)))
 #write_csv(example_alive_cells, "../simulation_data/alive_cells_death_rate_validation_pop_1000_dr_0.29.csv")
+
 ### Ancestral state reconstruction ######
 
+# All simulated trees are reconstructed by reconstruct_sim_trees.R
 sim_tree <- readRDS("../eden/simtrees/cells_death_rate_validation_pop_1000_dr_0.29.rds")
 
 # Can skip to here
@@ -240,23 +242,26 @@ ggsave(plot=true_versus_post_prob, file ="../figures/example_true_versus_post_pr
 # Figures 3 E + F 
 ## Strict versus state-dependent + true versus estimated plots 
 
-##summarize_strict_v_sdevo_posteriors.R
-#growth_rate_posteriors_df <- read_csv("../eden/stats/birth_death_rate_posteriors_estimate_dr.csv")
-#strict_clock_growth_rate_posteriors_df <- read_csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock.csv")  
-growth_rate_posteriors_df <- read.csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_updated.csv")
+#Get true differences again
+true_diff_df <- read_csv("../eden/stats/validation_growth_and_death_rates_weighted.csv") %>% 
+    dplyr::mutate(true_birth_rate_diff_weighted=mean_edge_birth_rate-mean_center_birth_rate)
 
-strict_clock_growth_rate_posteriors_df <- read.csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock_updated.csv")
+# Posterior summary statistics for all sdevo analyses of simulated tumors are 
+# generated by run_beast_to_ess.sh and compile_posterior_summaries.sh
+all_posteriors_summary_df <- read_tsv("../eden/stats/posteriors/posterior_summary_all.tsv") %>% 
+    left_join(., true_diff_df, by = "dr")
 
+#strict_clock_growth_rate_posteriors_df <- read.csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock_updated.csv")
 
 # True versus estimated plots (stat-dependent and strict comparisons,  Figure 3E)
-clock_comparison_growth_rate_posteriors_df <- bind_rows(list(growth_rate_posteriors_df, strict_clock_growth_rate_posteriors_df)) %>% 
+clock_comparison_growth_rate_posteriors_df <- all_posteriors_summary_df %>% 
     dplyr::mutate(clock_model = factor(clock_model, levels = c('strict', 'state_dependent'))) %>% 
     dplyr::arrange(clock_model)
 
 clock_colors <- c("state_dependent" = "#3A5A40", "strict" = "#ECA966")
 
 clock_rate_comparison_posteriors_plot <- clock_comparison_growth_rate_posteriors_df %>% 
-    dplyr::filter(n==50, minBirthRateESS > 100) %>% 
+    dplyr::filter(n==50, minBirthRateESS > 200) %>% 
     ggplot(., aes(x=true_birth_rate_diff_weighted, y=mean_birth_rate_diff, color = clock_model)) +
     geom_point(aes(color = clock_model)) +
     theme_classic() +
@@ -275,7 +280,7 @@ ggsave(file = "../figures/clock_rate_comparison_birth_rate_posteriors.png",
 
 #strict only for presentations
 clock_rate_comparison_posteriors_plot_strict_only <- clock_comparison_growth_rate_posteriors_df %>% 
-    dplyr::filter(n==50, minBirthRateESS > 100) %>% 
+    dplyr::filter(n==50, minBirthRateESS > 200) %>% 
     ggplot(., aes(x=true_birth_rate_diff_weighted, y=mean_birth_rate_diff, color = clock_model, alpha = clock_model)) +
     geom_point(aes(color = clock_model, alpha = clock_model)) +
     theme_classic() +
@@ -294,13 +299,8 @@ ggsave(file = "../figures/clock_rate_comparison_birth_rate_posteriors_strict_onl
 
 # MSE plots (Figure 3F)
 ## Get only runs for MSE plot with same sample sizes
-#growth_rate_posteriors_df <- read.csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_updated.csv")
-
-#strict_clock_growth_rate_posteriors_df <- read.csv("../eden/stats/birth_death_rate_posteriors_estimate_dr_strict_clock_updated.csv")
-
 
 #function to subsampled each sample size category to the same number of simulations
-
 subsample_results <- function(sample_size,
                               priority_drs,
                               simulation_number = 17, 
@@ -377,7 +377,7 @@ standardized_sim_number_df <- purrr::map(unique(clock_comparison_growth_rate_pos
                                                                         clock_comparison_growth_rate_posteriors_df = clock_comparison_growth_rate_posteriors_df)) %>% 
     
     bind_rows()
-clock_comparison_sample_size_results_summary <- standardized_sim_number_df  %>% 
+clock_comparison_sample_size_results_summary <- clock_comparison_growth_rate_posteriors_df  %>% 
     
     dplyr::filter(minBirthRateESS > 200) %>% 
     group_by(n, clock_model) %>% 

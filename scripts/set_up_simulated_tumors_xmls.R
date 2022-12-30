@@ -66,7 +66,7 @@ for (sample_size in sample_sizes) {
     }
 }
 
-# Also generate files for random sampleing
+# Also generate files for random sampling
 set.seed(21221)
 
 #Set overwrite to TRUE if want to regenerate XMLS that already exist
