@@ -22,8 +22,9 @@ get_color_palette <- function(names = c("edge", "center", "boundary_driven", "un
 #' Normalize x-y coordinates in of simulated cells.
 #'
 #' @param cells data.frame
-#'
+#' @importFrom magrittr %>%
 #' @return data.frame
+#' 
 #' @export
 normalize_locs <- function(cells){
   center_x <- min(cells$locx) + (max(cells$locx) - min(cells$locx))/2
@@ -56,8 +57,8 @@ filter_alive_cells <- function(cells_df) {
 #'
 #' Samples alive cells from simulated tumor with maximized distance between points
 #'
-#' @param alive_cells data.frame Alive cells in tumor
-#' @importFrom rdist farthest_point_sampling
+#' @param alive_cells data.frame alive cells in tumor
+#' @importFrom rdist farthest_point_sampling pdist
 #' @importFrom magrittr %>%
 #'
 #' @return data.frame
@@ -94,10 +95,12 @@ diversified_sampling <- function(alive_cells, n_sampled_cells) {
 #' @param diversified_sampling logical for diversified sampling
 #' @param edge_weight probability of edge sample for diversified sampling -- parameter for binomial distribution
 #' @param fixed_edge_num number of edge cells to sample, if not provided number of edge samples are randomly drawn
+#' 
 #' @importFrom dplyr mutate
 #' @importFrom magrittr %>%
 #'
 #' @return data.frame
+#' 
 #' @export
 sample_alive_cells <- function(alive_cells, n, diversified_sampling= FALSE, weighted_sampling = FALSE, edge_weight = 0.5,  fixed_edge_num = NULL){
 
@@ -282,6 +285,7 @@ compare_muts <- function(row_muts, all_muts) {
 #' Create presence-absence data.frame of samples vs sampled mutations.
 #'
 #' @param sampled_cells data.frame
+#' 
 #' @importFrom magrittr %>%
 #' @importFrom purrr map
 #' @importFrom future plan multisession
@@ -339,16 +343,16 @@ find_MRCA <- function(index_1, index_2, all_cells) {
 
 #' Convert nodes to string
 #'
-#' Convert sampled simulated cells into newick formatted string and node list.
+#' Convert sampled simulated cells into newick formatted string and node list: VERY SLOW. 
+#' Use convert_all_cells_to_tree_fast instead!
 #'
 #' @param orphan_cells vector of sampled leaves
 #' @param all_cells data.frame of all cells in simulation
 #' @param branch_unit Unit to calcualte branch length. Options: "time", "molecular", "generations", "none".
+#' 
 #' @importFrom dplyr arrange select
 #' @importFrom magrittr %>%
 #' @importFrom purrr map2_dbl
-#' @importFrom tcltk tkProgressBar
-#' @importFrom future plan multisession
 #'
 #' @return list
 #' @export
@@ -374,11 +378,7 @@ convert_nodes_to_string <- function(orphan_cells,
   n <- length(orphan_cells)
 
   starting_orphans <- length(orphan_cells)
-  # create progress bar
-  #pb <- tkProgressBar(title = "progress bar", min = 0,
-   #                   max = starting_orphans, width = 300)
 
-  pb <- txtProgressBar(min = 0, max = starting_orphans, style = 3, label = "Making tree")
   while(length(subtrees) > 1) { #will connect subtrees by MCRA until reach single tree
 
     #make all pariwise combinations of cells without mrca
@@ -1527,10 +1527,9 @@ convert_all_cells_to_tree_fast <- function (all_cells, add_all_states = FALSE, s
 #' @importFrom ape read.tree
 #' @importFrom phangorn Ancestors
 #' @importFrom stringr str_count
+#' @importFrom ape read.tree drop.tip
 #'
 #' @return numeric
-
-#' @importFrom ape read.tree drop.tip
 #' @export
 prune_simulated_tree <- function (tree, sampled_cells_indices, add_all_states = FALSE, 
           all_cells = NULL, cell_locations_df_file = NULL, branch_unit = "time"){
