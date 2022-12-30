@@ -171,7 +171,7 @@ insert_sequence
 
 
 
-    <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="100" model="@posterior" sanitiseHeaders="true" sort="smart">
+    <logger id="tracelog" spec="Logger" fileName="logs/$(filebase).log" logEvery="100" model="@posterior" sanitiseHeaders="true" sort="smart">
         <log idref="posterior"/>
         <log idref="likelihood"/>
         <log idref="prior"/>
@@ -198,19 +198,19 @@ insert_sequence
         <log idref="prior"/>
     </logger>
 
-    <logger id="treelog.t:state_dependent_clock_sim" spec="Logger" fileName="$(filebase).trees" logEvery="1000" mode="tree">
+    <logger id="treelog.t:state_dependent_clock_sim" spec="Logger" fileName="trees/$(filebase).trees" logEvery="1000" mode="tree">
         <log id="TreeWithMetaDataLogger.t:state_dependent_clock_sim" spec="beast.evolution.tree.TreeWithMetaDataLogger" tree="@Tree.t:state_dependent_clock_sim"/>
     </logger>
 
-    <logger id="typedTreeLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="$(filebase).typed.trees" logEvery="1000" mode="tree">
+    <logger id="typedTreeLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="trees/$(filebase).typed.trees" logEvery="1000" mode="tree">
         <log idref="typeMappedTree.t:state_dependent_clock_sim"/>
     </logger>
 
-    <logger id="nodeTypedTreeLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="$(filebase).typed.node.trees" logEvery="1000" mode="tree">
+    <logger id="nodeTypedTreeLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="trees/$(filebase).typed.node.trees" logEvery="1000" mode="tree">
         <log id="nodeTypedTree.t:state_dependent_clock_sim" spec="bdmmprime.mapping.TypedNodeTreeLogger" typedTree="@typeMappedTree.t:state_dependent_clock_sim"/>
     </logger>
 
-    <logger id="trajLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" fileName="$(filebase).$(tree).traj" logEvery="1000">
+    <logger id="trajLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" fileName="trees/$(filebase).$(tree).traj" logEvery="1000">
         <log id="typedTraj.t:state_dependent_clock_sim" spec="bdmmprime.trajectories.SampledTrajectory" bdmmDistrib="@BDMMPrime.t:state_dependent_clock_sim" frequencies="@typeFrequencies.t:state_dependent_clock_sim" typeMappedTree="@typeMappedTree.t:state_dependent_clock_sim" useTauLeaping="true"/>
     </logger>
 

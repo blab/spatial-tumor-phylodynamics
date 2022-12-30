@@ -89,3 +89,11 @@ for file in xml/death_rate_validation_pop_1000_dr_0.[0-9][05]_n_[1-4][0-9]_state
 do
   sbatch ../scripts/run_beast_to_ess2.sh $file
 done
+
+## Run in eden/bulk directory
+##### BULK SAMPLING ##############
+cd bulk
+for file in xml/bulk_sampling_death_rate_validation_pop_1000_dr_0.[0-8][0-9].xml
+do
+  sbatch ../../scripts/run_beast_to_ess_bulk.sh $file
+done

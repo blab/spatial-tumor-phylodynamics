@@ -3,6 +3,7 @@
 #combine posterior summary statistics (means, HPD intervals)
 ## Run in eden/stats/posteriors
 
+
 #Add headers
 head -n 1 death_rate_validation_pop_1000_dr_0.00_n_100_state_clock_estimate_dr_posterior_summary.tsv > posterior_summary_all.tsv
 

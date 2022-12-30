@@ -1,2 +1,0 @@
-mean_birth_rate_diff	median_birth_rate_diff	birthRate_hdi95_lower	birthRate_hdi95_upper	dr	n	clock_model	sampling	minBirthRateESS
-0.15364504435913012	0.14578934188646675	0.012562358467802952	0.29822679947377373	0.405	50	state_dependent	diversified	132.81607362565254
