@@ -77,11 +77,45 @@ do
 done
 
 
-for file in xml/death_rate_validation_pop_1000_dr_0.[0-9][05]_n_[6-9][0-9]_state_clock_estimate_dr.xml
+for file in xml/death_rate_validation_pop_1000_dr_0.[0-9][05]_n_[6-8][0-9]_state_clock_estimate_dr.xml
 do
   sbatch ../scripts/run_beast_to_ess2.sh $file
 done
 
+
+
+for file in xml/death_rate_validation_pop_1000_dr_0.[0-9][05]_n_90_state_clock_estimate_dr.xml
+do
+  sbatch ../scripts/run_beast_to_ess2.sh $file
+done
+
+for file in xml/death_rate_validation_pop_1000_dr_0.[0-1][05]_n_40_state_clock_estimate_dr.xml
+do
+  sbatch ../scripts/run_beast_to_ess2.sh $file
+done
+
+for file in xml/death_rate_validation_pop_1000_dr_0.[0-1][05]_n_60_state_clock_estimate_dr.xml
+do
+  sbatch ../scripts/run_beast_to_ess2.sh $file
+done
+
+for file in xml/death_rate_validation_pop_1000_dr_0.[0-1][05]_n_70_state_clock_estimate_dr.xml
+do
+  sbatch ../scripts/run_beast_to_ess2.sh $file
+done
+
+for file in xml/death_rate_validation_pop_1000_dr_0.[0-1][05]_n_80_state_clock_estimate_dr.xml
+do
+  sbatch ../scripts/run_beast_to_ess2.sh $file
+done
+
+for file in xml/death_rate_validation_pop_1000_dr_0.[0-1][05]_n_90_state_clock_estimate_dr.xml
+do
+  sbatch ../scripts/run_beast_to_ess2.sh $file
+done
+
+#To run
+sbatch ../scripts/run_beast_to_ess2.sh xml/death_rate_validation_pop_1000_dr_0.20_n_17_state_clock_estimate_dr.xml
 
 ### Strict N >= 10
 
@@ -97,3 +131,17 @@ for file in xml/bulk_sampling_death_rate_validation_pop_1000_dr_0.[0-8][0-9].xml
 do
   sbatch ../../scripts/run_beast_to_ess_bulk.sh $file
 done
+
+## Physicell runs ####
+
+for file in xml/sampconfig_m0_w1*
+do
+  sbatch ../../../scripts/run_beast_to_ess_physicell.sh $file
+done
+
+for file in xml/sampconfig_m0_w1_d0.6_*
+do
+  sbatch ../../../scripts/run_beast_to_ess_physicell.sh $file
+done
+
+#sbatch ../../../scripts/run_beast_to_ess_physicell.sh xml/sampconfig_m0_w1.1_d0.1_t1_mg0.99_mm1_l2e+08_i8_s50357_diversified_m1_n100.xml

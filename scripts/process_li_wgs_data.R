@@ -5,11 +5,14 @@ library(tumortree)
 library(tidyverse)
 set.seed(812)
 
-t1_all_sites <- read.csv("../li-application/li_hcc_data/t1_all_sites_deident.csv")
-t2_all_sites <- read.csv("../li-application/li_hcc_data/t2_all_sites_deident.csv")
+t1_all_sites_df <- read.csv("../li-application/li_hcc_data/t1_all_sites_deident.csv")
+t2_all_sites_df <- read.csv("../li-application/li_hcc_data/t2_all_sites_deident.csv")
 
 T1_data_amp_long <- read.csv("../li-application/li_hcc_data/T1_data_amp_long_deident.csv")
 T2_data_amp_long <- read.csv("../li-application/li_hcc_data/T2_data_amp_long_deident.csv")
+
+t1_wgs_snv_df <- read.csv("../li-application/li_hcc_data/t1_wgs_snvs_deident.csv")
+t2_wgs_snv_df <- read.csv("../li-application/li_hcc_data/t2_wgs_snvs_deident.csv")
 
 ##Whole genome estimated to be ~3Gb
 ###41% GC content
@@ -38,7 +41,9 @@ make_vafs <- function(punch_snvs, punch_name, all_sites, vaf_cutoff = 0.05) {
 T1_all_amp_punches <- unique(T1_data_amp_long$Punch)
 T2_all_amp_punches <- unique(T2_data_amp_long$Punch)
 
-get_wgs_sequence_from_vaf <- function(punch, wgs_snvs_vaf_df, include_invariable = TRUE, amplicon_only = FALSE)  {
+get_wgs_sequence_from_vaf <- function(punch,
+                                      wgs_snvs_vaf_df,
+                                      include_invariable = FALSE, amplicon_only = FALSE)  {
     
     punch_snvs <- wgs_snvs_vaf_df %>% 
         dplyr::filter(Punch == punch)
@@ -82,7 +87,12 @@ get_wgs_seq_from_amp_panel <- function(punch, amp_long_df, wgs_all_sites, includ
     return(amp_sequence)
 }
 
-get_sequence <- function(punch, wgs_snvs_vaf_df, amp_long_df, wgs_all_sites, include_invariable = TRUE, amplicon_only = FALSE) {
+get_sequence <- function(punch,
+                         wgs_snvs_vaf_df,
+                         amp_long_df,
+                         wgs_all_sites,
+                         include_invariable = FALSE,
+                         amplicon_only = FALSE) {
     
     if (punch %in% unique(wgs_snvs_vaf_df$Punch) & (! amplicon_only)) {
         
@@ -102,68 +112,6 @@ get_sequence <- function(punch, wgs_snvs_vaf_df, amp_long_df, wgs_all_sites, inc
 }
 
 
-generate_subsampled_sequences <- function(all_amp_punches, wgs_snv_list, amp_long_df, wgs_all_sites, vaf_cutoff = 0.1,
-                                          n_sites = 10000,
-                                          include_invariable = TRUE,
-                                          amplicon_only = FALSE, 
-                                          sites_file=NULL) {
-    
-    if (amplicon_only) {
-        wgs_subset_sites <- amp_long_df %>% 
-            
-            dplyr::distinct(contig, position, ref_allele) %>% 
-            arrange(var_id)
-        
-        if(! is.null(sites_file)) {
-          write_csv(wgs_subset_sites, sites_file)
-        }
-        
-        unsampled_sites <- 0
-   
-    } else {
-        wgs_subset_sites <- wgs_all_sites[sort(sample(1:nrow(wgs_all_sites), size = n_sites, replace = FALSE)), ]
-        wgs_subset_sites <- wgs_subset_sites %>% 
-          
-          dplyr::distinct(var_id, ref_allele) %>% 
-          arrange(var_id)
-        
-        print(nrow(wgs_subset_sites))
-        
-        if(! is.null(sites_file)) {
-          
-          write_csv(wgs_subset_sites, sites_file)
-          
-        }
-        unsampled_sites <- nrow(wgs_all_sites) - nrow(wgs_subset_sites)
-
-    }
-    
-    
-    vaf_list <- purrr::map2(wgs_snv_list, names(wgs_snv_list),
-                              function(x, n) make_vafs(punch_snvs = x,
-                                                       punch_name = n,
-                                                    all_sites = wgs_subset_sites,
-                                                    vaf_cutoff = vaf_cutoff))
-    
-    
-    vaf_df <- vaf_list %>%
-        bind_rows
-    
-
-    
-    sequences <- purrr::map(all_amp_punches, function(p) get_sequence(punch = p, 
-                                                                            wgs_snvs_vaf_df = vaf_df,
-                                                                            amp_long_df = amp_long_df,
-                                                                            wgs_all_sites = wgs_subset_sites,
-                                                                      include_invariable = include_invariable,
-                                                                      amplicon_only = amplicon_only))
-    
-    
-
-    
-    return(list("sequences" = sequences, "n_unsampled_sites" = unsampled_sites))
-    
-}
 
 
 # t1_fasta_file_wgs_punches_amp_sites <- "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/data/li_t1_wgs_punches_amp_sites.fa"
@@ -218,11 +166,13 @@ generate_subsampled_sequences <- function(all_amp_punches, wgs_snv_list, amp_lon
 # sum(nNs > 1000) == length(T1_all_amp_punches) - length(t1_snv_list)
 # sum(nNs < 1000) == length(t1_snv_list)
 # 
+
+
 # t1_sequences_df <- purrr::map2(t1_sequences$sequences, T1_all_amp_punches, function(s, p) data.frame("mut_id" = paste("mut_", 1:nchar(s), sep = ""),
-#                                                                     "basepair"= unlist(str_split(s, pattern = "")), 
-#                                                                     "Punch" = p)) %>% 
-#     bind_rows %>% 
-#     left_join(., subclone_labels, by = "Punch") %>% 
+#                                                                     "basepair"= unlist(str_split(s, pattern = "")),
+#                                                                     "Punch" = p)) %>%
+#     bind_rows %>%
+#     left_join(., subclone_labels, by = "Punch") %>%
 #     mutate("Subclone" = as.factor(Subclone))
 # 
 # 
@@ -254,11 +204,13 @@ generate_subsampled_sequences <- function(all_amp_punches, wgs_snv_list, amp_lon
 #     ggplot(., aes(x= as.factor(mut_id), y = Punch, fill = basepair)) +geom_tile() + scale_fill_brewer(type = "qual")
 
 # hist(nNs)
-# t1_sequences <- purrr::map(T1_all_amp_punches, function(p) get_sequence(punch = p, 
-#                                                                          wgs_snvs_vaf_df = t1_vaf_df,
-#                                                                         amp_long_df = T1_data_amp_long,
-#                                                                         wgs_all_sites = t1_all_sites_df))
-#  
+
+
+# t1_sequences <- purrr::map(T1_all_amp_punches, function(p) get_sequence(punch = p,
+#                                                                           wgs_snvs_vaf_df = t1_wgs_snv_df,
+#                                                                          amp_long_df = T1_data_amp_long,
+#                                                                          wgs_all_sites = t1_all_sites_df))
+  
 # t2_sequences <- purrr::map(T2_all_amp_punches, function(p) get_sequence(punch = p, 
 #                                                                         wgs_snvs_vaf_df = t2_vaf_df,
 #                                                                         amp_long_df = T2_data_amp_long,
@@ -485,21 +437,17 @@ write_csv(T2_boundary_coordinates, file = "../li-application/li_hcc_data/T2_boun
 # t2_pop_size <- length(t2_sequences) / 0.0001
 ######## WRITE ALIGNMENT AND TAXON STRINGS ############
 
-write_li_xml <- function(wgs_all_sites, amp_long_df, wgs_snv_list, all_amp_punches, punch_coordinates,
-                         n_sites = 10000, boundary_coordinates, edge_cutoff = 2, n_sequenced_sites = 3E9,
+write_li_xml <- function(wgs_all_sites, amp_long_df, wgs_snv_df, punches, punch_coordinates,
+                         boundary_coordinates, edge_cutoff = 2, n_sequenced_sites = 3E9,
                          state_clocks_template_xml = "state_clocks_template.xml", 
                          state_clocks_xml = "state_clocks.xml", include_invariable = TRUE,
-                         amplicon_only = FALSE,  sites_file = NULL, amplicon_weights_file = NULL) {
+                         amplicon_only = FALSE,  sites_file = NULL) {
     
 
-    sequences <- generate_subsampled_sequences(all_amp_punches = all_amp_punches, 
-                                                  wgs_snv_list = wgs_snv_list, 
-                                                  amp_long_df =  amp_long_df, 
-                                                  wgs_all_sites = wgs_all_sites, 
-                                                  n_sites = n_sites,
-                                               include_invariable = include_invariable,
-                                               amplicon_only = amplicon_only,
-                                               sites_file = sites_file)
+      sequences <- purrr::map(punches, function(p) get_sequence(punch = p,
+                                                                wgs_snvs_vaf_df = wgs_snv_df,
+                                                                amp_long_df = amp_long_df,
+                                                                wgs_all_sites = wgs_all_site))
     
     alignment_string <- ""
 
@@ -520,71 +468,24 @@ write_li_xml <- function(wgs_all_sites, amp_long_df, wgs_snv_list, all_amp_punch
         dplyr::mutate(Punch = tolower(Punch)) %>% 
         dplyr::filter(Punch %in% all_amp_punches)
     
-    g <- ggplot(punch_coordinates, aes(X,-Y)) + geom_polygon(data = boundary_coordinates, fill = "lightgrey", alpha = 0.5,  color = "black", aes(group = Slice)) +
-        geom_point(size = 2, shape = 21, color = "black",  aes(fill = ifelse(edge, "edge", "center"))) +
-        theme_void() + theme(legend.position = "none") + ggtitle(paste0("Edge cutoff = ", edge_cutoff, "mm", sep = ""))
-    
-    base::print(g)
+
+  
     
     taxon_traits <- c()
     
     for (i in 1:nrow(punch_coordinates)) {
         
-        taxon_traits <- c(taxon_traits, paste0(tolower(punch_coordinates$Punch)[i], "=loc", as.integer(punch_coordinates$edge[i]), sep = ""))
+        taxon_traits <- c(taxon_traits, paste0(tolower(punch_coordinates$Punch)[i], "=loc",
+                                               as.integer(punch_coordinates$edge[i]), sep = ""))
     }
     
     taxon_traits_string <- paste(taxon_traits, collapse = ",")
-    
-    #weights string
-    
-    if (include_invariable) {
-      #assume 60% GC content
-      #assume human genome ~3Gb with 70% being a high confidence set
-      ##https://www.pnas.org/doi/10.1073/pnas.1613365113
-      n_wgs_sites_gc <- format(n_sequenced_sites * 0.7 * 0.4 * 0.5, scientific = FALSE)
-      n_wgs_sites_at <- format(n_sequenced_sites * 0.7 * 0.6 * 0.5, scientific = FALSE)
-      
-      if (! is.null(amplicon_weights_file)) {
-        #amplicon_weights_file <- "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/t1_amp_site_weights.csv"
-        #amplicon weights from solve_branch_weights_li.R
-        amplicon_weights <- read_csv(amplicon_weights_file) %>% 
-          dplyr::select(snv_mut_id, amp_wgs_ratio, norm_ratio, branch_weight) 
-        
-        #just to double check that sites are going to be exactly the same
-        #sites_file = "data/t1_all_sites_file.csv"
-        sites <- read_csv(sites_file) %>% 
-          dplyr::mutate(snv_mut_id = paste0(contig, "_", position)) %>% 
-          dplyr::left_join(., amplicon_weights, by = "snv_mut_id")
-        
-        #non-amplicon sites have weight of 1
-        sites$branch_weight[which(is.na(sites$branch_weight))] <- 1
-        
-
-        weights_string <- paste(c(sites$branch_weight, sequences$n_unsampled_sites, n_wgs_sites_at,
-                                  n_wgs_sites_gc, n_wgs_sites_gc, n_wgs_sites_at), collapse = ",")
-      } else {
-
-        weights_string <- paste(c(rep("1", n_sites), sequences$n_unsampled_sites, n_wgs_sites_at,
-                                  n_wgs_sites_gc, n_wgs_sites_gc, n_wgs_sites_at), collapse = ",")
-        
-      }
-        
-        
-    } else if (amplicon_only) {
-        
-        weights_string <- NULL
-
-    
-    } else {
-        
-        weights_string <- paste(c(rep("1", n_sites), sequences$n_unsampled_sites), collapse = ",")
-    }
+  
     
     write_alignment_to_state_xml_from_template(state_clocks_template_xml = state_clocks_template_xml,
                                                alignment_string = alignment_string,
                                                taxon_traits_string = taxon_traits_string,
-                                               state_clocks_xml = state_clocks_xml,
-                                               weights_string = weights_string)
+                                               state_clocks_xml = state_clocks_xml)
     
     
 }
@@ -595,7 +496,6 @@ write_li_xml <- function(wgs_all_sites, amp_long_df, wgs_snv_list, all_amp_punch
 write_alignment_to_state_xml_from_template <- function(state_clocks_template_xml,
                                                        alignment_string,
                                                        taxon_traits_string,
-                                                       weights_string, 
                                                        state_clocks_xml) {
 
     con = file(state_clocks_template_xml, "r")
@@ -614,9 +514,9 @@ write_alignment_to_state_xml_from_template <- function(state_clocks_template_xml
 
             write(gsub("insert_trait", taxon_traits_string , x), file=state_clocks_xml, append = !first_line)
 
-        } else if (grepl("insert_weights", x, fixed = TRUE)) { #taxon insertion
-
-            write(gsub("insert_weights", weights_string , x), file=state_clocks_xml, append = !first_line)
+        # } else if (grepl("insert_weights", x, fixed = TRUE)) { #taxon insertion
+        # 
+        #     write(gsub("insert_weights", weights_string , x), file=state_clocks_xml, append = !first_line)
 
         } else {
 
@@ -636,19 +536,18 @@ write_alignment_to_state_xml_from_template <- function(state_clocks_template_xml
 
 write_li_xml(wgs_all_sites =t1_all_sites_df,
              amp_long_df =T1_data_amp_long, 
-             wgs_snv_list = t1_snv_list,
-             all_amp_punches =names(t1_snv_list),
+             wgs_snv_df = t1_snv_list,
+             punches =unique(),
              punch_coordinates = T1_punch_coordinates,
              boundary_coordinates = T1_boundary_coordinates,
              n_sites = nrow(t1_all_sites_df),
              edge_cutoff = 2,
              n_sequenced_sites = 3E9,
-             state_clocks_template_xml = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/xml_files/T1_wgs_state_clocks.xml", 
-             state_clocks_xml = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/xml_files/T1_state_clocks_all_sites_wgs_punches.xml",
-             include_invariable = TRUE,
+             state_clocks_template_xml = "../li-application/templates/state_clocks_template.xml", 
+             state_clocks_xml = "../li-application/templates/T1_wgs_state_clocks_test.xml",
+             include_invariable = FALSE,
              amplicon_only = FALSE,
-             sites_file = "data/t1_all_sites_file_wgs_punches.csv",
-             amplicon_weights_file =  "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/t1_amp_site_weights.csv")
+             sites_file = "../li-application/li_hcc_data/t1_all_sites_deident.csv")
 
 
 write_li_xml( wgs_all_sites =t2_all_sites_df,

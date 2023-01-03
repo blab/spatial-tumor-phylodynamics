@@ -7,7 +7,6 @@ library(ggtree)
 library(treeio)
 library(viridis)
 library(tumortree)
-setwd("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li")
 
 t1_li_edge_labels <- data.frame("punch" = c("t1z5", "t1l13", "t1z1", "t1f24", "t1z3", "t1f23", "t1f11", "t1l8", "t1f14", "t1f9", "t1l1", "t1l10", "t1l3", "t1f2", "t1l6", "t1f4"),
                                 "edgeP" = c(1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)) #%>% 
@@ -29,8 +28,8 @@ t2_li_edge_labels <- data.frame("punch" = c("t2z11", "t2z13", "t2z1", "t2f9", "t
 
 #Fasta alignment files compiled in process_li_wgs_data.R
 #VAF cutoff is 0.05 for variants
-fasta_file_t1 <- "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/data/li_t1_wgs.fa"
-fasta_file_t2 <- "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/data/li_t2_wgs.fa"
+fasta_file_t1 <- "../li-application/li_hcc_data/li_t1_wgs.fa"
+fasta_file_t2 <- "../li-application/li_hcc_data/li_t2_wgs.fa"
 
 set.seed(38172)
 #read in data into phyDat format (phangorn/ape)
@@ -82,7 +81,7 @@ t1_wgs_tree <- ggtree(t1_treePars_obj, aes(color = ifelse(edgeP==1, "edge","cent
     geom_tippoint(size =2) +geom_text(color = "black", nudge_x=7000, size =3) +
     theme(legend.position = "none")
 t1_wgs_tree 
-ggsave(filename = "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/figures/t1_wgs_genetic_state_tree.png",
+ggsave(filename = "../figures/t1_wgs_genetic_state_tree.png",
        t1_wgs_tree, height = 4, width = 3)
 
 t2_wgs_tree <- ggtree(t2_treePars_obj, aes(color = ifelse(edgeP==1, "edge","center"), label = punch_label)) +
@@ -92,5 +91,5 @@ t2_wgs_tree <- ggtree(t2_treePars_obj, aes(color = ifelse(edgeP==1, "edge","cent
     geom_text(color = "black", nudge_x=7000, size = 3) +
     theme(legend.position = "none")
 t2_wgs_tree 
-ggsave(filename = "/Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/figures/t2_wgs_genetic_state_tree.png",
+ggsave(filename = "../figures/t2_wgs_genetic_state_tree.png",
        t2_wgs_tree, height = 4, width = 3)

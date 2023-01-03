@@ -8,7 +8,7 @@ library(tumortree)
 
 #example random sampling diagram
 ## Local directories
-### Use to create more minimal dataset for publication
+### Use to create more minimal dataset for 
 # example_cells <- read_csv("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation/cells_death_rate_validation_pop_500_dr_0.27.csv") %>%
 #      tumortree::filter_alive_cells()
 # 

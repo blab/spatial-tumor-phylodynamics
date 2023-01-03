@@ -372,7 +372,7 @@ set.seed(9811)
 priority_drs = unique(clock_comparison_growth_rate_posteriors_df$dr[clock_comparison_growth_rate_posteriors_df$n == 5])
 standardized_sim_number_df <- purrr::map(unique(clock_comparison_growth_rate_posteriors_df$n),
                                          function(ss) subsample_results(sample_size = ss,
-                                                                        simulation_number = 17,
+                                                                        simulation_number = 18,
                                                                         priority_drs = priority_drs,
                                                                         clock_comparison_growth_rate_posteriors_df = clock_comparison_growth_rate_posteriors_df)) %>% 
     
@@ -392,6 +392,7 @@ min(clock_comparison_sample_size_results_summary$N)
 mean(clock_comparison_sample_size_results_summary$N)
 
 ggplot(clock_comparison_sample_size_results_summary, aes(x=n, y=N)) + geom_point()
+clock_comparison_sample_size_results_summary[which(clock_comparison_sample_size_results_summary$N < 18),]
 clock_comparison_sample_size_mse  <- clock_comparison_sample_size_results_summary %>% 
     dplyr::filter(as.numeric(n) <= 100) %>% 
     ggplot(., aes(x = n, y = mse)) +

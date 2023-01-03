@@ -257,7 +257,7 @@ ggsave(filename = "../figures/t2_wgs_genetic_state_tree.png", t2_wgs_tree , heig
 #                         pattern=".log", 
 #                         full.names = TRUE)
 
-li_log_files <- list.files(path = "../li-application/out",
+li_log_files <- list.files(path = "../li-application/combined",
                         pattern=".log",
                         full.names = TRUE)
 
@@ -265,6 +265,8 @@ li_log_files <- list.files(path = "../li-application/out",
 li_log_files <- li_log_files[! grepl("chain1", li_log_files)]
 li_log_files <- li_log_files[! grepl("T1red", li_log_files)]
 li_log_files <- li_log_files[! grepl("bidir", li_log_files)]
+li_log_files <- li_log_files[! grepl("random", li_log_files)]
+
 
 log_files <- c(li_log_files)
 
@@ -272,8 +274,8 @@ log_files <- c(li_log_files)
 
 process_logs <- function(log_file) {
     print(log_file)
-    rep_extract <- regmatches(basename(log_file),
-                              gregexpr("(?<=rep)[0-9]", basename(log_file), perl = TRUE))[[1]]
+    # rep_extract <- regmatches(basename(log_file),
+    #                           gregexpr("(?<=rep)[0-9]", basename(log_file), perl = TRUE))[[1]]
     subset_extract <- regmatches(basename(log_file),
                               gregexpr("(?<=unidir_)[0-9]", basename(log_file), perl = TRUE))[[1]]
     if (length(subset_extract) == 0) {
@@ -287,13 +289,13 @@ process_logs <- function(log_file) {
     }
     states_extract <- ifelse(grepl("newstates", basename(log_file)), "newstates", "oldstates")
     clock_extract <- ifelse(grepl("strict", basename(log_file)), "strict", "state-dependent")
-    log <- readLog(log_file, burnin = 0.2)
+    log <- readLog(log_file, burnin = 0)
     ess <- coda::effectiveSize(log)
     minESSbirth <- min(ess["birthRateSVCanonical.loc1"], ess["birthRateSVCanonical.loc0"])
     log_df <- as.data.frame(log) %>%
         add_column("migration_model" = migration_model,
                    "tumor" = tumor_extract,
-                   "rep" = rep_extract,
+#                   "rep" = rep_extract,
                    "subset" = subset_extract, 
                    "states" = states_extract,
                    "clock_model" = clock_extract, 
