@@ -254,10 +254,10 @@ ggsave(filename = "../figures/t2_wgs_genetic_state_tree.png", t2_wgs_tree , heig
 
 #Record of local directory
 # log_files <- list.files(path = "/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/beast_analysis/state_dependent_clock_model/primary_tumor_analysis/li/curr_runs/out",
-#                         pattern=".log", 
+#                         pattern=".log",
 #                         full.names = TRUE)
 
-li_log_files <- list.files(path = "../li-application/combined",
+li_log_files <- list.files(path = "../li-application/logs",
                         pattern=".log",
                         full.names = TRUE)
 
@@ -266,7 +266,9 @@ li_log_files <- li_log_files[! grepl("chain1", li_log_files)]
 li_log_files <- li_log_files[! grepl("T1red", li_log_files)]
 li_log_files <- li_log_files[! grepl("bidir", li_log_files)]
 li_log_files <- li_log_files[! grepl("random", li_log_files)]
+li_log_files <- li_log_files[! grepl("_test", li_log_files)]
 
+li_log_files <- li_log_files[! grepl("T2_wgs_newstates_unidir_3_strict_rep0.log",li_log_files)]
 
 log_files <- c(li_log_files)
 
@@ -274,8 +276,8 @@ log_files <- c(li_log_files)
 
 process_logs <- function(log_file) {
     print(log_file)
-    # rep_extract <- regmatches(basename(log_file),
-    #                           gregexpr("(?<=rep)[0-9]", basename(log_file), perl = TRUE))[[1]]
+    rep_extract <- regmatches(basename(log_file),
+                              gregexpr("(?<=rep)[0-9]", basename(log_file), perl = TRUE))[[1]]
     subset_extract <- regmatches(basename(log_file),
                               gregexpr("(?<=unidir_)[0-9]", basename(log_file), perl = TRUE))[[1]]
     if (length(subset_extract) == 0) {
@@ -289,13 +291,13 @@ process_logs <- function(log_file) {
     }
     states_extract <- ifelse(grepl("newstates", basename(log_file)), "newstates", "oldstates")
     clock_extract <- ifelse(grepl("strict", basename(log_file)), "strict", "state-dependent")
-    log <- readLog(log_file, burnin = 0)
+    log <- readLog(log_file, burnin = 0.2)
     ess <- coda::effectiveSize(log)
     minESSbirth <- min(ess["birthRateSVCanonical.loc1"], ess["birthRateSVCanonical.loc0"])
     log_df <- as.data.frame(log) %>%
         add_column("migration_model" = migration_model,
                    "tumor" = tumor_extract,
-#                   "rep" = rep_extract,
+                   "rep" = rep_extract,
                    "subset" = subset_extract, 
                    "states" = states_extract,
                    "clock_model" = clock_extract, 
@@ -463,6 +465,7 @@ t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_
            states == "oldstates",
            tumor == "T2") %>% 
     ggplot(., aes(x=subset, y=birthRateRatio), color = "black",  fill = "black") +
+
     geom_violin(alpha=0.8, fill = "black") +
     geom_boxplot(width=.1, outlier.alpha = 0, color = "grey") +
     # geom_point(data=t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin_summary, aes(x= subset, y=birthRateRatio_mean), color = "grey") +
@@ -480,7 +483,7 @@ t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin <- all_logs_birthRate_
 
 t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin
 ggsave(plot=t2_wgs_ratio_posteriors_plot_oldstates_state_clock_violin ,
-       file ="../figures/t2_li_wgs_ratio_posteriors_stateclock_violin.png", height = 5, width = 1.5)
+       file ="../figures/t2_li_wgs_ratio_posteriors_oldstates_stateclock_violin.png", height = 5, width = 1.5)
 
 
 #get HDI intervals to put in text
@@ -505,6 +508,7 @@ t1_estimate_summaries %>%
     #group_by(subset) %>% 
     dplyr::select(contains("birthRateRatio")) %>% 
     distinct()
+
 write_csv(t1_estimate_summaries, file = "../li-application/stats/t1_wgs_birth_rate_estimate_summary.csv")
 
 #get HDI intervals to put in text
@@ -531,15 +535,17 @@ t2_estimate_summaries %>%
     distinct()
 write_csv(t2_estimate_summaries, file = "../li-application/stats/t2_wgs_birth_rate_estimate_summary.csv")
 
-
+combined_summary <- bind_rows(t1_estimate_summaries, t2_estimate_summaries)
+write_csv(combined_summary, file = "../li-application/stats/wgs_birth_rate_estimate_summary.csv")
 ####### MCC TREES ###############
 
 #To generate MCC run combined_typed_node_mcc_trees.sh in li-application/out directory
 
-li_mcc_tree_files <- list.files(path = "../li-application/combined",
-                             pattern="T[1-2]_wgs_oristates_unidir_1_state.HCCtumor.typed.node.tree", 
+li_mcc_tree_files <- list.files(path = "../li-application/logs",
+                             pattern="HCCtumor_mcc.tree", 
                              full.names = TRUE)
 li_mcc_tree_files <- li_mcc_tree_files[! grepl(".trees", li_mcc_tree_files )]
+li_mcc_tree_files <- li_mcc_tree_files[! grepl("T1red", li_mcc_tree_files )]
 
 for (mcc_file in li_mcc_tree_files) {
     mcc_tree <- read.beast(file=mcc_file)
@@ -592,7 +598,7 @@ for (mcc_file in li_mcc_tree_files) {
 t1_estimate_summaries %>% 
     ungroup() %>% 
     dplyr::select(contains("birthRateRatio"))
-
+#4.53 6.35  8.32
 t2_estimate_summaries %>% 
     dplyr::select(contains("birthRateRatio"))
-
+#2.35  2.83 3.32

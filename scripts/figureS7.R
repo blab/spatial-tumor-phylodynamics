@@ -130,11 +130,11 @@ get_corresponding_node <- function(node, tree, comparison_tree) {
     
 }
 
-T1_mcc_tree <- read.beast("../li-application/combined/T1_wgs_oristates_unidir_1_state.HCCtumor.typed.node.tree")
-T2_mcc_tree <- read.beast("../li-application/combined/T2_wgs_oristates_unidir_1_state.HCCtumor.typed.node.tree")
+T1_mcc_tree <- read.beast("../li-application/logs/T1_wgs_oristates_unidir_state_comb.HCCtumor_mcc.tree")
+T2_mcc_tree <- read.beast("../li-application/logs/T2_wgs_oristates_unidir_state_comb.HCCtumor_mcc.tree")
 
-T1_strict_clock_mcc_tree <- read.beast("../li-application/combined/T1_wgs_oristates_unidir_1_strict.HCCtumor.typed.node.tree")
-T2_strict_clock_mcc_tree <- read.beast("../li-application/combined/T2_wgs_oristates_unidir_1_strict.HCCtumor.typed.node.tree")
+T1_strict_clock_mcc_tree <- read.beast("../li-application/logs/T1_wgs_oristates_unidir_strict_comb.HCCtumor_mcc.tree")
+T2_strict_clock_mcc_tree <- read.beast("../li-application/logs/T2_wgs_oristates_unidir_strict_comb.HCCtumor_mcc.tree")
 
 #get all internal nodes to compare for each tumor
 t1_nodes <- seq((length(T1_mcc_tree@phylo$tip.label) + 1), length(T1_mcc_tree@phylo$tip.label) +T1_mcc_tree@phylo$Nnode)

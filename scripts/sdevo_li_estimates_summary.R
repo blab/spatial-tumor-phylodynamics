@@ -13,14 +13,17 @@ library(ggrepel)
 #                         pattern=".log", 
 #                         full.names = TRUE)
 
-log_files <- list.files(path = "../li-application/out",
+log_files <- list.files(path = "../li-application/logs",
                         pattern="[0-9].log",
                         full.names = TRUE)
 
 log_files <- log_files[! grepl("chain1", log_files)]
 log_files <- log_files[! grepl("T1red", log_files)]
 log_files <- log_files[! grepl("bidir", log_files)]
-
+log_files <- log_files[! grepl("test", log_files)]
+log_files <- log_files[! grepl("random", log_files)]
+log_files <- log_files[! grepl("_test", log_files)]
+log_files <- log_files[! grepl("T2_wgs_newstates_unidir_3_strict_rep0.log",log_files)]
 #logs <- purrr::map(log_files, readLog)
 
 process_logs <- function(log_file) {

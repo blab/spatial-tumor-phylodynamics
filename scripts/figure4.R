@@ -50,12 +50,12 @@ ggsave(file = "../figures/birth_rate_random_sampling_fig.png", birth_rate_random
 #local directory
 # example_cells <- read_csv("/Volumes/BALAENA/projects/spatial_tumor_growth_simulation/outputs/raw_simulation_results/validation/cells_death_rate_validation_pop_1000_dr_0.27.csv") %>% 
 #     tumortree::filter_alive_cells()
-example_cells <- read_csv("../eden/simulation_data/cells_death_rate_validation_pop_1000_dr_0.27.csv") %>%
-    tumortree::filter_alive_cells()
-example_cells <- mark_boundary(cells_to_mark = example_cells, alive_cells = example_cells)
+# example_cells <- read_csv("../eden/simulation_data/cells_death_rate_validation_pop_1000_dr_0.27.csv") %>%
+#     tumortree::filter_alive_cells()
+# example_cells <- mark_boundary(cells_to_mark = example_cells, alive_cells = example_cells)
 
 #Write example tumor to CSV
-write_csv(example_cells, "../eden/simulation_data/alive_cells_death_rate_validation_pop_1000_dr_0.27.csv")
+#write_csv(example_cells, "../eden/simulation_data/alive_cells_death_rate_validation_pop_1000_dr_0.27.csv")
 
 #To skip to visualization
 example_cells <- read_csv(file = "../eden/simulation_data/alive_cells_death_rate_validation_pop_1000_dr_0.27.csv")
@@ -148,8 +148,13 @@ ggsave("../figures/bulk_exampled_tumor_sampled_punches.png", g, height = 5, widt
 #growth_rate_posteriors_2D_net_bdg_n100 <- read_csv("../physicell/stats/growth_rate_posteriors_2D_neut_bdg_n100.csv")
 growth_rate_posteriors_2D_net_bdg_n100 <- read_tsv("../physicell/stats/posteriors/2D_neut_bdg_posterior_summary_all.tsv")
 
+#exclude runs with rare convergence to local optima
+excluded_ids <- c("89092", "41075")
+
+
 d_baseplot <- growth_rate_posteriors_2D_net_bdg_n100 %>% 
     dplyr::filter(minBirthRateESS > 200) %>% 
+    dplyr::filter(! id %in% excluded_ids) %>% 
     ggplot(., aes(x = true_birth_rate_difference,, y = mean_birth_rate_diff), color = "black") +
     theme_classic() + geom_errorbar(aes(ymin = birthRate_hdi95_lower, ymax = birthRate_hdi95_upper), width = 0, alpha = 0.5, size = 1) +
     geom_point(aes( y = mean_birth_rate_diff), alpha = 0.8, size = 2) + scale_color_viridis(option = "mako", discrete = TRUE, direction = -1) +
@@ -179,16 +184,16 @@ e_baseplot
 ggsave(plot=e_baseplot, file ="../figures/physicell_3D_neutral_bdg.png", height = 5, width = 5)
 
 ############# PHYSICELL 2D SELECTION BOUNDARY-DRIVEN GROWTH #####
-growth_rate_posteriors_2D_sel_bdg_n100 <- read_csv("../physicell/stats/growth_rate_posteriors_2D_sel_bdg_n100_updated.csv")
+growth_rate_posteriors_2D_sel_bdg_n100 <- read_tsv("../physicell/stats/posteriors/2D_sel_bdg_posterior_summary_all.tsv")
 
 f_baseplot <- growth_rate_posteriors_2D_sel_bdg_n100 %>% 
     dplyr::filter(minBirthRateESS > 200) %>% 
-    ggplot(., aes(x = true_birth_diff, y = mean_birth_rate_diff), color = "black") +
+    ggplot(., aes(x = true_birth_rate_difference, y = mean_birth_rate_diff), color = "black") +
     theme_classic() + geom_errorbar(aes(ymin = birthRate_hdi95_lower, ymax = birthRate_hdi95_upper), width = 0, alpha = 0.5, size = 1) +
     geom_point(aes( y = mean_birth_rate_diff), alpha = 0.8, size = 2) +
     geom_abline(intercept = 0, slope = 1, linetype = "dashed") + xlab("True birth rate difference (edge - center)") +
     ylab("Estimated birth rate difference (edge - center)") +
-    theme(text = element_text(size = 48))
+    theme(text = element_text(size = 15))
 
 f_baseplot
 

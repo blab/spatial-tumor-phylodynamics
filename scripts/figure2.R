@@ -254,8 +254,8 @@ all_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df <- purrr::map2(all_c
 
 
 # To skip calculations and get output directly
-# all_sims_edge_dist_versus_divisions_dr_0.10_df <- read_csv(file = "..eden/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10.csv")
-# ll_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df <- read_csv(file = "../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10.csv")
+#all_sims_edge_dist_versus_divisions_dr_0.10_df <- read_csv(file = "..eden/stats/edge_dist_versus_growth_rate_sim_data_dr_0.10.csv")
+#all_sims_edge_dist_versus_divisions_unrestricted_dr_0.10_df <- read_csv(file = "../eden/stats/edge_dist_versus_growth_rate_sim_data_unrestricted_dr_0.10.csv")
 
 #Calculate mean and se of birth rate across binned disistances from the tumor edge
 time_step <- 2/24
@@ -701,10 +701,10 @@ summary_stats <- purrr::map(sim_trees_files, function(file) get_corr_edge_time_c
 write.csv(summary_stats, file="../eden/stats/model_summary_stats.csv")
 
 # To get these stats without having trees generated
-#summary_stats <- read_csv(file="../eden/stats/model_summary_stats.csv")
+summary_stats <- read_csv(file="../eden/stats/model_summary_stats.csv")
 # Extract values to highlight from example tumors
 highlighted_sims <- summary_stats  %>% 
-    dplyr::filter(dr == "0.10") 
+    dplyr::filter(dr == 0.10) 
 
 
 k <- ggplot(summary_stats, aes(x = as.numeric(dr)/24, y = terminal_branch_ratio, color = model)) +

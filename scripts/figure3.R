@@ -303,7 +303,7 @@ ggsave(file = "../figures/clock_rate_comparison_birth_rate_posteriors_strict_onl
 #function to subsampled each sample size category to the same number of simulations
 subsample_results <- function(sample_size,
                               priority_drs,
-                              simulation_number = 17, 
+                              simulation_number = 18, 
                               clock_comparison_growth_rate_posteriors_df) {
     
     posteriors_N_state_clock <- clock_comparison_growth_rate_posteriors_df %>% 
@@ -372,12 +372,12 @@ set.seed(9811)
 priority_drs = unique(clock_comparison_growth_rate_posteriors_df$dr[clock_comparison_growth_rate_posteriors_df$n == 5])
 standardized_sim_number_df <- purrr::map(unique(clock_comparison_growth_rate_posteriors_df$n),
                                          function(ss) subsample_results(sample_size = ss,
-                                                                        simulation_number = 18,
+                                                                        simulation_number = 17,
                                                                         priority_drs = priority_drs,
                                                                         clock_comparison_growth_rate_posteriors_df = clock_comparison_growth_rate_posteriors_df)) %>% 
     
     bind_rows()
-clock_comparison_sample_size_results_summary <- clock_comparison_growth_rate_posteriors_df  %>% 
+clock_comparison_sample_size_results_summary <- standardized_sim_number_df  %>% 
     
     dplyr::filter(minBirthRateESS > 200) %>% 
     group_by(n, clock_model) %>% 

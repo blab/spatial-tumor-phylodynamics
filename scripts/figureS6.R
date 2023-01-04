@@ -110,7 +110,7 @@ ggsave(plot=t2_map_plot_alt_states,
 ##### PLOT POSTERIORS ####
 
 # Get summary from sdevo_li_estimates_summary.R
-all_logs_birthRate_df <- read_tsv("../li-application/sdevo_estimates_summary.tsv")
+all_logs_birthRate_df <- read_tsv("../li-application/stats/sdevo_estimates_summary.tsv")
 # Also for supplement -- compare published states versus 10% diameter cutoff
 ## Tumor 1
 t1_wgs_posteriors_plot_alt_states <- all_logs_birthRate_df %>% 
@@ -192,10 +192,10 @@ ggsave(plot=t2_wgs_ratio_posteriors_plot_newstates_state_clock,
 
 #To generate MCC run combined_typed_node_mcc_trees.sh in li-application/out directory
 
-mcc_tree_files <- list.files(path = "../li-application/combined",
-                             pattern="T[1-2]_wgs_newstates_unidir_1_state.HCCtumor.typed.node.tree", 
+mcc_tree_files <- list.files(path = "../li-application/logs",
+                             pattern="T[1-2]_wgs_newstates_unidir_state_comb.HCCtumor_mcc.tree", 
                              full.names = TRUE)
-mcc_tree_files <- mcc_tree_files[! grepl(".trees", mcc_tree_files)]
+
 #only do unidirectional
 
 for (mcc_file in mcc_tree_files) {

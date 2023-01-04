@@ -23,9 +23,11 @@ names(colors_loc) <- c("loc1", "loc0")
 #                         pattern=".log", 
 #                         full.names = TRUE)
 
-log_files <- list.files(path = "../li-application/out",
+log_files <- list.files(path = "../li-application/logs",
                         pattern="T1red_wgs_oristates_unidir_[1-3]_state_rep[0-2].log",
                         full.names = TRUE)
+
+log_files <- log_files[! grepl("chain1",log_files)] 
 
 #log_files <- log_files[! grepl("chain1", log_files)]
 process_logs <- function(log_file) {
@@ -105,7 +107,7 @@ ggsave(plot=t1_wgs_ratio_posteriors_plot,
 
 #To generate MCC run combined_typed_node_mcc_trees.sh in li-application/out directory
 
-mcc_file <- "../li-application/combined/T1red_wgs_oristates_unidir_1_state.HCCtumor.typed.node.tree"
+mcc_file <- "../li-application/logs/T1red_wgs_oristates_unidir_state_comb.HCCtumor_mcc.tree"
 
 #only do unidirectional
 
