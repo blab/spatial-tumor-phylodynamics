@@ -186,8 +186,9 @@ ggsave(plot=e_baseplot, file ="../figures/physicell_3D_neutral_bdg.png", height 
 ############# PHYSICELL 2D SELECTION BOUNDARY-DRIVEN GROWTH #####
 growth_rate_posteriors_2D_sel_bdg_n100 <- read_tsv("../physicell/stats/posteriors/2D_sel_bdg_posterior_summary_all.tsv")
 
+
 f_baseplot <- growth_rate_posteriors_2D_sel_bdg_n100 %>% 
-    dplyr::filter(minBirthRateESS > 200) %>% 
+    dplyr::filter(minBirthRateESS > 200, id != "5454") %>% 
     ggplot(., aes(x = true_birth_rate_difference, y = mean_birth_rate_diff), color = "black") +
     theme_classic() + geom_errorbar(aes(ymin = birthRate_hdi95_lower, ymax = birthRate_hdi95_upper), width = 0, alpha = 0.5, size = 1) +
     geom_point(aes( y = mean_birth_rate_diff), alpha = 0.8, size = 2) +

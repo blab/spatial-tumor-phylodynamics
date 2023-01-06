@@ -37,12 +37,12 @@ do
 done
 
 # 2D neutral BDG -- motility
-head -n 1 sampconfig_m0_w1_d0.2_t1_mg1_mm1_l2e+08_i1_s4522_diversified_m1_n100_posterior_summary.tsv > 2D_neut_bdg_motility_posterior_summary_all.tsv
+head -n 1 sampconfig_m0_w1_d0.2_t1_mg1_mm1_l2e+08_i1_s4522_diversified_m1_n100_posterior_summary.tsv > 2D_neut_bdg_motility_posterior_summary_all2.tsv
 
 for file in *_posterior_summary.tsv
 do
   #add summary line from each file
-  tail -n 1 $file >> 2D_neut_bdg_motility_posterior_summary_all.tsv
+  tail -n 1 $file >> 2D_neut_bdg_motility_posterior_summary_all2.tsv
 done
 
 # 2D neutral BDG -- sigmoid
@@ -89,6 +89,7 @@ rsync -a mlewinso@rhino:/fh/fast/bedford_t/users/mlewinsohn/tumors_sims/spatial-
 rsync -a mlewinso@rhino:/fh/fast/bedford_t/users/mlewinsohn/tumors_sims/spatial-tumor-phylodynamics/physicell/simulation_data/2D_neut_bdg/stats/posteriors/2D_neut_bdg_posterior_summary_all.tsv /Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/physicell/stats/posteriors
 rsync -a mlewinso@rhino:/fh/fast/bedford_t/users/mlewinsohn/tumors_sims/spatial-tumor-phylodynamics/physicell/simulation_data/2D_neut_bdg_sigmoid/stats/posteriors/2D_neut_bdg_sigmoid_posterior_summary_all.tsv /Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/physicell/stats/posteriors
 rsync -a mlewinso@rhino:/fh/fast/bedford_t/users/mlewinsohn/tumors_sims/spatial-tumor-phylodynamics/physicell/simulation_data/2D_neut_bdg_motility/stats/posteriors/2D_neut_bdg_motility_posterior_summary_all.tsv /Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/physicell/stats/posteriors
+rsync -a mlewinso@rhino:/fh/fast/bedford_t/users/mlewinsohn/tumors_sims/spatial-tumor-phylodynamics/physicell/simulation_data/2D_neut_bdg_motility_SGE/stats/posteriors/2D_neut_bdg_motility_posterior_summary_all2.tsv /Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/physicell/stats/posteriors
 
 rsync -a mlewinso@rhino:/fh/fast/bedford_t/users/mlewinsohn/tumors_sims/spatial-tumor-phylodynamics/physicell/simulation_data/2D_sel_bdg/stats/posteriors/2D_sel_bdg_posterior_summary_all.tsv /Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/physicell/stats/posteriors
 rsync -a mlewinso@rhino:/fh/fast/bedford_t/users/mlewinsohn/tumors_sims/spatial-tumor-phylodynamics/physicell/simulation_data/3D_sel/stats/posteriors/3D_sel_bdg_posterior_summary_all.tsv /Users/mayalewinsohn/Documents/PhD/Bedford_lab/spatial-tumor-phylodynamics/physicell/stats/posteriors

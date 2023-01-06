@@ -1,0 +1,140 @@
+#!/usr/bin/env Rscript
+
+library(beastio)
+
+library(HDInterval)
+
+
+#This script inputs an XML file, will check if the corresponding log file exists and has reached sufficient ESS for the birth rate estimates
+
+args = commandArgs(trailingOnly=TRUE)
+xml_file = args[1]
+
+#ESS threshold
+ess_threshold <- 200
+#Set overwrite to TRUE if want to re-check log file if posterior summary already exists
+overwrite = FALSE
+
+#Directories
+log_file_dir = ""
+output_stats_dir = "stats/posteriors/"
+true_growth_rate_differences_dir = "diversified_100/updated_growth_rate_differences"
+#Output file
+output_file = paste0(output_stats_dir, gsub(".xml", "_posterior_summary.tsv", basename(xml_file)), sep = "")
+
+if(file.exists(output_file) & (! overwrite)) {
+
+	message("File exists, skipping, set overwrite = TRUE if want to re-check file")
+	#print("skip")
+	write( "skip", stdout())
+
+} else {
+
+	#Get log file from xml file
+
+	log_file <- paste0(log_file_dir,  gsub(".xml", ".log", basename(xml_file)), sep = "")
+
+	#Check if log file exists
+
+	if(file.exists(log_file)) {
+	
+        	message("Found log file, reading...")
+	
+		##If found mcmc log read in to dataframe
+		mcmc_log <- readLog(log_file)
+        
+         
+        	#Get minimum ESS of birth rates
+        	ess <- coda::effectiveSize(mcmc_log)
+       		min_ess_birth_rate <- min(ess["birthRateCanonical.1"], ess["birthRateCanonical.2"])
+        
+       	 	if (min_ess_birth_rate < ess_threshold) {
+	  		message(paste0("ESS is ", min_ess_birth_rate, " which is less than the ESS threshold of ", ess_threshold))
+          
+          		#Return signal to resume beast run
+	  		#print("resume")
+	  		write("resume", stdout())
+ 
+        	} else {
+
+			message("MCMC log meets ESS threshold, summarizing...")
+			
+			#Estimates from mcmc logs
+			## Get birth rate posteriors and calculate difference
+    			birthRate_loc0_posteriors <- mcmc_log[,"birthRateCanonical.1"]
+    			birthRate_loc1_posteriors <- mcmc_log[,"birthRateCanonical.2"]
+                        birthRateDiff_posteriors <- birthRate_loc1_posteriors - birthRate_loc0_posteriors
+
+                        #Get summary stats
+                        mean_birth_rate_diff = mean(birthRateDiff_posteriors)
+                        median_birth_rate_diff = median(birthRateDiff_posteriors)
+                        birthRate_hdi95_lower = hdi(birthRateDiff_posteriors,  credMass = 0.95)[1]
+                        birthRate_hdi95_upper = hdi(birthRateDiff_posteriors,  credMass = 0.95)[2]
+                        
+		        dr_extract <- regmatches(basename(log_file),
+                            gregexpr("(?<=d)[[:digit:]]+.*?(?=_)", basename(log_file), perl = TRUE))[[1]]
+
+    		        i_extract <- regmatches(basename(log_file),
+                             gregexpr("(?<=i)[[:digit:]]", basename(log_file), perl = TRUE))[[1]]
+
+
+		        id_extract <- regmatches(basename(log_file),
+                             gregexpr("(?<=_s)[[:digit:]]+", basename(log_file), perl = TRUE))[[1]]
+
+                        #m_extract <- regmatches(basename(log_file),
+                        #    gregexpr("(?<=_sampconfig_m)[[:digit:]]+.*?(?=_)", basename(log_file), perl = TRUE))[[1]]
+                        m_extract <- basename(log_file)
+                        #Get true birth rate differences
+                        #    #get true growth rate differences
+
+			file_pattern = gsub(".log", "", gsub("_diversified_m1_n100", "", basename(log_file)))	
+			message(file_pattern)
+			all_rate_files = list.files(path=true_growth_rate_differences_dir)
+			true_growth_rate_differences_file <- paste0(true_growth_rate_differences_dir, "/",
+				all_rate_files[grep(pattern=file_pattern, all_rate_files, fixed = TRUE)])		
+	
+    			true_growth_rate_differences_df <- read_tsv(true_growth_rate_differences_file) %>%
+        			group_by(edgeAssociated) %>%
+        			dplyr::summarize(mean_growth_rate = weighted.mean(avGrowth, n))
+
+
+    			#birth rates are recorded during simulations because they also depend on spatial pressure restrictions
+    			true_edge_birth <- true_growth_rate_differences_df$mean_growth_rate[true_growth_rate_differences_df$edgeAssociated][[1]]
+
+			true_center_birth <- true_growth_rate_differences_df$mean_growth_rate[! true_growth_rate_differences_df$edgeAssociated][[1]]
+
+
+   			 #relative edge/center calculations
+    			true_birth_rate_difference = true_edge_birth -  true_center_birth
+			summary_stats = data.frame("mean_birth_rate_diff" = mean_birth_rate_diff, 
+						   "median_birth_rate_diff" = median_birth_rate_diff, 
+						   "birthRate_hdi95_lower" = birthRate_hdi95_lower, 
+						   "birthRate_hdi95_upper" = birthRate_hdi95_upper, 
+						   "dr" = dr_extract,
+						   "i" = i_extract,
+						   "id" = id_extract, 
+						   "m" = m_extract,
+						   "true_birth_rate_difference" = true_birth_rate_difference,
+#						   "n" = n_extract, 
+#						   "clock_model" = clock_model_extract, 
+#						   "sampling" = sampling_extract, 
+						   "minBirthRateESS" = min_ess_birth_rate)
+			
+			write_tsv(summary_stats, output_file)
+			#print("done")
+			write("done", stdout())
+		}
+	} else {
+
+		message(paste0("Log file ", log_file, "does not exist.", sep = ""))
+
+        	#Return signal to start new beast run
+        	#print("new")
+		write("new", stdout())
+
+	}
+}	
+
+
+
+

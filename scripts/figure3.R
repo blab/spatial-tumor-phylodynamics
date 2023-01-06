@@ -30,10 +30,13 @@ true_example_diff_df <- read_csv("../eden/stats/validation_growth_and_death_rate
 example_birth_rates_diff_posteriors_summary <- example_mcmc_log %>% 
     dplyr::mutate(birthRateDiff = birthRateCanonical.2 -  birthRateCanonical.1) %>% 
     dplyr::summarise(mean = mean(birthRateDiff),
-                  hpd_90_lower = hdi(birthRateDiff,
-                                     credMass =0.9)[1],
-                  hpd_90_upper = hdi(birthRateDiff,
-                                     credMass =0.9)[2])
+                  hpd_95_lower = hdi(birthRateDiff,
+                                     credMass =0.95)[1],
+                  hpd_95_upper = hdi(birthRateDiff,
+                                     credMass =0.95)[2])
+
+example_birth_rates_diff_posteriors_summary 
+
 # Example edge - center difference posterior distibution
 example_birth_rates_diff_posteriors <- example_mcmc_log %>% 
     dplyr::mutate(birthRateDiff = birthRateCanonical.2 -  birthRateCanonical.1) %>% 
@@ -45,6 +48,7 @@ example_birth_rates_diff_posteriors <- example_mcmc_log %>%
           axis.line.y=element_blank()) +
     theme(text = element_text(size = 20)) +
     geom_vline(xintercept = true_example_diff_df$true_birth_rate_diff_weighted[1], linetype = "dashed")
+
 
 # Example edge - center posterior distibutions
 example_birth_rates_posteriors <- example_mcmc_log %>% 
@@ -377,7 +381,7 @@ standardized_sim_number_df <- purrr::map(unique(clock_comparison_growth_rate_pos
                                                                         clock_comparison_growth_rate_posteriors_df = clock_comparison_growth_rate_posteriors_df)) %>% 
     
     bind_rows()
-clock_comparison_sample_size_results_summary <- standardized_sim_number_df  %>% 
+clock_comparison_sample_size_results_summary <- standardized_sim_number_df %>% 
     
     dplyr::filter(minBirthRateESS > 200) %>% 
     group_by(n, clock_model) %>% 
@@ -388,7 +392,7 @@ clock_comparison_sample_size_results_summary <- standardized_sim_number_df  %>%
 #For caption stats
 sum(clock_comparison_sample_size_results_summary$N)
 max(clock_comparison_sample_size_results_summary$N)
-min(clock_comparison_sample_size_results_summary$N)
+clock_comparison_sample_size_results_summary[which.min(clock_comparison_sample_size_results_summary$N),]
 mean(clock_comparison_sample_size_results_summary$N)
 
 ggplot(clock_comparison_sample_size_results_summary, aes(x=n, y=N)) + geom_point()

@@ -38,7 +38,7 @@ growth_rate_posteriors_2D_sel_bdg_n100 <- read_tsv("../physicell/stats/posterior
 
 
 baseplot_2d_sel_bdg <- growth_rate_posteriors_2D_sel_bdg_n100  %>% 
-    dplyr::filter(minBirthRateESS > 200) %>% 
+    dplyr::filter(minBirthRateESS > 200, id != "5454") %>% 
     ggplot(., aes(x = true_birth_rate_difference,
                   y = mean_birth_rate_diff), color = "darkgrey") +
     theme_classic() + geom_errorbar(aes(ymin = birthRate_hdi95_lower,
@@ -57,10 +57,11 @@ baseplot_2d_sel_bdg
 
 #Add per motolity 
 library(stringr)
-growth_rate_posteriors_2D_neut_bdg_motility <- read_tsv("../physicell/stats/posteriors/2D_neut_bdg_motility_posterior_summary_all.tsv") %>% 
-    dplyr::filter(minBirthRateESS >= 200) %>% 
+growth_rate_posteriors_2D_neut_bdg_motility <- read_tsv("../physicell/stats/posteriors/2D_neut_bdg_motility_posterior_summary_all2.tsv") %>% 
+    dplyr::filter(minBirthRateESS >= 200, id != "2253") %>% 
     mutate("motility" = as.numeric(str_extract(m, "(?<=_m).+(?=_w1)")))
 
+#growth_rate_posteriors_2D_neut_bdg_motility[which(growth_rate_posteriors_2D_neut_bdg_motility$mean_birth_rate_diff < -0.001),]
 plot_2D_neut_bdg_motility <-  baseplot_2d_neut_bdg +
     geom_errorbar(data = growth_rate_posteriors_2D_neut_bdg_motility,
                   aes(ymin = birthRate_hdi95_lower,

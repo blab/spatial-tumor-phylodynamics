@@ -330,7 +330,7 @@ t1_wgs_violin_posteriors_plot_oldstates_state_clock_summary <- all_logs_birthRat
     summarize(birthRate_hdi95_lower = hdi(birthRate, credMass = 0.95)[1],
               birthRate_hdi95_upper = hdi(birthRate, credMass = 0.95)[2],
               birthRate_mean = mean(birthRate))
-
+t1_wgs_violin_posteriors_plot_oldstates_state_clock_summary
 t1_wgs_violin_posteriors_plot_oldstates_state_clock <- all_logs_birthRate_df %>% 
     dplyr::filter(migration_model == "unidirectional",
            clock_model == "state-dependent",
