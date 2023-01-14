@@ -52,27 +52,27 @@ insert_sequence
     <distribution id="posterior" spec="util.CompoundDistribution">
         <distribution id="prior" spec="util.CompoundDistribution">
             <distribution id="BDMMPrime.t:state_dependent_clock_sim" spec="bdmmprime.distribution.BirthDeathMigrationDistribution" conditionOnSurvival="false" frequencies="@typeFrequencies.t:state_dependent_clock_sim" tree="@Tree.t:state_dependent_clock_sim">
-               <parameterization id="CanonicalBDMMPrimeParameterization.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.CanonicalParameterization" origin="@originBDMMPrime.t:state_dependent_clock_sim">
-                    <birthRate id="birthRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@birthRateCanonical.t:state_dependent_clock_sim" timesAreAges="true">
+               <parameterization id="CanonicalBDMMPrimeParameterization.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.CanonicalParameterization" processLength="@originBDMMPrime.t:state_dependent_clock_sim">
+                    <birthRate id="birthRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@birthRateCanonical.t:state_dependent_clock_sim" timesAreAges="true">
                         <typeSet id="typeSetBDMMPrime.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.TypeSet">
                             <typeTraitSet id="typeTraitSet.t:state_dependent_clock_sim" spec="bdmmprime.util.InitializedTraitSet" traitname="type" value="insert_trait">
                                 <taxa id="TaxonSet.1" spec="TaxonSet" alignment="@state_dependent_clock_sim"/>
                             </typeTraitSet>
                         </typeSet>
                  </birthRate>
-                       <deathRate id="deathRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim"  skylineValues = "@deathRateCanonical.t:state_dependent_clock_sim"/>
+                       <deathRate id="deathRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim"  skylineValues = "@deathRateCanonical.t:state_dependent_clock_sim"/>
 
-                    <samplingRate id="samplingRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@samplingRateCanonical.t:state_dependent_clock_sim" timesAreAges="false" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
+                    <samplingRate id="samplingRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@samplingRateCanonical.t:state_dependent_clock_sim" timesAreAges="false" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
                         <parameter id="samplingRateChangeTimesCanonical.t:state_dependent_clock_sim" spec="parameter.RealParameter" estimate="false" lower="0.0" name="changeTimes">0</parameter>
                     </samplingRate>
-                    <rhoSampling id="rhoSamplingProbTPEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.TimedParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim" values="@rhoSamplingProbEpi.t:state_dependent_clock_sim">
+                    <rhoSampling id="rhoSamplingProbTPEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.TimedParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim" values="@rhoSamplingProbEpi.t:state_dependent_clock_sim">
                         <parameter id="rhoSamplingProbTimesEpi.t:state_dependent_clock_sim" spec="parameter.RealParameter" estimate="false" name="times">0.0</parameter>
                     </rhoSampling>
-                    <removalProb id="removalProbSVEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
+                    <removalProb id="removalProbSVEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
                         <parameter id="removalProbEpi.t:state_dependent_clock_sim" spec="parameter.RealParameter" dimension="2" estimate="false" lower="0.0" name="skylineValues" upper="1.0">0.0</parameter>
                     </removalProb>
-                    <migrationRate id="migrationRateSMEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineMatrixParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@migrationRateEpi.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim"/>
-                    <birthRateAmongDemes id="birthRateAmongDemesSMCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineMatrixParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
+                    <migrationRate id="migrationRateSMEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineMatrixParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@migrationRateEpi.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim"/>
+                    <birthRateAmongDemes id="birthRateAmongDemesSMCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineMatrixParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
                         <parameter id="birthRateAmongDemesCanonical.t:tumor1" spec="parameter.RealParameter" estimate="false" name="skylineValues">0.0</parameter>
                     </birthRateAmongDemes>
                     <typeSet idref="typeSetBDMMPrime.t:state_dependent_clock_sim"/>
@@ -118,10 +118,10 @@ insert_sequence
                     <substModel id="JC69.s:state_dependent_clock_sim" spec="JukesCantor"/>
                 </siteModel>
                 	<!-- 	<branchRateModel id="StrictClock.c:H3N2" spec="beast.evolution.branchratemodel.StrictClockModel" clock.rate="@clockRate.c:state_dependent_clock_sim"/>-->
-			<branchRateModel id="StrictClock.c:H3N2" spec="sdevo.bdmm.BdmmStateClock" clock.rate="@clockRate.c:state_dependent_clock_sim" normalize="true">
+			<branchRateModel id="StrictClock.c:H3N2" spec="sdevo.statetclock.BdmmStateClock" clock.rate="@clockRate.c:state_dependent_clock_sim" normalize="true">
     				<relativeClockRates idref="birthRateCanonical.t:state_dependent_clock_sim"/>
 
-    				<typedTree spec="sdevo.bdmm.FlatTypeMappedTree" parameterization="@CanonicalBDMMPrimeParameterization.t:state_dependent_clock_sim" typeLabel="loc" frequencies="@typeFrequencies.t:state_dependent_clock_sim" untypedTree="@Tree.t:state_dependent_clock_sim" typeTraitSet="@typeTraitSet.t:state_dependent_clock_sim"/>
+    				<typedTree spec="sdevo.stateclock.FlatTypeMappedTree" parameterization="@CanonicalBDMMPrimeParameterization.t:state_dependent_clock_sim" typeLabel="loc" frequencies="@typeFrequencies.t:state_dependent_clock_sim" untypedTree="@Tree.t:state_dependent_clock_sim" typeTraitSet="@typeTraitSet.t:state_dependent_clock_sim"/>
     		 	</branchRateModel>
             </distribution>
         </distribution>
@@ -180,10 +180,10 @@ insert_sequence
         <log idref="clockRate.c:state_dependent_clock_sim"/>
         <log idref="originBDMMPrime.t:state_dependent_clock_sim"/>
         <log idref="typeFrequencies.t:state_dependent_clock_sim"/>
-        <log id="typedTreeStats.t:state_dependent_clock_sim" spec="bdmmprime.mapping.TypedTreeStatsLogger" includeRootEdgeChanges="true" typeLabel="type" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
+        <log id="typedTreeStats.t:state_dependent_clock_sim" spec="bdmmprime.mapping.TypedTreeStatsLogger" includeRootEdge="true" typeLabel="type" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
             <typedTree id="typeMappedTree.t:state_dependent_clock_sim" spec="bdmmprime.mapping.TypeMappedTree" bdmmDistrib="@BDMMPrime.t:state_dependent_clock_sim" frequencies="@typeFrequencies.t:state_dependent_clock_sim" mapOnInit="false" remapOnLog="true" typeLabel="type" typeTraitSet="@typeTraitSet.t:state_dependent_clock_sim" untypedTree="@Tree.t:state_dependent_clock_sim"/>
         </log>
-        <log spec="sdevo.bdmm.OriginLogger" typedTree="@typeMappedTree.t:state_dependent_clock_sim" typeLabel="type"/>
+        <log spec="sdevo.stateclock.OriginLogger" typedTree="@typeMappedTree.t:state_dependent_clock_sim" typeLabel="type"/>
         <log idref="birthRateCanonical.t:state_dependent_clock_sim"/>
         <log idref="deathRateCanonical.t:state_dependent_clock_sim"/>
         <log idref="migrationRateSMEpi.t:state_dependent_clock_sim"/>

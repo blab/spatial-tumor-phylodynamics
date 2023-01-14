@@ -152,27 +152,27 @@ name="alignment">
     <distribution id="posterior" spec="util.CompoundDistribution">
         <distribution id="prior" spec="util.CompoundDistribution">
             <distribution id="BDMMPrime.t:state_dependent_clock_sim" spec="bdmmprime.distribution.BirthDeathMigrationDistribution" conditionOnSurvival="false" frequencies="@typeFrequencies.t:state_dependent_clock_sim" tree="@Tree.t:state_dependent_clock_sim">
-               <parameterization id="CanonicalBDMMPrimeParameterization.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.CanonicalParameterization" origin="@originBDMMPrime.t:state_dependent_clock_sim">
-                    <birthRate id="birthRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@birthRateCanonical.t:state_dependent_clock_sim" timesAreAges="true">
+               <parameterization id="CanonicalBDMMPrimeParameterization.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.CanonicalParameterization" processLength="@originBDMMPrime.t:state_dependent_clock_sim">
+                    <birthRate id="birthRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@birthRateCanonical.t:state_dependent_clock_sim" timesAreAges="true">
                         <typeSet id="typeSetBDMMPrime.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.TypeSet">
                             <typeTraitSet id="typeTraitSet.t:state_dependent_clock_sim" spec="bdmmprime.util.InitializedTraitSet" traitname="type" value="cell2078loc0=loc0,cell2227loc0=loc0,cell2228loc0=loc0,cell2315loc0=loc0,cell2455loc0=loc0,cell2548loc0=loc0,cell2584loc0=loc0,cell2674loc0=loc0,cell2796loc0=loc0,cell2849loc0=loc0,cell2887loc0=loc0,cell2948loc0=loc0,cell3012loc0=loc0,cell3021loc0=loc0,cell3022loc0=loc0,cell3121loc0=loc0,cell3179loc0=loc0,cell3190loc1=loc1,cell3208loc0=loc0,cell3219loc0=loc0,cell3253loc0=loc0,cell3276loc0=loc0,cell3381loc0=loc0,cell3431loc0=loc0,cell3479loc0=loc0,cell3488loc0=loc0,cell3624loc0=loc0,cell3644loc0=loc0,cell3679loc0=loc0,cell3745loc0=loc0,cell3749loc0=loc0,cell3776loc0=loc0,cell3845loc0=loc0,cell3894loc0=loc0,cell3924loc0=loc0,cell3937loc1=loc1,cell3939loc0=loc0,cell3948loc0=loc0,cell3967loc0=loc0,cell3976loc1=loc1,cell4006loc1=loc1,cell4034loc0=loc0,cell4061loc0=loc0,cell4126loc0=loc0,cell4141loc0=loc0,cell4153loc0=loc0,cell4194loc0=loc0,cell4210loc1=loc1,cell4224loc1=loc1,cell4232loc0=loc0,cell4268loc0=loc0,cell4270loc0=loc0,cell4275loc0=loc0,cell4281loc0=loc0,cell4307loc0=loc0,cell4351loc1=loc1,cell4374loc0=loc0,cell4376loc1=loc1,cell4422loc1=loc1,cell4443loc0=loc0,cell4459loc1=loc1,cell4475loc0=loc0,cell4484loc0=loc0,cell4492loc1=loc1,cell4502loc0=loc0,cell4506loc1=loc1,cell4508loc1=loc1,cell4512loc0=loc0,cell4518loc1=loc1,cell4529loc1=loc1,cell4531loc0=loc0,cell4559loc0=loc0,cell4570loc1=loc1,cell4586loc1=loc1,cell4598loc1=loc1,cell4611loc0=loc0,cell4620loc1=loc1,cell4625loc1=loc1,cell4628loc1=loc1,cell4648loc1=loc1,cell4659loc0=loc0,cell4663loc1=loc1,cell4670loc0=loc0,cell4692loc1=loc1,cell4694loc1=loc1,cell4700loc1=loc1,cell4713loc0=loc0,cell4717loc0=loc0,cell4719loc1=loc1,cell4723loc0=loc0,cell4725loc0=loc0,cell4738loc1=loc1,cell4740loc1=loc1,cell4748loc0=loc0,cell4752loc1=loc1,cell4758loc0=loc0,cell4760loc1=loc1,cell4780loc1=loc1,cell4787loc0=loc0,cell4788loc0=loc0">
                                 <taxa id="TaxonSet.1" spec="TaxonSet" alignment="@state_dependent_clock_sim"/>
                             </typeTraitSet>
                         </typeSet>
                  </birthRate>
-                       <deathRate id="deathRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim"  skylineValues = "@deathRateCanonical.t:state_dependent_clock_sim"/>
+                       <deathRate id="deathRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim"  skylineValues = "@deathRateCanonical.t:state_dependent_clock_sim"/>
 
-                    <samplingRate id="samplingRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@samplingRateCanonical.t:state_dependent_clock_sim" timesAreAges="false" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
+                    <samplingRate id="samplingRateSVCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@samplingRateCanonical.t:state_dependent_clock_sim" timesAreAges="false" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
                         <parameter id="samplingRateChangeTimesCanonical.t:state_dependent_clock_sim" spec="parameter.RealParameter" estimate="false" lower="0.0" name="changeTimes">0</parameter>
                     </samplingRate>
-                    <rhoSampling id="rhoSamplingProbTPEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.TimedParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim" values="@rhoSamplingProbEpi.t:state_dependent_clock_sim">
+                    <rhoSampling id="rhoSamplingProbTPEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.TimedParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim" values="@rhoSamplingProbEpi.t:state_dependent_clock_sim">
                         <parameter id="rhoSamplingProbTimesEpi.t:state_dependent_clock_sim" spec="parameter.RealParameter" estimate="false" name="times">0.0</parameter>
                     </rhoSampling>
-                    <removalProb id="removalProbSVEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
+                    <removalProb id="removalProbSVEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
                         <parameter id="removalProbEpi.t:state_dependent_clock_sim" spec="parameter.RealParameter" dimension="2" estimate="false" lower="0.0" name="skylineValues" upper="1.0">0.0</parameter>
                     </removalProb>
-                    <migrationRate id="migrationRateSMEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineMatrixParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@migrationRateEpi.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim"/>
-                    <birthRateAmongDemes id="birthRateAmongDemesSMCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineMatrixParameter" origin="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
+                    <migrationRate id="migrationRateSMEpi.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineMatrixParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" skylineValues="@migrationRateEpi.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim"/>
+                    <birthRateAmongDemes id="birthRateAmongDemesSMCanonical.t:state_dependent_clock_sim" spec="bdmmprime.parameterization.SkylineMatrixParameter" processLength="@originBDMMPrime.t:state_dependent_clock_sim" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
                         <parameter id="birthRateAmongDemesCanonical.t:tumor1" spec="parameter.RealParameter" estimate="false" name="skylineValues">0.0</parameter>
                     </birthRateAmongDemes>
                     <typeSet idref="typeSetBDMMPrime.t:state_dependent_clock_sim"/>
@@ -271,7 +271,7 @@ name="alignment">
 
 
 
-    <logger id="tracelog" spec="Logger" fileName="logs/$(filebase).log" logEvery="100" model="@posterior" sanitiseHeaders="true" sort="smart">
+    <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="100" model="@posterior" sanitiseHeaders="true" sort="smart">
         <log idref="posterior"/>
         <log idref="likelihood"/>
         <log idref="prior"/>
@@ -280,7 +280,7 @@ name="alignment">
         <log idref="clockRate.c:state_dependent_clock_sim"/>
         <log idref="originBDMMPrime.t:state_dependent_clock_sim"/>
         <log idref="typeFrequencies.t:state_dependent_clock_sim"/>
-        <log id="typedTreeStats.t:state_dependent_clock_sim" spec="bdmmprime.mapping.TypedTreeStatsLogger" includeRootEdgeChanges="true" typeLabel="type" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
+        <log id="typedTreeStats.t:state_dependent_clock_sim" spec="bdmmprime.mapping.TypedTreeStatsLogger" includeRootEdge="true" typeLabel="type" typeSet="@typeSetBDMMPrime.t:state_dependent_clock_sim">
             <typedTree id="typeMappedTree.t:state_dependent_clock_sim" spec="bdmmprime.mapping.TypeMappedTree" bdmmDistrib="@BDMMPrime.t:state_dependent_clock_sim" frequencies="@typeFrequencies.t:state_dependent_clock_sim" mapOnInit="false" remapOnLog="true" typeLabel="type" typeTraitSet="@typeTraitSet.t:state_dependent_clock_sim" untypedTree="@Tree.t:state_dependent_clock_sim"/>
         </log>
         <log spec="sdevo.bdmm.OriginLogger" typedTree="@typeMappedTree.t:state_dependent_clock_sim" typeLabel="type"/>
@@ -298,19 +298,19 @@ name="alignment">
         <log idref="prior"/>
     </logger>
 
-    <logger id="treelog.t:state_dependent_clock_sim" spec="Logger" fileName="trees/$(filebase).trees" logEvery="1000" mode="tree">
+    <logger id="treelog.t:state_dependent_clock_sim" spec="Logger" fileName="$(filebase).trees" logEvery="1000" mode="tree">
         <log id="TreeWithMetaDataLogger.t:state_dependent_clock_sim" spec="beast.evolution.tree.TreeWithMetaDataLogger" tree="@Tree.t:state_dependent_clock_sim"/>
     </logger>
 
-    <logger id="typedTreeLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="trees/$(filebase).typed.trees" logEvery="1000" mode="tree">
+    <logger id="typedTreeLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="$(filebase).typed.trees" logEvery="1000" mode="tree">
         <log idref="typeMappedTree.t:state_dependent_clock_sim"/>
     </logger>
 
-    <logger id="nodeTypedTreeLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="trees/$(filebase).typed.node.trees" logEvery="1000" mode="tree">
+    <logger id="nodeTypedTreeLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="$(filebase).typed.node.trees" logEvery="1000" mode="tree">
         <log id="nodeTypedTree.t:state_dependent_clock_sim" spec="bdmmprime.mapping.TypedNodeTreeLogger" typedTree="@typeMappedTree.t:state_dependent_clock_sim"/>
     </logger>
 
-    <logger id="trajLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" fileName="trees/$(filebase).$(tree).traj" logEvery="1000">
+    <logger id="trajLogger.t:state_dependent_clock_sim" spec="bdmmprime.util.OptionalLogger" fileName="$(filebase).$(tree).traj" logEvery="1000">
         <log id="typedTraj.t:state_dependent_clock_sim" spec="bdmmprime.trajectories.SampledTrajectory" bdmmDistrib="@BDMMPrime.t:state_dependent_clock_sim" frequencies="@typeFrequencies.t:state_dependent_clock_sim" typeMappedTree="@typeMappedTree.t:state_dependent_clock_sim" useTauLeaping="true"/>
     </logger>
 
